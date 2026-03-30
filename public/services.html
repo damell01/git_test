@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Services | Trash Panda Roll-Offs</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .page-hero { padding:160px 0 90px; position:relative; overflow:hidden; background:linear-gradient(160deg,#080808 0%,#100800 60%,#0d0d0d 100%); }
+    .page-hero::before { content:''; position:absolute;inset:0; background:radial-gradient(ellipse 60% 80% at 80% 50%,rgba(249,115,22,.1) 0%,transparent 65%); }
+    .page-hero-grid { position:absolute;inset:0; background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px); background-size:50px 50px; }
+    .breadcrumb-wrap { font-family:var(--font-cond);font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);margin-bottom:1.5rem; }
+    .breadcrumb-wrap a { color:var(--orange);text-decoration:none; }
+
+    .svc-card { background:var(--dark2);border:1px solid var(--steel);border-radius:var(--radius-lg);overflow:hidden;height:100%;transition:var(--transition); }
+    .svc-card:hover { border-color:rgba(249,115,22,.35);transform:translateY(-6px);box-shadow:var(--shadow-orange); }
+    .svc-card-head { padding:2.5rem 2rem 2rem;background:var(--dark3);border-bottom:1px solid var(--steel);position:relative; }
+    .svc-card-head-icon { font-size:2.5rem;color:var(--orange);margin-bottom:1rem; }
+    .svc-card-head h3 { font-family:var(--font-cond);font-weight:800;font-size:1.4rem;text-transform:uppercase;letter-spacing:.05em; }
+    .svc-card-body { padding:2rem; }
+    .svc-card-body p { color:var(--gray-light);font-size:.92rem;line-height:1.65;margin-bottom:1.2rem; }
+    .svc-includes { font-family:var(--font-cond);font-weight:700;font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--orange);margin-bottom:.75rem; }
+    .check-list li { font-size:.88rem; }
+    .svc-cta { margin-top:1.5rem;display:inline-flex;align-items:center;gap:8px;font-family:var(--font-cond);font-weight:800;font-size:.85rem;letter-spacing:.1em;text-transform:uppercase;color:var(--orange);text-decoration:none;transition:gap .2s; }
+    .svc-cta:hover { gap:14px;color:var(--orange); }
+
+    .feature-strip { background:var(--dark3);border:1px solid var(--steel);border-radius:var(--radius-lg);padding:1.5rem 2rem;display:flex;align-items:center;gap:1.2rem;transition:var(--transition); }
+    .feature-strip:hover { border-color:rgba(249,115,22,.3); }
+    .feature-strip-icon { width:48px;height:48px;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.25);border-radius:var(--radius);display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:var(--orange);flex-shrink:0; }
+    .feature-strip h5 { font-family:var(--font-cond);font-weight:800;font-size:.95rem;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.2rem; }
+    .feature-strip p { font-size:.82rem;color:var(--gray-light);margin:0; }
+  </style>
+</head>
+<body>
+<div id="nav-placeholder"></div>
+<div id="ticker-placeholder"></div>
+
+<section class="page-hero">
+  <div class="page-hero-grid"></div>
+  <div class="container position-relative" style="max-width:1300px;">
+    <div class="breadcrumb-wrap"><a href="index.html">Home</a> / Services</div>
+    <div class="s-label mb-3"><span class="glow-dot"></span><span>What We Do</span></div>
+    <h1 class="display-xl mb-3">OUR <span class="text-orange">SERVICES</span></h1>
+    <div class="orange-line"></div>
+    <p class="body-lead" style="max-width:560px;">From single-room cleanouts to full commercial demolitions, Trash Panda Roll-Offs has the dumpster, the experience, and the drive to get the job done right.</p>
+    <div class="d-flex gap-3 mt-4">
+      <a href="contact.html" class="btn-panda"><i class="fas fa-phone"></i> Get a Free Quote</a>
+    </div>
+  </div>
+</section>
+
+<section class="section-pad" style="background:var(--dark);">
+  <div class="container" style="max-width:1300px;">
+    <div class="row g-4">
+      <!-- Residential -->
+      <div class="col-md-6 col-xl-4">
+        <div class="svc-card">
+          <div class="svc-card-head">
+            <div class="svc-card-head-icon"><i class="fas fa-home"></i></div>
+            <h3>Residential Rentals</h3>
+          </div>
+          <div class="svc-card-body">
+            <p>Whether you're doing a full home renovation or just finally tackling that junk-filled garage, our residential roll-off dumpsters make the process painless. We deliver to driveways, yards, and alleys across the Gulf Coast.</p>
+            <div class="svc-includes">What's Included</div>
+            <ul class="check-list">
+              <li><i class="fas fa-check-circle"></i>Flexible rental periods (typically 7–14 days)</li>
+              <li><i class="fas fa-check-circle"></i>Delivery & pickup included in flat rate</li>
+              <li><i class="fas fa-check-circle"></i>All sizes from 10 to 40 yards</li>
+              <li><i class="fas fa-check-circle"></i>Licensed disposal at certified facilities</li>
+            </ul>
+            <a href="contact.html" class="svc-cta">Book Now <i class="fas fa-arrow-right"></i></a>
+          </div>
+        </div>
+      </div>
+      <!-- Commercial -->
+      <div class="col-md-6 col-xl-4">
+        <div class="svc-card">
+          <div class="svc-card-head">
+            <div class="svc-card-head-icon"><i class="fas fa-building"></i></div>
+            <h3>Commercial Rentals</h3>
+          </div>
+          <div class="svc-card-body">
+            <p>Businesses across Baldwin County and Mobile trust us for reliable commercial dumpster service. Retail build-outs, restaurant renovations, office cleanouts — we understand your business can't afford downtime.</p>
+            <div class="svc-includes">What's Included</div>
+            <ul class="check-list">
+              <li><i class="fas fa-check-circle"></i>Priority scheduling for commercial accounts</li>
+              <li><i class="fas fa-check-circle"></i>Multiple-swap options for ongoing projects</li>
+              <li><i class="fas fa-check-circle"></i>On-site placement consultation</li>
+              <li><i class="fas fa-check-circle"></i>Invoicing for business clients available</li>
+            </ul>
+            <a href="contact.html" class="svc-cta">Book Now <i class="fas fa-arrow-right"></i></a>
+          </div>
+        </div>
+      </div>
+      <!-- Construction -->
+      <div class="col-md-6 col-xl-4">
+        <div class="svc-card">
+          <div class="svc-card-head">
+            <div class="svc-card-head-icon"><i class="fas fa-hard-hat"></i></div>
+            <h3>Construction Cleanup</h3>
+          </div>
+          <div class="svc-card-body">
+            <p>New builds, additions, demolitions — construction sites generate serious debris. Our 30 and 40 yard containers are built for the heavy stuff: concrete, lumber, drywall, and more.</p>
+            <div class="svc-includes">What's Included</div>
+            <ul class="check-list">
+              <li><i class="fas fa-check-circle"></i>Heavy-duty containers for construction debris</li>
+              <li><i class="fas fa-check-circle"></i>Concrete, dirt & heavy material options</li>
+              <li><i class="fas fa-check-circle"></i>Job site drop placement available</li>
+              <li><i class="fas fa-check-circle"></i>Contractor pricing available</li>
+            </ul>
+            <a href="contact.html" class="svc-cta">Book Now <i class="fas fa-arrow-right"></i></a>
+          </div>
+        </div>
+      </div>
+      <!-- Roofing -->
+      <div class="col-md-6 col-xl-4">
+        <div class="svc-card">
+          <div class="svc-card-head">
+            <div class="svc-card-head-icon"><i class="fas fa-hammer"></i></div>
+            <h3>Roofing Projects</h3>
+          </div>
+          <div class="svc-card-body">
+            <p>Roofing debris — shingles, underlayment, old decking — is heavy and bulky. Our roll-offs are the roofing contractor's best friend. We work with roofing crews across the Gulf Coast regularly.</p>
+            <div class="svc-includes">What's Included</div>
+            <ul class="check-list">
+              <li><i class="fas fa-check-circle"></i>20 & 30 yard containers most popular</li>
+              <li><i class="fas fa-check-circle"></i>Shingle tear-off specialists</li>
+              <li><i class="fas fa-check-circle"></i>Quick swap when full</li>
+              <li><i class="fas fa-check-circle"></i>Contractor discount pricing</li>
+            </ul>
+            <a href="contact.html" class="svc-cta">Book Now <i class="fas fa-arrow-right"></i></a>
+          </div>
+        </div>
+      </div>
+      <!-- Estate -->
+      <div class="col-md-6 col-xl-4">
+        <div class="svc-card">
+          <div class="svc-card-head">
+            <div class="svc-card-head-icon"><i class="fas fa-boxes"></i></div>
+            <h3>Estate Cleanouts</h3>
+          </div>
+          <div class="svc-card-body">
+            <p>Cleaning out a lifetime of belongings is hard enough. We'll drop off the right size dumpster, give you the time you need, and make the haul-away completely effortless. We treat every estate job with respect.</p>
+            <div class="svc-includes">What's Included</div>
+            <ul class="check-list">
+              <li><i class="fas fa-check-circle"></i>Extended rental periods available</li>
+              <li><i class="fas fa-check-circle"></i>All sizes available for any home</li>
+              <li><i class="fas fa-check-circle"></i>Sensitive, respectful service</li>
+              <li><i class="fas fa-check-circle"></i>Multiple pickups if needed</li>
+            </ul>
+            <a href="contact.html" class="svc-cta">Book Now <i class="fas fa-arrow-right"></i></a>
+          </div>
+        </div>
+      </div>
+      <!-- Storm -->
+      <div class="col-md-6 col-xl-4">
+        <div class="svc-card">
+          <div class="svc-card-head">
+            <div class="svc-card-head-icon"><i class="fas fa-cloud-bolt"></i></div>
+            <h3>Storm Debris Removal</h3>
+          </div>
+          <div class="svc-card-body">
+            <p>Gulf Coast storms can leave a devastating mess. We respond fast when you need us most — tree debris, siding, damaged materials, and anything else the storm left behind.</p>
+            <div class="svc-includes">What's Included</div>
+            <ul class="check-list">
+              <li><i class="fas fa-check-circle"></i>Emergency rapid response available</li>
+              <li><i class="fas fa-check-circle"></i>All storm debris types accepted</li>
+              <li><i class="fas fa-check-circle"></i>Work with insurance adjusters</li>
+              <li><i class="fas fa-check-circle"></i>Multiple containers for large losses</li>
+            </ul>
+            <a href="contact.html" class="svc-cta">Book Now <i class="fas fa-arrow-right"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features strip -->
+<section class="section-pad" style="background:var(--black);">
+  <div class="container" style="max-width:1300px;">
+    <div class="text-center mb-5">
+      <div class="s-label justify-content-center"><span class="glow-dot"></span><span>Every Service Includes</span></div>
+      <h2 class="display-lg">THE <span class="text-orange">PANDA PROMISE</span></h2>
+      <div class="orange-line center"></div>
+    </div>
+    <div class="row g-3">
+      <div class="col-md-6 col-lg-4"><div class="feature-strip"><div class="feature-strip-icon"><i class="fas fa-bolt"></i></div><div><h5>Fast Delivery</h5><p>Same-day or next-morning in most cases across our service area.</p></div></div></div>
+      <div class="col-md-6 col-lg-4"><div class="feature-strip"><div class="feature-strip-icon"><i class="fas fa-tag"></i></div><div><h5>Flat-Rate Pricing</h5><p>One price, everything included. No mileage fees, no surprise charges.</p></div></div></div>
+      <div class="col-md-6 col-lg-4"><div class="feature-strip"><div class="feature-strip-icon"><i class="fas fa-phone-alt"></i></div><div><h5>Real Support</h5><p>Call and talk to a real person — not a bot, not a menu.</p></div></div></div>
+      <div class="col-md-6 col-lg-4"><div class="feature-strip"><div class="feature-strip-icon"><i class="fas fa-recycle"></i></div><div><h5>Eco Disposal</h5><p>We sort recyclables and use certified disposal facilities.</p></div></div></div>
+      <div class="col-md-6 col-lg-4"><div class="feature-strip"><div class="feature-strip-icon"><i class="fas fa-shield-alt"></i></div><div><h5>Fully Insured</h5><p>Licensed and insured for residential and commercial work.</p></div></div></div>
+      <div class="col-md-6 col-lg-4"><div class="feature-strip"><div class="feature-strip-icon"><i class="fas fa-handshake"></i></div><div><h5>Satisfaction Guaranteed</h5><p>If something isn't right, we make it right. Period.</p></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section-pad" style="background:linear-gradient(135deg,var(--orange-xd),var(--orange),var(--amber));">
+  <div class="container text-center" style="max-width:800px;">
+    <h2 style="font-family:var(--font-display);font-size:clamp(2.5rem,6vw,4rem);color:var(--black);line-height:.95;">READY TO GET STARTED?</h2>
+    <p style="font-family:var(--font-cond);font-size:1.1rem;font-weight:600;color:rgba(0,0,0,.65);margin:1rem 0 2rem;">Call us or fill out a quote form — we respond fast.</p>
+    <div class="d-flex gap-3 justify-content-center flex-wrap">
+      <a href="contact.html" style="display:inline-flex;align-items:center;gap:10px;background:var(--black);color:var(--white);font-family:var(--font-cond);font-weight:900;font-size:1rem;letter-spacing:.1em;text-transform:uppercase;padding:16px 38px;border-radius:var(--radius-sm);text-decoration:none;"><i class="fas fa-envelope"></i>Get a Free Quote</a>
+      <a href="tel:+12513334444" style="display:inline-flex;align-items:center;gap:10px;background:rgba(0,0,0,.2);border:2px solid rgba(0,0,0,.3);color:var(--black);font-family:var(--font-cond);font-weight:900;font-size:1rem;letter-spacing:.1em;text-transform:uppercase;padding:14px 38px;border-radius:var(--radius-sm);text-decoration:none;"><i class="fas fa-phone"></i>(251) 333-4444</a>
+    </div>
+  </div>
+</section>
+
+<div id="footer-placeholder"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="shared-components.js"></script>
+</body>
+</html>

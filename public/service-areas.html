@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Service Areas | Trash Panda Roll-Offs — Baldwin County & Mobile, AL</title>
+  <meta name="description" content="Trash Panda Roll-Offs serves Gulf Shores, Orange Beach, Foley, Fairhope, Daphne, Spanish Fort, Mobile and all of Baldwin County, Alabama."/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    .page-hero {
+      padding: 160px 0 90px;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(160deg, #080808 0%, #100800 60%, #0d0d0d 100%);
+    }
+    .page-hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 80% at 80% 50%, rgba(249,115,22,0.1) 0%, transparent 65%);
+    }
+    .page-hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 50px 50px;
+    }
+    .breadcrumb-wrap {
+      font-family: var(--font-cond);
+      font-size: 0.8rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gray);
+      margin-bottom: 1.5rem;
+    }
+    .breadcrumb-wrap a { color: var(--orange); text-decoration: none; }
+    .breadcrumb-wrap a:hover { text-decoration: underline; }
+
+    /* ── MAP AREA ── */
+    .map-section { background: var(--dark); }
+    .map-placeholder {
+      background: var(--dark2);
+      border: 1px solid var(--steel);
+      border-radius: var(--radius-lg);
+      height: 460px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .map-placeholder::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(circle at 30% 60%, rgba(249,115,22,0.12) 0%, transparent 50%),
+        radial-gradient(circle at 70% 30%, rgba(59,130,246,0.08) 0%, transparent 50%);
+    }
+    .map-pin {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: default;
+      transition: transform 0.2s;
+    }
+    .map-pin:hover { transform: scale(1.15) translateY(-4px); z-index: 10; }
+    .map-pin-dot {
+      width: 12px; height: 12px;
+      background: var(--orange);
+      border-radius: 50%;
+      border: 2px solid var(--white);
+      box-shadow: 0 0 12px rgba(249,115,22,0.7);
+      position: relative;
+    }
+    .map-pin-dot::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border: 1px solid rgba(249,115,22,0.4);
+      border-radius: 50%;
+      animation: ping 2s ease-out infinite;
+    }
+    .map-pin-label {
+      font-family: var(--font-cond);
+      font-weight: 700;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--white);
+      background: rgba(8,8,8,0.85);
+      border: 1px solid rgba(249,115,22,0.3);
+      border-radius: 4px;
+      padding: 3px 8px;
+      margin-top: 4px;
+      white-space: nowrap;
+    }
+    @keyframes ping {
+      0% { transform: scale(1); opacity: 0.8; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+
+    /* ── AREA CARDS ── */
+    .areas-grid { background: var(--black); }
+    .area-card {
+      background: var(--dark);
+      border: 1px solid var(--steel);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      height: 100%;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    .area-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--orange), var(--amber));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.4s ease;
+    }
+    .area-card:hover { border-color: rgba(249,115,22,0.35); transform: translateY(-6px); box-shadow: var(--shadow-orange); }
+    .area-card:hover::before { transform: scaleX(1); }
+    .area-card-icon {
+      width: 52px; height: 52px;
+      background: rgba(249,115,22,0.1);
+      border: 1px solid rgba(249,115,22,0.25);
+      border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+      color: var(--orange);
+      margin-bottom: 1.2rem;
+    }
+    .area-card h3 {
+      font-family: var(--font-cond);
+      font-weight: 800;
+      font-size: 1.3rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.3rem;
+    }
+    .area-county {
+      font-family: var(--font-cond);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--orange);
+      margin-bottom: 1rem;
+    }
+    .area-desc { font-size: 0.88rem; color: var(--gray-light); line-height: 1.6; margin-bottom: 1rem; }
+    .area-services-list {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .area-services-list li {
+      background: var(--dark3);
+      border: 1px solid var(--steel2);
+      border-radius: 4px;
+      font-family: var(--font-cond);
+      font-weight: 700;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gray-light);
+      padding: 4px 10px;
+    }
+
+    /* ── COVERAGE ── */
+    .coverage-section { background: var(--dark); }
+    .county-block {
+      background: var(--dark2);
+      border: 1px solid var(--steel);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+    }
+    .county-name {
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      color: var(--white);
+      margin-bottom: 0.3rem;
+    }
+    .county-tag {
+      font-family: var(--font-cond);
+      font-weight: 700;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--orange);
+      margin-bottom: 1.2rem;
+    }
+    .city-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .city-pill {
+      background: var(--dark3);
+      border: 1px solid var(--steel2);
+      color: var(--gray-light);
+      font-family: var(--font-cond);
+      font-weight: 600;
+      font-size: 0.85rem;
+      padding: 6px 14px;
+      border-radius: 100px;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .city-pill:hover { border-color: var(--orange); color: var(--orange); }
+    .city-pill i { font-size: 0.6rem; color: var(--orange); }
+  </style>
+</head>
+<body>
+<div id="nav-placeholder"></div>
+<div id="ticker-placeholder"></div>
+
+<!-- ── PAGE HERO ── -->
+<section class="page-hero">
+  <div class="page-hero-grid"></div>
+  <div class="container position-relative" style="max-width:1300px;">
+    <div class="breadcrumb-wrap"><a href="index.html">Home</a> / Service Areas</div>
+    <div class="s-label mb-3"><span class="glow-dot"></span><span>Where We Serve</span></div>
+    <h1 class="display-xl mb-3">SERVICE <span class="text-orange">AREAS</span></h1>
+    <div class="orange-line"></div>
+    <p class="body-lead" style="max-width:580px;">Proudly serving Baldwin County, Mobile County, and all surrounding communities across South Alabama's Gulf Coast. If you're within our range — we're on our way.</p>
+    <div class="d-flex gap-3 mt-4">
+      <a href="contact.html" class="btn-panda"><i class="fas fa-phone"></i> Book a Dumpster</a>
+      <a href="tel:+12513334444" class="btn-ghost"><i class="fas fa-phone"></i> (251) 333-4444</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── MAP ── -->
+<section class="map-section section-pad-sm">
+  <div class="container" style="max-width:1300px;">
+    <div class="map-placeholder">
+      <!-- Decorative pin map of South Alabama -->
+      <div style="position:relative;width:100%;height:100%;">
+        <!-- Gulf Shores -->
+        <div class="map-pin" style="left:38%;top:78%;"><div class="map-pin-dot"></div><div class="map-pin-label">Gulf Shores</div></div>
+        <!-- Orange Beach -->
+        <div class="map-pin" style="left:48%;top:80%;"><div class="map-pin-dot"></div><div class="map-pin-label">Orange Beach</div></div>
+        <!-- Foley -->
+        <div class="map-pin" style="left:42%;top:65%;"><div class="map-pin-dot"></div><div class="map-pin-label">Foley</div></div>
+        <!-- Fairhope -->
+        <div class="map-pin" style="left:30%;top:50%;"><div class="map-pin-dot"></div><div class="map-pin-label">Fairhope</div></div>
+        <!-- Daphne -->
+        <div class="map-pin" style="left:26%;top:42%;"><div class="map-pin-dot"></div><div class="map-pin-label">Daphne</div></div>
+        <!-- Spanish Fort -->
+        <div class="map-pin" style="left:22%;top:36%;"><div class="map-pin-dot"></div><div class="map-pin-label">Spanish Fort</div></div>
+        <!-- Mobile -->
+        <div class="map-pin" style="left:14%;top:32%;"><div class="map-pin-dot" style="background:var(--blue);box-shadow:0 0 12px rgba(59,130,246,0.7);"></div><div class="map-pin-label" style="border-color:rgba(59,130,246,0.4);">Mobile</div></div>
+        <!-- Robertsdale -->
+        <div class="map-pin" style="left:50%;top:56%;"><div class="map-pin-dot"></div><div class="map-pin-label">Robertsdale</div></div>
+        <!-- Loxley -->
+        <div class="map-pin" style="left:44%;top:48%;"><div class="map-pin-dot"></div><div class="map-pin-label">Loxley</div></div>
+        <!-- Bay Minette -->
+        <div class="map-pin" style="left:58%;top:38%;"><div class="map-pin-dot"></div><div class="map-pin-label">Bay Minette</div></div>
+        <!-- Saraland -->
+        <div class="map-pin" style="left:10%;top:22%;"><div class="map-pin-dot"></div><div class="map-pin-label">Saraland</div></div>
+
+        <div style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:20px;align-items:center;">
+          <div style="display:flex;align-items:center;gap:8px;font-family:var(--font-cond);font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray);">
+            <div style="width:10px;height:10px;background:var(--orange);border-radius:50%;box-shadow:0 0 8px var(--orange);"></div> Baldwin County
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font-family:var(--font-cond);font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray);">
+            <div style="width:10px;height:10px;background:var(--blue);border-radius:50%;box-shadow:0 0 8px var(--blue);"></div> Mobile County
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── AREA CARDS ── -->
+<section class="areas-grid section-pad">
+  <div class="container" style="max-width:1300px;">
+    <div class="text-center mb-5">
+      <div class="s-label justify-content-center"><span class="glow-dot"></span><span>Cities We Serve</span></div>
+      <h2 class="display-lg">GULF COAST <span class="text-orange">COVERAGE</span></h2>
+      <div class="orange-line center"></div>
+    </div>
+    <div class="row g-4">
+      <!-- Gulf Shores -->
+      <div class="col-md-6 col-xl-4">
+        <div class="area-card">
+          <div class="area-card-icon"><i class="fas fa-umbrella-beach"></i></div>
+          <h3>Gulf Shores</h3>
+          <div class="area-county">Baldwin County, AL</div>
+          <p class="area-desc">From beachside condos to inland subdivisions, we keep Gulf Shores projects rolling. Fast turnaround for vacation rentals and construction sites.</p>
+          <ul class="area-services-list">
+            <li>Same-Day Available</li><li>Residential</li><li>Commercial</li><li>Construction</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Orange Beach -->
+      <div class="col-md-6 col-xl-4">
+        <div class="area-card">
+          <div class="area-card-icon"><i class="fas fa-water"></i></div>
+          <h3>Orange Beach</h3>
+          <div class="area-county">Baldwin County, AL</div>
+          <p class="area-desc">Resort renovations, condo cleanouts, and beachfront construction — we handle Orange Beach's unique coastal project demands with ease.</p>
+          <ul class="area-services-list">
+            <li>Roofing</li><li>Condo Cleanouts</li><li>Storm Debris</li><li>Renovation</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Foley -->
+      <div class="col-md-6 col-xl-4">
+        <div class="area-card">
+          <div class="area-card-icon"><i class="fas fa-store"></i></div>
+          <h3>Foley</h3>
+          <div class="area-county">Baldwin County, AL</div>
+          <p class="area-desc">Baldwin County's fastest-growing city. We serve Foley's booming residential developments, commercial districts, and retail construction projects.</p>
+          <ul class="area-services-list">
+            <li>New Construction</li><li>Commercial</li><li>Estate Cleanouts</li><li>Landscaping</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Fairhope -->
+      <div class="col-md-6 col-xl-4">
+        <div class="area-card">
+          <div class="area-card-icon"><i class="fas fa-leaf"></i></div>
+          <h3>Fairhope</h3>
+          <div class="area-county">Baldwin County, AL</div>
+          <p class="area-desc">Fairhope's charming neighborhoods and bluff properties deserve careful, professional service. We deliver and pick up with attention to detail.</p>
+          <ul class="area-services-list">
+            <li>Home Remodel</li><li>Estate Cleanout</li><li>Landscaping</li><li>Renovation</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Daphne -->
+      <div class="col-md-6 col-xl-4">
+        <div class="area-card">
+          <div class="area-card-icon"><i class="fas fa-house-chimney"></i></div>
+          <h3>Daphne</h3>
+          <div class="area-county">Baldwin County, AL</div>
+          <p class="area-desc">One of the Gulf Coast's fastest-growing communities. Daphne's suburban growth means constant demand — we're always ready to deliver.</p>
+          <ul class="area-services-list">
+            <li>Residential</li><li>Commercial</li><li>New Build</li><li>Cleanouts</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Spanish Fort -->
+      <div class="col-md-6 col-xl-4">
+        <div class="area-card">
+          <div class="area-card-icon"><i class="fas fa-shield-alt"></i></div>
+          <h3>Spanish Fort</h3>
+          <div class="area-county">Baldwin County, AL</div>
+          <p class="area-desc">Bridge communities between Baldwin and Mobile counties. Spanish Fort residents rely on us for fast, professional roll-off service.</p>
+          <ul class="area-services-list">
+            <li>Residential</li><li>Remodel</li><li>Junk Removal</li><li>Roofing</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Mobile -->
+      <div class="col-md-6 col-xl-4">
+        <div class="area-card">
+          <div class="area-card-icon"><i class="fas fa-city"></i></div>
+          <h3>Mobile</h3>
+          <div class="area-county">Mobile County, AL</div>
+          <p class="area-desc">Alabama's port city has big projects that need big solutions. From downtown renovations to industrial cleanouts — we handle Mobile's scale.</p>
+          <ul class="area-services-list">
+            <li>Commercial</li><li>Industrial</li><li>Demolition</li><li>Residential</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Robertsdale -->
+      <div class="col-md-6 col-xl-4">
+        <div class="area-card">
+          <div class="area-card-icon"><i class="fas fa-tractor"></i></div>
+          <h3>Robertsdale</h3>
+          <div class="area-county">Baldwin County, AL</div>
+          <p class="area-desc">Baldwin County's seat sits right in our core service zone. Robertsdale residents and businesses get some of our fastest response times.</p>
+          <ul class="area-services-list">
+            <li>Residential</li><li>Farm Cleanout</li><li>Commercial</li><li>Construction</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Loxley -->
+      <div class="col-md-6 col-xl-4">
+        <div class="area-card">
+          <div class="area-card-icon"><i class="fas fa-road"></i></div>
+          <h3>Loxley</h3>
+          <div class="area-county">Baldwin County, AL</div>
+          <p class="area-desc">Centrally located in Baldwin County, Loxley is perfectly positioned for quick service. New subdivisions and rural cleanouts — we've done it all.</p>
+          <ul class="area-services-list">
+            <li>New Construction</li><li>Rural Cleanout</li><li>Residential</li><li>Debris</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Bay Minette -->
+      <div class="col-md-6 col-xl-4">
+        <div class="area-card">
+          <div class="area-card-icon"><i class="fas fa-tree"></i></div>
+          <h3>Bay Minette</h3>
+          <div class="area-county">Baldwin County, AL</div>
+          <p class="area-desc">Northern Baldwin County projects get the same fast, reliable service. Bay Minette's rural and suburban mix is our bread and butter.</p>
+          <ul class="area-services-list">
+            <li>Rural</li><li>Estate Cleanout</li><li>Storm Debris</li><li>Construction</li>
+          </ul>
+        </div>
+      </div>
+      <!-- Saraland -->
+      <div class="col-md-6 col-xl-4">
+        <div class="area-card">
+          <div class="area-card-icon"><i class="fas fa-industry"></i></div>
+          <h3>Saraland</h3>
+          <div class="area-county">Mobile County, AL</div>
+          <p class="area-desc">North Mobile's growing community needs reliable roll-off service. We cover Saraland and surrounding communities throughout Mobile County.</p>
+          <ul class="area-services-list">
+            <li>Residential</li><li>Commercial</li><li>Renovation</li><li>Cleanouts</li>
+          </ul>
+        </div>
+      </div>
+      <!-- And More -->
+      <div class="col-md-6 col-xl-4">
+        <div class="area-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-style:dashed;border-color:rgba(249,115,22,0.3);">
+          <div class="area-card-icon mx-auto"><i class="fas fa-plus"></i></div>
+          <h3>Don't See Your City?</h3>
+          <div class="area-county">Call Us — We May Cover You</div>
+          <p class="area-desc">Our service area is always expanding. Give us a call and we'll let you know if we can get a dumpster to you.</p>
+          <a href="tel:+12513334444" class="btn-panda mt-2"><i class="fas fa-phone"></i> (251) 333-4444</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── COUNTY COVERAGE ── -->
+<section class="coverage-section section-pad">
+  <div class="container" style="max-width:1300px;">
+    <div class="text-center mb-5">
+      <div class="s-label justify-content-center"><span class="glow-dot"></span><span>Full Coverage</span></div>
+      <h2 class="display-lg">BY THE <span class="text-orange">COUNTY</span></h2>
+      <div class="orange-line center"></div>
+    </div>
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="county-block">
+          <div class="county-name">Baldwin County</div>
+          <div class="county-tag"><i class="fas fa-map-marker-alt me-1"></i> Primary Service Zone</div>
+          <p style="color:var(--gray-light);font-size:0.9rem;line-height:1.6;margin-bottom:1.2rem;">Our home turf. We know Baldwin County's roads, communities, and permit requirements inside and out.</p>
+          <div class="city-list">
+            <span class="city-pill"><i class="fas fa-circle"></i>Gulf Shores</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Orange Beach</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Foley</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Fairhope</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Daphne</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Spanish Fort</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Robertsdale</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Loxley</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Bay Minette</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Elberta</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Summerdale</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Silverhill</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Lillian</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Perdido Beach</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Stapleton</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="county-block">
+          <div class="county-name">Mobile County</div>
+          <div class="county-tag"><i class="fas fa-map-marker-alt me-1"></i> Extended Service Zone</div>
+          <p style="color:var(--gray-light);font-size:0.9rem;line-height:1.6;margin-bottom:1.2rem;">We extend across the bay into Mobile County for residential and commercial customers throughout the Metro area.</p>
+          <div class="city-list">
+            <span class="city-pill"><i class="fas fa-circle"></i>Mobile</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Saraland</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Chickasaw</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Prichard</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Satsuma</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Semmes</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Eight Mile</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Theodore</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Grand Bay</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Citronelle</span>
+            <span class="city-pill"><i class="fas fa-circle"></i>Tillmans Corner</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA ── -->
+<section class="section-pad" style="background:linear-gradient(135deg,var(--orange-xd),var(--orange),var(--amber));">
+  <div class="container text-center position-relative" style="max-width:900px;">
+    <h2 style="font-family:var(--font-display);font-size:clamp(2.5rem,6vw,4rem);color:var(--black);line-height:0.95;">SERVING YOUR NEIGHBORHOOD</h2>
+    <p style="font-family:var(--font-cond);font-size:1.1rem;font-weight:600;color:rgba(0,0,0,0.65);margin:1rem 0 2rem;">Get a fast, free quote for dumpster delivery to your area today.</p>
+    <div class="d-flex gap-3 justify-content-center flex-wrap">
+      <a href="contact.html" class="btn-cta-dark" style="background:var(--black);color:var(--white);font-family:var(--font-cond);font-weight:900;font-size:1rem;letter-spacing:.1em;text-transform:uppercase;padding:16px 38px;border-radius:var(--radius-sm);text-decoration:none;display:inline-flex;align-items:center;gap:10px;transition:var(--transition);">
+        <i class="fas fa-envelope"></i> Get a Free Quote
+      </a>
+      <a href="tel:+12513334444" class="btn-cta-dark" style="background:rgba(0,0,0,0.2);border:2px solid rgba(0,0,0,0.3);color:var(--black);font-family:var(--font-cond);font-weight:900;font-size:1rem;letter-spacing:.1em;text-transform:uppercase;padding:14px 38px;border-radius:var(--radius-sm);text-decoration:none;display:inline-flex;align-items:center;gap:10px;transition:var(--transition);">
+        <i class="fas fa-phone"></i> (251) 333-4444
+      </a>
+    </div>
+  </div>
+</section>
+
+<div id="footer-placeholder"></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="shared-components.js"></script>
+</body>
+</html>

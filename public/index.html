@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Trash Panda Roll-Offs | Dumpster Rental — Baldwin County & Mobile, AL</title>
+  <meta name="description" content="Baldwin County and Mobile Alabama's #1 dumpster rental service. Fast delivery, fair prices, no hidden fees. 10, 20, 30 & 40 yard roll-off dumpsters."/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="shared.css"/>
+  <style>
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      overflow: hidden;
+      padding-top: 76px;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 80% 70% at 65% 50%, rgba(249,115,22,0.13) 0%, transparent 65%),
+        radial-gradient(ellipse 40% 40% at 10% 80%, rgba(59,130,246,0.07) 0%, transparent 60%),
+        linear-gradient(160deg, #080808 0%, #0e0e0e 40%, #110800 100%);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 60px 60px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+    }
+    .hero-content { position: relative; z-index: 2; padding: 80px 0; }
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(249,115,22,0.1);
+      border: 1px solid rgba(249,115,22,0.3);
+      border-radius: 100px;
+      padding: 7px 18px;
+      font-family: var(--font-cond);
+      font-weight: 700;
+      font-size: 0.78rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--orange);
+      margin-bottom: 1.5rem;
+      animation: fadeUp 0.6s both;
+    }
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(4.2rem, 10vw, 8.5rem);
+      line-height: 0.88;
+      animation: fadeUp 0.6s 0.1s both;
+    }
+    .hero-title .block-orange { color: var(--orange); }
+    .hero-title .block-outline {
+      -webkit-text-stroke: 2px rgba(255,255,255,0.2);
+      color: transparent;
+    }
+    .hero-sub {
+      font-family: var(--font-cond);
+      font-weight: 500;
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      color: var(--gray-light);
+      max-width: 480px;
+      line-height: 1.6;
+      margin: 1.8rem 0 2.4rem;
+      animation: fadeUp 0.6s 0.2s both;
+    }
+    .hero-ctas {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      animation: fadeUp 0.6s 0.3s both;
+    }
+    .hero-trust {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 2.5rem;
+      animation: fadeUp 0.6s 0.4s both;
+    }
+    .hero-trust-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-cond);
+      font-weight: 600;
+      font-size: 0.85rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--gray-light);
+    }
+    .hero-trust-item i { color: var(--orange); }
+    .trust-sep { width: 1px; height: 20px; background: var(--steel2); }
+
+    .hero-visual {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hero-glow {
+      position: absolute;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(249,115,22,0.3) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: pulseGlow 4s ease-in-out infinite;
+    }
+    .hero-logo-img {
+      position: relative;
+      width: clamp(280px, 38vw, 480px);
+      filter: drop-shadow(0 16px 60px rgba(249,115,22,0.5));
+      animation: float 6s ease-in-out infinite;
+    }
+    .hero-stat-chips {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .hero-stat-chips.left { left: 0; }
+    .hero-stat-chips.right { right: 0; }
+    .stat-chip {
+      background: rgba(8,8,8,0.85);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(249,115,22,0.25);
+      border-radius: var(--radius);
+      padding: 12px 18px;
+      text-align: center;
+      min-width: 120px;
+    }
+    .stat-chip-num {
+      font-family: var(--font-display);
+      font-size: 1.8rem;
+      color: var(--orange);
+      line-height: 1;
+    }
+    .stat-chip-label {
+      font-family: var(--font-cond);
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gray);
+      margin-top: 2px;
+    }
+
+    /* ── SERVICES GRID ── */
+    .services-section { background: var(--dark); }
+    .service-card {
+      background: var(--dark2);
+      border: 1px solid var(--steel);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      height: 100%;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    .service-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--orange), var(--amber));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.4s ease;
+    }
+    .service-card:hover { border-color: rgba(249,115,22,0.3); transform: translateY(-8px); box-shadow: var(--shadow-orange); }
+    .service-card:hover::before { transform: scaleX(1); }
+    .service-icon {
+      width: 60px; height: 60px;
+      background: rgba(249,115,22,0.1);
+      border: 1px solid rgba(249,115,22,0.25);
+      border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem;
+      color: var(--orange);
+      margin-bottom: 1.2rem;
+    }
+    .service-card h4 {
+      font-family: var(--font-cond);
+      font-weight: 800;
+      font-size: 1.2rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.6rem;
+    }
+    .service-card p { font-size: 0.9rem; color: var(--gray-light); line-height: 1.6; margin: 0; }
+    .service-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-cond);
+      font-weight: 700;
+      font-size: 0.82rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--orange);
+      text-decoration: none;
+      margin-top: 1rem;
+      transition: gap 0.2s;
+    }
+    .service-link:hover { gap: 10px; color: var(--orange); }
+
+    /* ── SIZES PREVIEW ── */
+    .sizes-section { background: var(--black); }
+    .size-preview-card {
+      background: var(--dark);
+      border: 1px solid var(--steel);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: var(--transition);
+      height: 100%;
+    }
+    .size-preview-card.featured { border-color: var(--orange); }
+    .size-preview-card:hover { transform: translateY(-8px); box-shadow: var(--shadow-orange); }
+    .size-head {
+      padding: 2rem 2rem 1.5rem;
+      position: relative;
+      border-bottom: 1px solid var(--steel);
+    }
+    .size-head.featured-bg { background: linear-gradient(135deg, var(--orange-dark), var(--orange)); }
+    .size-num {
+      font-family: var(--font-display);
+      font-size: 5rem;
+      line-height: 0.9;
+      color: var(--white);
+    }
+    .size-head.featured-bg .size-num { color: var(--black); }
+    .size-yd {
+      font-family: var(--font-cond);
+      font-weight: 700;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--gray-light);
+    }
+    .size-head.featured-bg .size-yd { color: rgba(0,0,0,0.6); }
+    .most-popular {
+      position: absolute;
+      top: 14px; right: 14px;
+      background: var(--blue);
+      color: white;
+      font-family: var(--font-cond);
+      font-weight: 800;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 100px;
+    }
+    .size-body { padding: 1.5rem 2rem 2rem; }
+    .size-uses { list-style: none; margin-bottom: 1.5rem; }
+    .size-uses li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--steel);
+      font-size: 0.88rem;
+      color: var(--gray-light);
+    }
+    .size-uses li:last-child { border-bottom: none; }
+    .size-uses li i { color: var(--orange); font-size: 0.7rem; margin-top: 3px; }
+
+    /* ── TESTIMONIALS ── */
+    .reviews-section { background: var(--dark); }
+    .review-card {
+      background: var(--dark2);
+      border: 1px solid var(--steel);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      height: 100%;
+      transition: var(--transition);
+      position: relative;
+    }
+    .review-card::after {
+      content: '"';
+      position: absolute;
+      top: 1rem; right: 1.5rem;
+      font-family: var(--font-display);
+      font-size: 5rem;
+      color: var(--orange);
+      opacity: 0.08;
+      line-height: 1;
+    }
+    .review-card:hover { border-color: rgba(249,115,22,0.3); }
+    .reviewer-avatar {
+      width: 44px; height: 44px;
+      background: var(--orange);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      color: var(--black);
+      flex-shrink: 0;
+    }
+
+    /* ── PROCESS ── */
+    .process-section { background: var(--black); }
+    .process-line {
+      position: absolute;
+      top: 32px; left: calc(50% + 32px);
+      right: calc(-50% + 32px);
+      height: 2px;
+      background: linear-gradient(90deg, var(--orange), rgba(249,115,22,0.2));
+    }
+    .process-step { position: relative; text-align: center; }
+    .process-num {
+      width: 64px; height: 64px;
+      background: var(--orange);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      color: var(--black);
+      margin: 0 auto 1.2rem;
+      position: relative;
+      z-index: 1;
+      box-shadow: 0 0 0 8px rgba(249,115,22,0.12), 0 0 0 16px rgba(249,115,22,0.05);
+    }
+    .process-step h4 {
+      font-family: var(--font-cond);
+      font-weight: 800;
+      font-size: 1.05rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.5rem;
+    }
+    .process-step p { font-size: 0.88rem; color: var(--gray-light); line-height: 1.5; }
+
+    /* ── AREAS PREVIEW ── */
+    .areas-preview { background: var(--dark2); }
+    .area-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--dark3);
+      border: 1px solid var(--steel);
+      border-radius: var(--radius);
+      padding: 12px 20px;
+      font-family: var(--font-cond);
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: 0.04em;
+      color: var(--gray-light);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+    .area-chip:hover { border-color: var(--orange); color: var(--orange); transform: translateY(-3px); }
+    .area-chip i { color: var(--orange); }
+
+    /* ── CTA BANNER ── */
+    .cta-banner {
+      background: linear-gradient(135deg, var(--orange-xd) 0%, var(--orange-dark) 40%, var(--orange) 70%, var(--amber) 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-banner::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+    .cta-banner-title {
+      font-family: var(--font-display);
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      color: var(--black);
+      line-height: 0.9;
+    }
+    .cta-banner-sub {
+      font-family: var(--font-cond);
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: rgba(0,0,0,0.65);
+      margin: 1rem 0 0;
+    }
+    .btn-cta-dark {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--black);
+      color: var(--white);
+      font-family: var(--font-cond);
+      font-weight: 900;
+      font-size: 1rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 16px 38px;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+    .btn-cta-dark:hover { background: var(--dark2); color: var(--orange); transform: translateY(-3px); box-shadow: 0 12px 36px rgba(0,0,0,0.4); }
+
+    /* ── WHY US ── */
+    .why-section { background: var(--black); }
+    .why-card {
+      display: flex;
+      gap: 1.2rem;
+      padding: 1.8rem;
+      background: var(--dark);
+      border: 1px solid var(--steel);
+      border-radius: var(--radius-lg);
+      height: 100%;
+      transition: var(--transition);
+    }
+    .why-card:hover { border-color: rgba(249,115,22,0.35); }
+    .why-icon {
+      flex-shrink: 0;
+      width: 54px; height: 54px;
+      background: rgba(249,115,22,0.1);
+      border: 1px solid rgba(249,115,22,0.25);
+      border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+      color: var(--orange);
+    }
+    .why-card h5 {
+      font-family: var(--font-cond);
+      font-weight: 800;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.4rem;
+    }
+    .why-card p { font-size: 0.87rem; color: var(--gray-light); line-height: 1.55; margin: 0; }
+  </style>
+</head>
+<body>
+
+<div id="nav-placeholder"></div>
+<div id="ticker-placeholder"></div>
+
+<!-- ══════════════ HERO ══════════════ -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="container hero-content" style="max-width:1300px;">
+    <div class="row align-items-center gy-5">
+      <div class="col-lg-6">
+        <div class="hero-eyebrow">
+          <span class="glow-dot"></span>
+          Gulf Coast's #1 Dumpster Rental
+        </div>
+        <h1 class="hero-title">
+          DUMP<br>
+          <span class="block-orange">SMARTER.</span><br>
+          <span class="block-outline">HAUL</span><br>
+          FASTER.
+        </h1>
+        <p class="hero-sub">Roll-off dumpster rentals serving Baldwin County, Mobile, and surrounding areas. Same-day delivery. Zero surprises on your bill.</p>
+        <div class="hero-ctas">
+          <a href="contact.html" class="btn-panda"><i class="fas fa-phone"></i> Get a Free Quote</a>
+          <a href="sizes.html" class="btn-ghost">View Sizes <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div class="hero-trust">
+          <div class="hero-trust-item"><i class="fas fa-check-circle"></i> Same-Day Delivery</div>
+          <div class="trust-sep"></div>
+          <div class="hero-trust-item"><i class="fas fa-check-circle"></i> No Hidden Fees</div>
+          <div class="trust-sep"></div>
+          <div class="hero-trust-item"><i class="fas fa-check-circle"></i> Licensed & Insured</div>
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="hero-visual">
+          <div class="hero-glow"></div>
+          <div class="hero-stat-chips left d-none d-xl-flex" style="left:-20px;">
+            <div class="stat-chip">
+              <div class="stat-chip-num">500+</div>
+              <div class="stat-chip-label">Jobs Done</div>
+            </div>
+            <div class="stat-chip">
+              <div class="stat-chip-num">5★</div>
+              <div class="stat-chip-label">Rated</div>
+            </div>
+          </div>
+          <img src="assets/logo.jpeg" alt="Trash Panda Roll-Offs" class="hero-logo-img"/>
+          <div class="hero-stat-chips right d-none d-xl-flex" style="right:-20px;">
+            <div class="stat-chip">
+              <div class="stat-chip-num">24hr</div>
+              <div class="stat-chip-label">Turnaround</div>
+            </div>
+            <div class="stat-chip">
+              <div class="stat-chip-num">4</div>
+              <div class="stat-chip-label">Sizes Available</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ SERVICES ══════════════ -->
+<section class="services-section section-pad">
+  <div class="container" style="max-width:1300px;">
+    <div class="row align-items-end mb-5">
+      <div class="col-lg-6">
+        <div class="s-label"><span class="glow-dot"></span><span>What We Do</span></div>
+        <h2 class="display-lg">OUR <span class="text-orange">SERVICES</span></h2>
+        <div class="orange-line"></div>
+      </div>
+      <div class="col-lg-6 text-lg-end">
+        <p class="body-lead" style="max-width:400px;margin-left:auto;">From small home cleanouts to large commercial demolitions — we've got the right dumpster and the right price.</p>
+      </div>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-6 col-lg-4">
+        <div class="service-card">
+          <div class="service-icon"><i class="fas fa-home"></i></div>
+          <h4>Residential Rentals</h4>
+          <p>Cleanouts, garage purges, home renovations, landscaping — we make residential hauling simple and affordable.</p>
+          <a href="services.html" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4">
+        <div class="service-card">
+          <div class="service-icon"><i class="fas fa-hard-hat"></i></div>
+          <h4>Construction Cleanup</h4>
+          <p>New builds, demolitions, remodels — keep your job site clean with our heavy-duty roll-off containers.</p>
+          <a href="services.html" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4">
+        <div class="service-card">
+          <div class="service-icon"><i class="fas fa-building"></i></div>
+          <h4>Commercial Rentals</h4>
+          <p>Retail build-outs, office cleanouts, property management — reliable service your business can count on.</p>
+          <a href="services.html" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4">
+        <div class="service-card">
+          <div class="service-icon"><i class="fas fa-boxes"></i></div>
+          <h4>Estate Cleanouts</h4>
+          <p>Clearing out a family home or estate? We'll drop off, you fill it up, we'll haul it away. Easy as that.</p>
+          <a href="services.html" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4">
+        <div class="service-card">
+          <div class="service-icon"><i class="fas fa-cloud-bolt"></i></div>
+          <h4>Storm Debris Removal</h4>
+          <p>Gulf Coast storms can leave a mess. We respond fast so you can focus on getting back to normal.</p>
+          <a href="services.html" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4">
+        <div class="service-card">
+          <div class="service-icon"><i class="fas fa-hammer"></i></div>
+          <h4>Roofing Projects</h4>
+          <p>Shingle tear-offs, flat roof replacements — we have the right containers for roofing debris.</p>
+          <a href="services.html" class="service-link">Learn More <i class="fas fa-arrow-right"></i></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ PROCESS ══════════════ -->
+<section class="process-section section-pad">
+  <div class="container" style="max-width:1300px;">
+    <div class="text-center mb-5">
+      <div class="s-label justify-content-center"><span class="glow-dot"></span><span>Simple Process</span></div>
+      <h2 class="display-lg">HOW IT <span class="text-orange">WORKS</span></h2>
+      <div class="orange-line center"></div>
+      <p class="body-lead mx-auto" style="max-width:500px;">From call to haul in four simple steps. We make dumpster rental the easiest part of your project.</p>
+    </div>
+    <div class="row g-4 g-lg-0">
+      <div class="col-md-6 col-lg-3">
+        <div class="process-step">
+          <div class="process-num">1</div>
+          <div class="process-line d-none d-lg-block"></div>
+          <h4>Call or Book</h4>
+          <p>Call us or request a quote online. We'll help you pick the perfect size for your job.</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="process-step">
+          <div class="process-num">2</div>
+          <div class="process-line d-none d-lg-block"></div>
+          <h4>We Deliver</h4>
+          <p>Often same-day or next morning. We place the dumpster exactly where you need it.</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="process-step">
+          <div class="process-num">3</div>
+          <div class="process-line d-none d-lg-block"></div>
+          <h4>Fill It Up</h4>
+          <p>Load at your pace. Flexible rental periods so you're never rushed.</p>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-3">
+        <div class="process-step">
+          <div class="process-num">4</div>
+          <h4>We Haul It</h4>
+          <p>Call when ready — we pick it up and handle responsible disposal. Done.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ SIZES PREVIEW ══════════════ -->
+<section class="sizes-section section-pad">
+  <div class="container" style="max-width:1300px;">
+    <div class="row align-items-end mb-5">
+      <div class="col-lg-6">
+        <div class="s-label"><span class="glow-dot"></span><span>Right Size Every Time</span></div>
+        <h2 class="display-lg">DUMPSTER <span class="text-orange">SIZES</span></h2>
+        <div class="orange-line"></div>
+      </div>
+      <div class="col-lg-6 text-lg-end">
+        <a href="sizes.html" class="btn-panda-outline">View All Sizes & Details</a>
+      </div>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-6 col-xl-3">
+        <div class="size-preview-card">
+          <div class="size-head">
+            <div class="size-num">10</div>
+            <div class="size-yd">Yard Dumpster</div>
+          </div>
+          <div class="size-body">
+            <ul class="size-uses">
+              <li><i class="fas fa-circle"></i> Small home cleanouts</li>
+              <li><i class="fas fa-circle"></i> Garage & attic purges</li>
+              <li><i class="fas fa-circle"></i> Small landscaping</li>
+              <li><i class="fas fa-circle"></i> Minor bathroom remodel</li>
+            </ul>
+            <a href="contact.html" class="btn-panda-outline w-100 justify-content-center">Get a Quote</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 col-xl-3">
+        <div class="size-preview-card featured">
+          <div class="size-head featured-bg">
+            <span class="most-popular">Most Popular</span>
+            <div class="size-num">20</div>
+            <div class="size-yd">Yard Dumpster</div>
+          </div>
+          <div class="size-body">
+            <ul class="size-uses">
+              <li><i class="fas fa-circle"></i> Kitchen renovations</li>
+              <li><i class="fas fa-circle"></i> Roofing tear-off</li>
+              <li><i class="fas fa-circle"></i> Estate cleanouts</li>
+              <li><i class="fas fa-circle"></i> Multi-room remodel</li>
+            </ul>
+            <a href="contact.html" class="btn-panda w-100 justify-content-center">Get a Quote</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 col-xl-3">
+        <div class="size-preview-card">
+          <div class="size-head">
+            <div class="size-num">30</div>
+            <div class="size-yd">Yard Dumpster</div>
+          </div>
+          <div class="size-body">
+            <ul class="size-uses">
+              <li><i class="fas fa-circle"></i> Large renovations</li>
+              <li><i class="fas fa-circle"></i> Commercial cleanouts</li>
+              <li><i class="fas fa-circle"></i> New construction</li>
+              <li><i class="fas fa-circle"></i> Siding replacement</li>
+            </ul>
+            <a href="contact.html" class="btn-panda-outline w-100 justify-content-center">Get a Quote</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 col-xl-3">
+        <div class="size-preview-card">
+          <div class="size-head">
+            <div class="size-num">40</div>
+            <div class="size-yd">Yard Dumpster</div>
+          </div>
+          <div class="size-body">
+            <ul class="size-uses">
+              <li><i class="fas fa-circle"></i> Major demolitions</li>
+              <li><i class="fas fa-circle"></i> Large commercial sites</li>
+              <li><i class="fas fa-circle"></i> Full property cleanouts</li>
+              <li><i class="fas fa-circle"></i> Concrete & heavy debris</li>
+            </ul>
+            <a href="contact.html" class="btn-panda-outline w-100 justify-content-center">Get a Quote</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="text-center mt-4" style="color:var(--gray);font-family:var(--font-cond);font-size:0.9rem;">Not sure which size? <a href="contact.html" style="color:var(--orange);text-decoration:none;font-weight:700;">Call us — we'll recommend the right one for free.</a></p>
+  </div>
+</section>
+
+<!-- ══════════════ WHY US ══════════════ -->
+<section class="why-section section-pad">
+  <div class="container" style="max-width:1300px;">
+    <div class="row align-items-center gy-5">
+      <div class="col-lg-5">
+        <div class="s-label"><span class="glow-dot"></span><span>Why Choose Us</span></div>
+        <h2 class="display-lg">WE'RE NOT YOUR<br>AVERAGE<br><span class="text-orange">HAULER.</span></h2>
+        <div class="orange-line"></div>
+        <p style="color:var(--gray-light);line-height:1.7;max-width:420px;">We're a locally-owned Gulf Coast crew. We take pride in showing up when we say, charging what we quote, and leaving your property cleaner than we found it.</p>
+        <a href="contact.html" class="btn-panda mt-4"><i class="fas fa-phone"></i> Call (251) 333-4444</a>
+      </div>
+      <div class="col-lg-7">
+        <div class="row g-3">
+          <div class="col-sm-6"><div class="why-card"><div class="why-icon"><i class="fas fa-bolt"></i></div><div><h5>Same-Day Delivery</h5><p>Need it today? We move fast. Call by noon for same-day drops most days.</p></div></div></div>
+          <div class="col-sm-6"><div class="why-card"><div class="why-icon"><i class="fas fa-tag"></i></div><div><h5>No Hidden Fees</h5><p>Flat-rate pricing. The quote you get is the bill you pay. No gotchas.</p></div></div></div>
+          <div class="col-sm-6"><div class="why-card"><div class="why-icon"><i class="fas fa-map-marker-alt"></i></div><div><h5>Locally Owned</h5><p>We live here on the Gulf Coast. Your satisfaction is our reputation.</p></div></div></div>
+          <div class="col-sm-6"><div class="why-card"><div class="why-icon"><i class="fas fa-recycle"></i></div><div><h5>Eco-Responsible</h5><p>We sort and recycle whenever possible. Good for your project and the planet.</p></div></div></div>
+          <div class="col-sm-6"><div class="why-card"><div class="why-icon"><i class="fas fa-calendar-check"></i></div><div><h5>Flexible Rentals</h5><p>Keep your dumpster as long as your project needs. No rush.</p></div></div></div>
+          <div class="col-sm-6"><div class="why-card"><div class="why-icon"><i class="fas fa-shield-alt"></i></div><div><h5>Licensed & Insured</h5><p>Fully insured so you can focus on the work, not the liability.</p></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ REVIEWS ══════════════ -->
+<section class="reviews-section section-pad">
+  <div class="container" style="max-width:1300px;">
+    <div class="text-center mb-5">
+      <div class="s-label justify-content-center"><span class="glow-dot"></span><span>Customer Reviews</span></div>
+      <h2 class="display-lg">REAL PEOPLE,<br><span class="text-orange">REAL RESULTS</span></h2>
+      <div class="orange-line center"></div>
+    </div>
+    <div class="row g-4">
+      <div class="col-md-6 col-lg-4">
+        <div class="review-card">
+          <div class="stars mb-3">★★★★★</div>
+          <p style="color:var(--gray-light);font-size:0.95rem;line-height:1.7;font-style:italic;margin-bottom:1.5rem;">"Ordered a 20-yard for a kitchen reno and it was dropped at 7 AM just like they promised. Price was exactly what they quoted — no nonsense. These guys are the real deal."</p>
+          <div class="d-flex align-items-center gap-12" style="gap:12px;">
+            <div class="reviewer-avatar">M</div>
+            <div>
+              <div style="font-family:var(--font-cond);font-weight:800;font-size:1rem;text-transform:uppercase;letter-spacing:0.04em;">Mike T.</div>
+              <div style="font-size:0.8rem;color:var(--gray);">Foley, AL — Homeowner</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4">
+        <div class="review-card">
+          <div class="stars mb-3">★★★★★</div>
+          <p style="color:var(--gray-light);font-size:0.95rem;line-height:1.7;font-style:italic;margin-bottom:1.5rem;">"Used them for a full roofing job in Orange Beach. Crew was professional, dumpster was perfect size, and pickup was fast. Will absolutely use again for every project."</p>
+          <div class="d-flex align-items-center gap-12" style="gap:12px;">
+            <div class="reviewer-avatar">S</div>
+            <div>
+              <div style="font-family:var(--font-cond);font-weight:800;font-size:1rem;text-transform:uppercase;letter-spacing:0.04em;">Sarah L.</div>
+              <div style="font-size:0.8rem;color:var(--gray);">Orange Beach, AL — Contractor</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 col-lg-4">
+        <div class="review-card">
+          <div class="stars mb-3">★★★★★</div>
+          <p style="color:var(--gray-light);font-size:0.95rem;line-height:1.7;font-style:italic;margin-bottom:1.5rem;">"Cleaning out my parents' house after 40 years — no idea where to start. They walked me through everything, got me the right size, and made a stressful time much easier."</p>
+          <div class="d-flex align-items-center gap-12" style="gap:12px;">
+            <div class="reviewer-avatar">D</div>
+            <div>
+              <div style="font-family:var(--font-cond);font-weight:800;font-size:1rem;text-transform:uppercase;letter-spacing:0.04em;">Dave R.</div>
+              <div style="font-size:0.8rem;color:var(--gray);">Daphne, AL — Residential</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ AREAS PREVIEW ══════════════ -->
+<section class="areas-preview section-pad-sm">
+  <div class="container" style="max-width:1300px;">
+    <div class="row align-items-center gy-4">
+      <div class="col-lg-4">
+        <div class="s-label"><span class="glow-dot"></span><span>Service Areas</span></div>
+        <h2 class="display-md">SERVING THE <span class="text-orange">GULF COAST</span></h2>
+        <div class="orange-line"></div>
+        <p style="color:var(--gray-light);font-size:0.9rem;line-height:1.6;">Proudly serving Baldwin County, Mobile, and all surrounding communities across South Alabama.</p>
+        <a href="service-areas.html" class="btn-panda mt-3">View All Areas</a>
+      </div>
+      <div class="col-lg-8">
+        <div class="d-flex flex-wrap gap-3">
+          <a href="service-areas.html" class="area-chip"><i class="fas fa-map-marker-alt"></i> Gulf Shores</a>
+          <a href="service-areas.html" class="area-chip"><i class="fas fa-map-marker-alt"></i> Orange Beach</a>
+          <a href="service-areas.html" class="area-chip"><i class="fas fa-map-marker-alt"></i> Foley</a>
+          <a href="service-areas.html" class="area-chip"><i class="fas fa-map-marker-alt"></i> Fairhope</a>
+          <a href="service-areas.html" class="area-chip"><i class="fas fa-map-marker-alt"></i> Daphne</a>
+          <a href="service-areas.html" class="area-chip"><i class="fas fa-map-marker-alt"></i> Spanish Fort</a>
+          <a href="service-areas.html" class="area-chip"><i class="fas fa-map-marker-alt"></i> Mobile</a>
+          <a href="service-areas.html" class="area-chip"><i class="fas fa-map-marker-alt"></i> Loxley</a>
+          <a href="service-areas.html" class="area-chip"><i class="fas fa-map-marker-alt"></i> Robertsdale</a>
+          <a href="service-areas.html" class="area-chip"><i class="fas fa-map-marker-alt"></i> Bay Minette</a>
+          <a href="service-areas.html" class="area-chip"><i class="fas fa-map-marker-alt"></i> Saraland</a>
+          <a href="service-areas.html" class="area-chip"><i class="fas fa-map-marker-alt"></i> Chickasaw</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ CTA BANNER ══════════════ -->
+<section class="cta-banner section-pad">
+  <div class="container position-relative" style="max-width:1300px;">
+    <div class="row align-items-center gy-4">
+      <div class="col-lg-7">
+        <div class="cta-banner-title">READY TO ROLL?</div>
+        <p class="cta-banner-sub">Get your free quote today. Usually respond within the hour.</p>
+      </div>
+      <div class="col-lg-5 d-flex gap-3 flex-wrap justify-content-lg-end">
+        <a href="tel:+12513334444" class="btn-cta-dark"><i class="fas fa-phone"></i> Call Now</a>
+        <a href="contact.html" class="btn-cta-dark" style="background:rgba(0,0,0,0.2);border:2px solid rgba(0,0,0,0.3);"><i class="fas fa-envelope"></i> Get a Quote</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="footer-placeholder"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="shared-components.js"></script>
+</body>
+</html>
