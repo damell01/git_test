@@ -1,13 +1,3 @@
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Custom JS -->
-    <script src="/public/assets/js/main.js"></script>
-</body>
-</html>
-
-<?php
-// Not included inline — footer is below
-?>
 <footer class="site-footer">
     <div class="container-fluid px-4">
         <div class="row g-4 py-5">
@@ -102,3 +92,12 @@
 
     </div>
 </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-YvpcrYf0tY3lHB60NNkmXc4s9bIOgUxi8T/jzmFZLNNq3+5ZTbx6jP5DP7bEk7g"
+            crossorigin="anonymous"></script>
+    <!-- Custom JS -->
+    <script src="/public/assets/js/main.js"></script>
+</body>
+</html>

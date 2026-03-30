@@ -48,14 +48,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'email_from_email',
     ];
 
-    // Stripe keys (only save if non-empty or clearing)
-    foreach (['stripe_secret_key', 'stripe_publishable_key', 'stripe_webhook_secret'] as $sk) {
-        $val = trim($_POST[$sk] ?? '');
-        if ($val !== '') {
-            set_setting($sk, $val);
-        }
-    }
-
     foreach ($fields as $key) {
         $value = trim($_POST[$key] ?? '');
         set_setting($key, $value);
@@ -205,69 +197,6 @@ layout_start('Settings', 'settings');
             </button>
         </div>
 
-    </form>
-</div>
-
-<!-- ── Stripe Configuration ─────────────────────────────────────────────── -->
-<div class="tp-card mt-4" style="max-width:780px;">
-    <h6 class="mb-3" style="font-weight:600;border-bottom:1px solid #e5e7eb;padding-bottom:.5rem;">
-        <i class="fa-brands fa-stripe" style="color:#635BFF;"></i> Stripe Configuration
-    </h6>
-
-    <form method="POST" action="index.php">
-        <?= csrf_field() ?>
-
-        <div class="row g-3 mb-4">
-
-            <div class="col-md-6">
-                <label class="form-label" for="stripe_publishable_key">Publishable Key</label>
-                <div class="input-group">
-                    <input type="password" id="stripe_publishable_key" name="stripe_publishable_key"
-                           class="form-control" placeholder="pk_live_…"
-                           value="<?= e(get_setting('stripe_publishable_key')) ?>">
-                    <button type="button" class="btn btn-outline-secondary"
-                            onclick="toggleField('stripe_publishable_key')">
-                        <i class="fa-solid fa-eye" id="stripe_publishable_key-icon"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <label class="form-label" for="stripe_secret_key">Secret Key</label>
-                <div class="input-group">
-                    <input type="password" id="stripe_secret_key" name="stripe_secret_key"
-                           class="form-control" placeholder="sk_live_…"
-                           value="<?= e(get_setting('stripe_secret_key')) ?>">
-                    <button type="button" class="btn btn-outline-secondary"
-                            onclick="toggleField('stripe_secret_key')">
-                        <i class="fa-solid fa-eye" id="stripe_secret_key-icon"></i>
-                    </button>
-                </div>
-                <div class="form-text text-danger">Never share this key publicly.</div>
-            </div>
-
-            <div class="col-12">
-                <label class="form-label" for="stripe_webhook_secret">Webhook Secret</label>
-                <div class="input-group">
-                    <input type="password" id="stripe_webhook_secret" name="stripe_webhook_secret"
-                           class="form-control" placeholder="whsec_…"
-                           value="<?= e(get_setting('stripe_webhook_secret')) ?>">
-                    <button type="button" class="btn btn-outline-secondary"
-                            onclick="toggleField('stripe_webhook_secret')">
-                        <i class="fa-solid fa-eye" id="stripe_webhook_secret-icon"></i>
-                    </button>
-                </div>
-                <div class="form-text">
-                    Set your webhook endpoint in Stripe Dashboard to:<br>
-                    <code><?= e(APP_URL) ?>/modules/payments/webhook.php</code>
-                </div>
-            </div>
-
-        </div>
-
-        <button type="submit" class="btn-tp-primary">
-            <i class="fa-solid fa-floppy-disk"></i> Save Stripe Settings
-        </button>
     </form>
 </div>
 

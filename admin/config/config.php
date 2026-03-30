@@ -16,11 +16,5 @@ define('TMPL_PATH', ROOT_PATH . '/templates');
 define('ASSET_PATH', APP_URL . '/assets');
 define('APP_INSTALLED', false);  // set true after running the installer (see install/install.php)
 
-// ── Stripe ────────────────────────────────────────────────────────────────────
-define('STRIPE_SECRET_KEY',      'sk_live_REPLACE_ME');
-define('STRIPE_PUBLISHABLE_KEY', 'pk_live_REPLACE_ME');
-define('STRIPE_WEBHOOK_SECRET',  'whsec_REPLACE_ME');
-define('STRIPE_CURRENCY',        'usd');
-
 // ── Cron ──────────────────────────────────────────────────────────────────────
 define('CRON_KEY', 'change-this-to-a-random-secret');

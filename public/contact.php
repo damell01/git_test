@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                      rental_duration, source, message, status, created_at)
                 VALUES
                     (:name, :email, :phone, :address, :city, :size_needed, :project_type,
-                     :rental_duration, :source, :message, 'new', NOW())
+                     :rental_duration, :source, :message, 'new', :created_at)
             ");
             $stmt->execute([
                 ':name'             => $old['name'],
@@ -46,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':rental_duration'  => $old['rental_duration'],
                 ':source'           => $old['source'],
                 ':message'          => $old['message'],
+                ':created_at'       => date('Y-m-d H:i:s'),
             ]);
             $success = true;
             $old = [];   // clear form

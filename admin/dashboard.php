@@ -36,20 +36,8 @@ $revenue_row = db_fetch(
 );
 $revenue_month = (float)($revenue_row['total'] ?? 0);
 
-// Revenue from actual paid payments this month
-$payments_revenue_row = db_fetch(
-    "SELECT COALESCE(SUM(amount), 0) AS total FROM payments
-     WHERE status = 'paid'
-       AND MONTH(paid_at) = MONTH(NOW())
-       AND YEAR(paid_at)  = YEAR(NOW())"
-);
-$revenue_payments_month = (float)($payments_revenue_row['total'] ?? 0);
-
-// Outstanding invoices
-$outstanding_row = db_fetch(
-    "SELECT COALESCE(SUM(amount - amount_paid), 0) AS total FROM invoices WHERE status IN ('unpaid','partial')"
-);
-$outstanding_invoices = (float)($outstanding_row['total'] ?? 0);
+// Revenue from work orders this month (amount field, not payments table)
+$revenue_payments_month = $revenue_month;
 
 $dumpsters_available = (int)(db_fetch(
     "SELECT COUNT(*) AS cnt FROM dumpsters WHERE status = 'available'"
@@ -154,21 +142,12 @@ layout_start('Dashboard', 'dashboard');
         </a>
     </div>
 
-    <!-- Month Revenue (from payments) -->
+    <!-- Month Revenue (from work orders) -->
     <div class="col-6 col-md-4 col-xl-2">
-        <a href="<?= e(APP_URL) ?>/modules/payments/index.php" class="tp-kpi-card tp-kpi-green text-decoration-none d-block">
+        <a href="<?= e(APP_URL) ?>/modules/work_orders/index.php" class="tp-kpi-card tp-kpi-green text-decoration-none d-block">
             <div class="kpi-icon"><i class="fa-solid fa-dollar-sign"></i></div>
             <div class="kpi-value" style="font-size:1.1rem;"><?= fmt_money($revenue_payments_month) ?></div>
             <div class="kpi-label">Revenue This Month</div>
-        </a>
-    </div>
-
-    <!-- Outstanding Invoices -->
-    <div class="col-6 col-md-4 col-xl-2">
-        <a href="<?= e(APP_URL) ?>/modules/payments/index.php" class="tp-kpi-card tp-kpi-amber text-decoration-none d-block">
-            <div class="kpi-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
-            <div class="kpi-value" style="font-size:1.1rem;"><?= fmt_money($outstanding_invoices) ?></div>
-            <div class="kpi-label">Outstanding Invoices</div>
         </a>
     </div>
 
