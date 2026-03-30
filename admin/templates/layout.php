@@ -105,16 +105,16 @@ function layout_start(string $page_title, string $active_nav = ''): void
         }
         try {
             if ($type === 'leads') {
-                $row = db_query(
+                $row = db_fetch(
                     "SELECT COUNT(*) AS cnt FROM leads WHERE status IN ('new','contacted')"
                 );
-                return (int) ($row[0]['cnt'] ?? 0);
+                return (int) ($row['cnt'] ?? 0);
             }
             if ($type === 'work_orders') {
-                $row = db_query(
+                $row = db_fetch(
                     "SELECT COUNT(*) AS cnt FROM work_orders WHERE status IN ('scheduled','pickup_requested')"
                 );
-                return (int) ($row[0]['cnt'] ?? 0);
+                return (int) ($row['cnt'] ?? 0);
             }
         } catch (\Throwable $e) {
             // Swallow DB errors — badge is cosmetic.
