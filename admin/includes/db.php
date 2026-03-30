@@ -12,10 +12,15 @@ function get_db(): PDO
     static $pdo = null;
 
     if ($pdo === null) {
+        // Trim config values that commonly pick up accidental whitespace.
+        $dbHost = preg_replace('/^\s+|\s+$/u', '', (string) DB_HOST) ?? (string) DB_HOST;
+        $dbName = preg_replace('/^\s+|\s+$/u', '', (string) DB_NAME) ?? (string) DB_NAME;
+        $dbUser = preg_replace('/^\s+|\s+$/u', '', (string) DB_USER) ?? (string) DB_USER;
+
         $dsn = sprintf(
             'mysql:host=%s;dbname=%s;charset=%s',
-            DB_HOST,
-            DB_NAME,
+            $dbHost,
+            $dbName,
             DB_CHARSET
         );
 
@@ -25,7 +30,7 @@ function get_db(): PDO
             PDO::ATTR_EMULATE_PREPARES   => false,
         ];
 
-        $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+        $pdo = new PDO($dsn, $dbUser, DB_PASS, $options);
     }
 
     return $pdo;

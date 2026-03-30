@@ -31,6 +31,13 @@ if (defined('APP_INSTALLED') && APP_INSTALLED === true && ($_GET['force'] ?? '')
 $steps  = [];   // [ ['label'=>'...', 'ok'=>bool, 'detail'=>'...'] ]
 $fatal  = false;
 
+// Normalise DB config values to prevent hidden leading/trailing whitespace
+// from causing authentication failures (common after copy/paste).
+$dbHost = preg_replace('/^\s+|\s+$/u', '', (string) DB_HOST) ?? (string) DB_HOST;
+$dbName = preg_replace('/^\s+|\s+$/u', '', (string) DB_NAME) ?? (string) DB_NAME;
+$dbUser = preg_replace('/^\s+|\s+$/u', '', (string) DB_USER) ?? (string) DB_USER;
+$dbPass = (string) DB_PASS;
+
 /**
  * Record a step result and optionally mark the run as failed.
  */
@@ -63,13 +70,21 @@ step('PDO_MySQL driver loaded', $pdoMysqlOk);
 step('config/config.php readable', true);
 
 // DB credentials look customised
-$dbNameOk = defined('DB_NAME') && DB_NAME !== 'your_db';
+$dbNameOk = defined('DB_NAME') && $dbName !== 'your_db';
 step('DB_NAME is configured (not placeholder)', $dbNameOk,
-    $dbNameOk ? 'DB_NAME = ' . DB_NAME : 'Still set to "your_db" — please edit config/config.php');
+    $dbNameOk ? 'DB_NAME = ' . $dbName : 'Still set to "your_db" — please edit config/config.php');
 
-$dbUserOk = defined('DB_USER') && DB_USER !== 'your_user';
+$dbUserOk = defined('DB_USER') && $dbUser !== 'your_user';
 step('DB_USER is configured (not placeholder)', $dbUserOk,
-    $dbUserOk ? 'DB_USER = ' . DB_USER : 'Still set to "your_user" — please edit config/config.php');
+    $dbUserOk ? 'DB_USER = ' . $dbUser : 'Still set to "your_user" — please edit config/config.php');
+
+if ($dbHost !== (string) DB_HOST || $dbName !== (string) DB_NAME || $dbUser !== (string) DB_USER) {
+    step(
+        'Credential whitespace detected',
+        true,
+        'Leading/trailing whitespace was removed from DB_HOST/DB_NAME/DB_USER for this run.'
+    );
+}
 
 // Stop here if any pre-flight failed
 if ($fatal) {
@@ -83,13 +98,13 @@ if ($fatal) {
 
 try {
     // Connect WITHOUT specifying a database so we can CREATE it if needed
-    $dsn = sprintf('mysql:host=%s;charset=%s', DB_HOST, DB_CHARSET);
-    $pdo = new PDO($dsn, DB_USER, DB_PASS, [
+    $dsn = sprintf('mysql:host=%s;charset=%s', $dbHost, DB_CHARSET);
+    $pdo = new PDO($dsn, $dbUser, $dbPass, [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES   => false,
     ]);
-    step('Connected to MySQL server', true, 'Host: ' . DB_HOST);
+    step('Connected to MySQL server', true, 'Host: ' . $dbHost);
 } catch (PDOException $e) {
     step('Connected to MySQL server', false, $e->getMessage());
     render_page($steps, false);
@@ -101,8 +116,8 @@ try {
 // =============================================================================
 
 try {
-    $pdo->exec('CREATE DATABASE IF NOT EXISTS `' . DB_NAME . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
-    step('Created/verified database', true, 'Database: ' . DB_NAME);
+    $pdo->exec('CREATE DATABASE IF NOT EXISTS `' . $dbName . '` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
+    step('Created/verified database', true, 'Database: ' . $dbName);
 } catch (PDOException $e) {
     step('Created/verified database', false, $e->getMessage());
     render_page($steps, false);
@@ -111,7 +126,7 @@ try {
 
 // Select the database
 try {
-    $pdo->exec('USE `' . DB_NAME . '`');
+    $pdo->exec('USE `' . $dbName . '`');
     step('Selected database', true);
 } catch (PDOException $e) {
     step('Selected database', false, $e->getMessage());
