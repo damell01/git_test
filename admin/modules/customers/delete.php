@@ -35,11 +35,8 @@ if ($active_wo_count > 0) {
     redirect(APP_URL . '/modules/customers/view.php?id=' . $id);
 }
 
-// ── Soft-archive: set active = 0 ─────────────────────────────────────────────
-db_update('customers', [
-    'active'     => 0,
-    'updated_at' => date('Y-m-d H:i:s'),
-], 'id', $id);
+// ── Hard delete the customer ──────────────────────────────────────────────────
+db_execute("DELETE FROM customers WHERE id = ?", [$id]);
 
 log_activity('delete', 'Deleted customer: ' . $cust['name'], 'customer', $id);
 

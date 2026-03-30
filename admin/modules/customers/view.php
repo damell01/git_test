@@ -186,7 +186,7 @@ layout_start('Customer: ' . $cust['name'], 'customers');
                                 </a>
                             </td>
                             <td><?= status_badge($wo['status'] ?? 'scheduled') ?></td>
-                            <td><?= e($wo['size_needed'] ?? '—') ?></td>
+                            <td><?= e($wo['size_needed'] ?? $wo['size'] ?? '—') ?></td>
                             <td><?= e(fmt_date($wo['delivery_date'] ?? null)) ?: '—' ?></td>
                             <td><?= e(fmt_money($wo['total'] ?? 0)) ?></td>
                             <td class="text-end">
