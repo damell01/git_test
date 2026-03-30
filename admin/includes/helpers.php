@@ -416,12 +416,12 @@ function log_activity(string $action, string $desc, string $type = '', int $id =
     $ip = $_SERVER['REMOTE_ADDR'] ?? '';
 
     db_insert('activity_log', [
-        'user_id'      => $uid,
-        'action'       => $action,
-        'description'  => $desc,
-        'record_type'  => $type,
-        'record_id'    => $id,
-        'ip_address'   => $ip,
-        'created_at'   => date('Y-m-d H:i:s'),
+        'user_id'     => $uid,
+        'action'      => $action,
+        'description' => $desc,
+        'entity_type' => $type,
+        'entity_id'   => $id,
+        'ip_address'  => $ip,
+        'created_at'  => date('Y-m-d H:i:s'),
     ]);
 }
