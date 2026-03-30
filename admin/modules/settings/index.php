@@ -52,12 +52,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'smtp_username',
         'smtp_password',
         'smtp_encryption',
+        'stripe_mode',
+        'stripe_publishable_key',
+        'stripe_webhook_secret',
+        'booking_terms',
+        'currency',
     ];
 
     foreach ($fields as $key) {
     if ($key === 'smtp_password' && trim($_POST[$key] ?? '') === '') {
         // Only skip if a password is already saved; allow setting one from scratch
         if (!empty(get_setting('smtp_password'))) {
+            continue;
+        }
+    }
+    if ($key === 'stripe_secret_key' && trim($_POST[$key] ?? '') === '') {
+        if (!empty(get_setting('stripe_secret_key'))) {
             continue;
         }
     }
@@ -317,6 +327,93 @@ layout_start('Settings', 'settings');
                     <i class="fa-solid fa-paper-plane"></i> Send Test Email
                 </button>
             </form>
+        </div>
+
+    </form>
+</div>
+
+<!-- ── Stripe Configuration ──────────────────────────────────────────────── -->
+<div class="tp-card mt-4" style="max-width:780px;">
+    <h6 class="mb-3" style="font-weight:600;border-bottom:1px solid #e5e7eb;padding-bottom:.5rem;">
+        <i class="fa-brands fa-stripe" style="color:#6772e5;"></i> Stripe &amp; Booking Configuration
+    </h6>
+
+    <form method="POST" action="index.php">
+        <?= csrf_field() ?>
+
+        <div class="row g-3 mb-4">
+
+            <div class="col-md-4">
+                <label class="form-label" for="stripe_mode">Stripe Mode</label>
+                <select id="stripe_mode" name="stripe_mode" class="form-select">
+                    <?php $mode = get_setting('stripe_mode', 'test'); ?>
+                    <option value="test" <?= $mode === 'test' ? 'selected' : '' ?>>Test (Sandbox)</option>
+                    <option value="live" <?= $mode === 'live' ? 'selected' : '' ?>>Live (Production)</option>
+                </select>
+            </div>
+
+            <div class="col-md-8">
+                <label class="form-label" for="stripe_publishable_key">Publishable Key</label>
+                <input type="text" id="stripe_publishable_key" name="stripe_publishable_key"
+                       class="form-control"
+                       placeholder="pk_test_…"
+                       value="<?= e(get_setting('stripe_publishable_key', '')) ?>">
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label" for="stripe_secret_key">
+                    Secret Key
+                    <button type="button" class="btn btn-sm btn-link p-0 ms-1" onclick="toggleField('stripe_secret_key')" style="color:var(--gy);font-size:.8rem;">
+                        <i class="fa-solid fa-eye" id="stripe_secret_key-icon"></i>
+                    </button>
+                </label>
+                <input type="password" id="stripe_secret_key" name="stripe_secret_key"
+                       class="form-control"
+                       placeholder="<?= get_setting('stripe_secret_key') ? '••••••••' : 'sk_test_…' ?>"
+                       value="">
+                <div class="form-text" style="color:var(--gy);">Leave blank to keep existing key.</div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label" for="stripe_webhook_secret">
+                    Webhook Secret
+                    <button type="button" class="btn btn-sm btn-link p-0 ms-1" onclick="toggleField('stripe_webhook_secret')" style="color:var(--gy);font-size:.8rem;">
+                        <i class="fa-solid fa-eye" id="stripe_webhook_secret-icon"></i>
+                    </button>
+                </label>
+                <input type="password" id="stripe_webhook_secret" name="stripe_webhook_secret"
+                       class="form-control"
+                       placeholder="<?= get_setting('stripe_webhook_secret') ? '••••••••' : 'whsec_…' ?>"
+                       value="">
+                <div class="form-text" style="color:var(--gy);">
+                    Webhook endpoint: <code><?= e(APP_URL) ?>/../../public/api/stripe-webhook.php</code>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label" for="currency">Currency</label>
+                <select id="currency" name="currency" class="form-select">
+                    <?php
+                    $cur = get_setting('currency', 'usd');
+                    foreach (['usd' => 'USD ($)', 'cad' => 'CAD (CA$)', 'eur' => 'EUR (€)', 'gbp' => 'GBP (£)', 'aud' => 'AUD (A$)'] as $val => $lbl):
+                    ?>
+                    <option value="<?= e($val) ?>" <?= $cur === $val ? 'selected' : '' ?>><?= e($lbl) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label" for="booking_terms">Online Booking Terms</label>
+                <textarea id="booking_terms" name="booking_terms" class="form-control" rows="3"
+                          placeholder="Terms shown to customers during online booking…"><?= e(get_setting('booking_terms', '')) ?></textarea>
+            </div>
+
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn-tp-primary">
+                <i class="fa-solid fa-floppy-disk"></i> Save Stripe Settings
+            </button>
         </div>
 
     </form>

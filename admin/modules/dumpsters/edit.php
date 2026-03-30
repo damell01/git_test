@@ -28,11 +28,14 @@ $errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
 
-    $unit_code = trim($_POST['unit_code'] ?? '');
-    $size      = trim($_POST['size']      ?? '');
-    $status    = trim($_POST['status']    ?? 'available');
-    $condition = trim($_POST['condition'] ?? 'good');
-    $notes     = trim($_POST['notes']     ?? '');
+    $unit_code  = trim($_POST['unit_code']  ?? '');
+    $type       = trim($_POST['type']       ?? 'dumpster');
+    $size       = trim($_POST['size']       ?? '');
+    $daily_rate = (float)($_POST['daily_rate'] ?? 0.00);
+    $active     = isset($_POST['active']) ? 1 : 0;
+    $status     = trim($_POST['status']     ?? 'available');
+    $condition  = trim($_POST['condition']  ?? 'good');
+    $notes      = trim($_POST['notes']      ?? '');
 
     // Required field validation
     if ($unit_code === '') {
@@ -40,6 +43,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($size === '') {
         $errors[] = 'Size is required.';
+    }
+    if (!in_array($type, ['dumpster', 'trailer'], true)) {
+        $errors[] = 'Invalid type selected.';
     }
 
     // Validate size is in allowed list
@@ -61,7 +67,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         db_update('dumpsters', [
             'unit_code'  => $unit_code,
+            'type'       => $type,
             'size'       => $size,
+            'daily_rate' => $daily_rate,
+            'active'     => $active,
             'status'     => $status,
             'condition'  => $condition,
             'notes'      => $notes,
@@ -75,11 +84,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Re-populate form values from POST on validation failure
     $dumpster = array_merge($dumpster, [
-        'unit_code' => $unit_code,
-        'size'      => $size,
-        'status'    => $status,
-        'condition' => $condition,
-        'notes'     => $notes,
+        'unit_code'  => $unit_code,
+        'type'       => $type,
+        'size'       => $size,
+        'daily_rate' => $daily_rate,
+        'active'     => $active,
+        'status'     => $status,
+        'condition'  => $condition,
+        'notes'      => $notes,
     ]);
 }
 
@@ -137,6 +149,37 @@ layout_start('Edit Dumpster', 'inventory');
                     </option>
                     <?php endforeach; ?>
                 </select>
+            </div>
+
+            <!-- Type -->
+            <div class="col-md-4">
+                <label class="form-label" for="type">Type</label>
+                <select id="type" name="type" class="form-select">
+                    <option value="dumpster" <?= ($dumpster['type'] ?? 'dumpster') === 'dumpster' ? 'selected' : '' ?>>Dumpster</option>
+                    <option value="trailer"  <?= ($dumpster['type'] ?? '') === 'trailer'  ? 'selected' : '' ?>>Trailer</option>
+                </select>
+            </div>
+
+            <!-- Daily Rate -->
+            <div class="col-md-4">
+                <label class="form-label" for="daily_rate">Daily Rate ($)</label>
+                <input type="number"
+                       id="daily_rate"
+                       name="daily_rate"
+                       class="form-control"
+                       step="0.01"
+                       min="0"
+                       value="<?= e(number_format((float)($dumpster['daily_rate'] ?? 0), 2, '.', '')) ?>"
+                       placeholder="0.00">
+            </div>
+
+            <!-- Active -->
+            <div class="col-md-4 d-flex align-items-end pb-1">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="active" name="active" value="1"
+                           <?= !empty($dumpster['active']) ? 'checked' : '' ?>>
+                    <label class="form-check-label" for="active">Active (available for booking)</label>
+                </div>
             </div>
 
             <!-- Status -->

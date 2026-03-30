@@ -115,6 +115,26 @@ function status_badge(string $status): string
 }
 
 /**
+ * Return a styled badge <span> for a payment status value.
+ */
+function payment_badge(string $status): string
+{
+    $map = [
+        'unpaid'        => 'Unpaid',
+        'pending'       => 'Pending',
+        'paid'          => 'Paid',
+        'refunded'      => 'Refunded',
+        'pending_cash'  => 'Cash (Pending)',
+        'paid_cash'     => 'Cash (Paid)',
+        'pending_check' => 'Check (Pending)',
+        'paid_check'    => 'Check (Paid)',
+    ];
+    $label   = $map[$status] ?? ucfirst($status);
+    $cssSlug = str_replace('_', '-', strtolower($status));
+    return '<span class="tp-badge badge-' . e($cssSlug) . '">' . e($label) . '</span>';
+}
+
+/**
  * Generate the next sequential number for a given prefix / table / column.
  * Example output: "Q-0001", "WO-0042"
  *
@@ -131,10 +151,10 @@ function next_number(string $prefix, string $table, string $col): string
 {
     // Whitelist of tables and columns permitted for sequence generation.
     static $allowed_tables = [
-        'quotes', 'work_orders', 'leads', 'estimates',
+        'quotes', 'work_orders', 'leads', 'estimates', 'bookings',
     ];
     static $allowed_cols = [
-        'quote_number', 'wo_number', 'lead_number', 'estimate_number',
+        'quote_number', 'wo_number', 'lead_number', 'estimate_number', 'booking_number',
     ];
 
     if (!in_array($table, $allowed_tables, true)) {

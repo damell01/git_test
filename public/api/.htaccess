@@ -1,7 +1,11 @@
 # Restrict to PHP files only — no directory listing
 Options -Indexes
 
-# Only allow access to .php files
-<FilesMatch "^(?!contact\.php$)">
+# Only allow access to specific PHP API files
+<FilesMatch "^(contact|availability|create-booking|stripe-webhook)\.php$">
+  Require all granted
+</FilesMatch>
+
+<FilesMatch "^(?!(contact|availability|create-booking|stripe-webhook)\.php$)">
   Require all denied
 </FilesMatch>
