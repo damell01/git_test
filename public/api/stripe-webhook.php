@@ -50,17 +50,26 @@ if ($event->type === 'checkout.session.completed') {
 
     if (!empty($session_id)) {
         $booking = db_fetch(
-            'SELECT id, booking_number FROM bookings WHERE stripe_session_id = ? LIMIT 1',
+            'SELECT * FROM bookings WHERE stripe_session_id = ? LIMIT 1',
             [$session_id]
         );
 
         if ($booking) {
             db_update('bookings', [
                 'payment_status'    => 'paid',
-                'booking_status'    => 'confirmed',
+                'booking_status'    => 'paid',
                 'stripe_payment_id' => $payment_id ?: null,
                 'updated_at'        => date('Y-m-d H:i:s'),
             ], 'id', (int)$booking['id']);
+
+            // Re-fetch the updated row and auto-create a work order
+            $updated_booking = db_fetch(
+                'SELECT * FROM bookings WHERE id = ? LIMIT 1',
+                [(int)$booking['id']]
+            );
+            if ($updated_booking) {
+                booking_auto_create_work_order($updated_booking);
+            }
         }
     }
 }

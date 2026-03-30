@@ -173,6 +173,10 @@ if ($payment_method === 'stripe') {
         error_log('[Booking #' . $booking_number . '] Stripe SDK not found at ' . $autoload . '. Falling back to cash payment. Run `composer install` in the admin directory.');
         db_update('bookings', ['payment_method' => 'cash', 'payment_status' => 'pending_cash', 'booking_status' => 'confirmed', 'updated_at' => date('Y-m-d H:i:s')], 'id', (int)$new_id);
         $token = hash_hmac('sha256', (string)$new_id, get_setting('stripe_secret_key', 'booking-token-secret'));
+        $fallback_booking = db_fetch('SELECT * FROM bookings WHERE id = ? LIMIT 1', [(int)$new_id]);
+        if ($fallback_booking) {
+            booking_auto_create_work_order($fallback_booking);
+        }
         http_response_code(200);
         echo json_encode(['success' => true, 'redirect' => '/book-success.php?id=' . (int)$new_id . '&token=' . urlencode($token)]);
         exit;
@@ -212,7 +216,12 @@ if ($payment_method === 'stripe') {
     }
 }
 
-// Cash / check
+// Cash / check — booking is already confirmed; auto-create work order now
+$cash_booking = db_fetch('SELECT * FROM bookings WHERE id = ? LIMIT 1', [(int)$new_id]);
+if ($cash_booking) {
+    booking_auto_create_work_order($cash_booking);
+}
+
 http_response_code(200);
 echo json_encode([
     'success'  => true,
