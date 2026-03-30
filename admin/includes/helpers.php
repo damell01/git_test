@@ -131,10 +131,10 @@ function next_number(string $prefix, string $table, string $col): string
 {
     // Whitelist of tables and columns permitted for sequence generation.
     static $allowed_tables = [
-        'quotes', 'work_orders', 'invoices', 'leads', 'estimates',
+        'quotes', 'work_orders', 'leads', 'estimates',
     ];
     static $allowed_cols = [
-        'quote_number', 'wo_number', 'invoice_number', 'lead_number', 'estimate_number',
+        'quote_number', 'wo_number', 'lead_number', 'estimate_number',
     ];
 
     if (!in_array($table, $allowed_tables, true)) {

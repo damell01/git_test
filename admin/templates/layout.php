@@ -81,14 +81,6 @@ function layout_start(string $page_title, string $active_nav = ''): void
             'badge' => null,
         ],
         [
-            'key'   => 'payments',
-            'label' => 'Payments',
-            'icon'  => 'fa-credit-card',
-            'href'  => APP_URL . '/modules/payments/index.php',
-            'roles' => null,
-            'badge' => null,
-        ],
-        [
             'key'   => 'notifications',
             'label' => 'Notifications',
             'icon'  => 'fa-bell',

@@ -114,9 +114,7 @@ layout_start('Notifications', 'notifications');
                         <?php if ($notif['related_type'] && $notif['related_id']): ?>
                         <?php
                             $link_url = '#';
-                            if ($notif['related_type'] === 'payment') {
-                                $link_url = APP_URL . '/modules/payments/receipt.php?id=' . (int)$notif['related_id'];
-                            } elseif ($notif['related_type'] === 'work_order') {
+                            if ($notif['related_type'] === 'work_order') {
                                 $link_url = APP_URL . '/modules/work_orders/view.php?id=' . (int)$notif['related_id'];
                             }
                         ?>
