@@ -1,0 +1,427 @@
+<?php
+/**
+ * General-purpose helper functions
+ * Trash Panda Roll-Offs
+ */
+
+/**
+ * HTML-encode a value for safe output.
+ *
+ * @param mixed $val
+ * @return string
+ */
+function e(mixed $val): string
+{
+    return htmlspecialchars((string)$val, ENT_QUOTES, 'UTF-8');
+}
+
+/**
+ * Format a date string using the given format.
+ * Returns an empty string for null / empty input.
+ *
+ * @param string|null $date
+ * @param string      $format
+ * @return string
+ */
+function fmt_date(?string $date, string $format = 'M j, Y'): string
+{
+    if ($date === null || $date === '') {
+        return '';
+    }
+    $ts = strtotime($date);
+    return $ts !== false ? date($format, $ts) : '';
+}
+
+/**
+ * Format a datetime string as "M j, Y g:i A".
+ *
+ * @param string|null $dt
+ * @return string
+ */
+function fmt_datetime(?string $dt): string
+{
+    return fmt_date($dt, 'M j, Y g:i A');
+}
+
+/**
+ * Format a numeric amount as a dollar string.
+ *
+ * @param mixed $amount
+ * @return string  e.g. "$1,234.56"
+ */
+function fmt_money(mixed $amount): string
+{
+    return '$' . number_format((float)$amount, 2);
+}
+
+/**
+ * Format a 10-digit phone number as (251) 555-1234.
+ * Returns the original string if it cannot be normalised.
+ *
+ * @param string|null $phone
+ * @return string
+ */
+function fmt_phone(?string $phone): string
+{
+    if ($phone === null) {
+        return '';
+    }
+    $digits = preg_replace('/\D/', '', $phone);
+    if (strlen($digits) === 10) {
+        return sprintf('(%s) %s-%s',
+            substr($digits, 0, 3),
+            substr($digits, 3, 3),
+            substr($digits, 6, 4)
+        );
+    }
+    return $phone;
+}
+
+/**
+ * Return a styled badge <span> for a status value.
+ *
+ * @param string $status
+ * @return string  HTML
+ */
+function status_badge(string $status): string
+{
+    $map = [
+        'new'              => 'New',
+        'contacted'        => 'Contacted',
+        'quoted'           => 'Quoted',
+        'won'              => 'Won',
+        'lost'             => 'Lost',
+        'draft'            => 'Draft',
+        'sent'             => 'Sent',
+        'approved'         => 'Approved',
+        'rejected'         => 'Rejected',
+        'scheduled'        => 'Scheduled',
+        'delivered'        => 'Delivered',
+        'active'           => 'Active',
+        'pickup_requested' => 'Pickup Req.',
+        'picked_up'        => 'Picked Up',
+        'completed'        => 'Completed',
+        'canceled'         => 'Canceled',
+        'available'        => 'Available',
+        'reserved'         => 'Reserved',
+        'in_use'           => 'In Use',
+        'maintenance'      => 'Maintenance',
+    ];
+
+    $label     = $map[$status] ?? ucfirst($status);
+    $cssSlug   = str_replace('_', '-', strtolower($status));
+
+    return '<span class="tp-badge badge-' . e($cssSlug) . '">' . e($label) . '</span>';
+}
+
+/**
+ * Generate the next sequential number for a given prefix / table / column.
+ * Example output: "Q-0001", "WO-0042"
+ *
+ * $table and $col are validated against an explicit whitelist to prevent SQL
+ * injection, since PDO cannot parameterise identifier names.
+ *
+ * @param string $prefix  e.g. "Q" or "WO"
+ * @param string $table   database table name (must be whitelisted)
+ * @param string $col     column that holds the number string (must be whitelisted)
+ * @return string
+ * @throws InvalidArgumentException if $table or $col are not in the whitelist
+ */
+function next_number(string $prefix, string $table, string $col): string
+{
+    // Whitelist of tables and columns permitted for sequence generation.
+    static $allowed_tables = [
+        'quotes', 'work_orders', 'invoices', 'leads', 'estimates',
+    ];
+    static $allowed_cols = [
+        'quote_number', 'wo_number', 'invoice_number', 'lead_number', 'estimate_number',
+    ];
+
+    if (!in_array($table, $allowed_tables, true)) {
+        throw new InvalidArgumentException("next_number: table '$table' is not whitelisted.");
+    }
+    if (!in_array($col, $allowed_cols, true)) {
+        throw new InvalidArgumentException("next_number: column '$col' is not whitelisted.");
+    }
+
+    // Identifiers are now safe to interpolate (validated against static whitelist).
+    $row = db_fetch(
+        'SELECT MAX(CAST(SUBSTRING_INDEX(`' . $col . '`, \'-\', -1) AS UNSIGNED)) AS max_num FROM `' . $table . '`'
+    );
+
+    $next = ($row && $row['max_num'] !== null) ? (int)$row['max_num'] + 1 : 1;
+
+    return $prefix . '-' . str_pad((string)$next, 4, '0', STR_PAD_LEFT);
+}
+
+/**
+ * Queue a success flash message.
+ *
+ * @param string $msg
+ */
+function flash_success(string $msg): void
+{
+    $_SESSION['flash'][] = ['type' => 'success', 'msg' => $msg];
+}
+
+/**
+ * Queue an error flash message.
+ *
+ * @param string $msg
+ */
+function flash_error(string $msg): void
+{
+    $_SESSION['flash'][] = ['type' => 'error', 'msg' => $msg];
+}
+
+/**
+ * Queue an info flash message.
+ *
+ * @param string $msg
+ */
+function flash_info(string $msg): void
+{
+    $_SESSION['flash'][] = ['type' => 'info', 'msg' => $msg];
+}
+
+/**
+ * Output Bootstrap dismissible alerts for queued flash messages, then clear them.
+ */
+function render_flash(): void
+{
+    if (empty($_SESSION['flash'])) {
+        return;
+    }
+
+    $typeMap = [
+        'success' => 'alert-success',
+        'error'   => 'alert-danger',
+        'info'    => 'alert-info',
+    ];
+
+    foreach ($_SESSION['flash'] as $flash) {
+        $alertClass = $typeMap[$flash['type']] ?? 'alert-secondary';
+        echo '<div class="alert ' . $alertClass . ' alert-dismissible fade show" role="alert">'
+            . e($flash['msg'])
+            . '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>'
+            . '</div>';
+    }
+
+    unset($_SESSION['flash']);
+}
+
+/**
+ * Redirect to a URL and terminate execution.
+ *
+ * @param string $url
+ */
+function redirect(string $url): void
+{
+    header('Location: ' . $url);
+    exit;
+}
+
+/**
+ * Build a pagination metadata array.
+ *
+ * @param int $total     total number of records
+ * @param int $page      current page (1-based)
+ * @param int $per_page  records per page
+ * @return array{page:int,pages:int,per_page:int,offset:int}
+ */
+function paginate(int $total, int $page, int $per_page = 25): array
+{
+    $page   = max(1, $page);
+    $pages  = max(1, (int)ceil($total / $per_page));
+    $page   = min($page, $pages);
+
+    return [
+        'page'     => $page,
+        'pages'    => $pages,
+        'per_page' => $per_page,
+        'offset'   => ($page - 1) * $per_page,
+    ];
+}
+
+/**
+ * Retrieve a setting value from the database, with a static in-memory cache.
+ *
+ * @param string $key
+ * @param string $default
+ * @return string
+ */
+function get_setting(string $key, string $default = ''): string
+{
+    static $cache = [];
+
+    if (!array_key_exists($key, $cache)) {
+        $row = db_fetch('SELECT `value` FROM settings WHERE `key` = ? LIMIT 1', [$key]);
+        $cache[$key] = ($row !== false) ? $row['value'] : null;
+    }
+
+    return $cache[$key] ?? $default;
+}
+
+/**
+ * Persist a setting value using INSERT … ON DUPLICATE KEY UPDATE.
+ *
+ * @param string $key
+ * @param string $value
+ */
+function set_setting(string $key, string $value): void
+{
+    db_execute(
+        'INSERT INTO settings (`key`, `value`, `updated_at`) VALUES (?, ?, NOW())
+         ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `updated_at` = NOW()',
+        [$key, $value]
+    );
+}
+
+/**
+ * Validate that required fields are present and non-empty in $data.
+ *
+ * @param string[] $fields  list of required field names
+ * @param array    $data    data array to check (e.g. $_POST)
+ * @return string[]         error messages for any missing fields
+ */
+function validate_required(array $fields, array $data): array
+{
+    $errors = [];
+    foreach ($fields as $field) {
+        if (!isset($data[$field]) || trim((string)$data[$field]) === '') {
+            $label    = ucwords(str_replace(['_', '-'], ' ', $field));
+            $errors[] = $label . ' is required.';
+        }
+    }
+    return $errors;
+}
+
+/**
+ * Return the list of available dumpster sizes.
+ *
+ * @return string[]
+ */
+function dumpster_sizes(): array
+{
+    return ['10 Yard', '15 Yard', '20 Yard', '30 Yard', '40 Yard'];
+}
+
+/**
+ * Return the list of lead sources.
+ *
+ * @return string[]
+ */
+function lead_sources(): array
+{
+    return ['Website', 'Google', 'Facebook', 'Referral', 'Phone', 'Walk-in', 'Other'];
+}
+
+/**
+ * Return the list of project types.
+ *
+ * @return string[]
+ */
+function project_types(): array
+{
+    return [
+        'Residential',
+        'Commercial',
+        'Construction',
+        'Roofing',
+        'Estate Cleanout',
+        'Storm Debris',
+        'Landscaping',
+        'Other',
+    ];
+}
+
+/**
+ * Return the map of user roles (value => label).
+ *
+ * @return array<string,string>
+ */
+function user_roles(): array
+{
+    return [
+        'admin'      => 'Admin',
+        'office'     => 'Office Staff',
+        'dispatcher' => 'Dispatcher',
+        'readonly'   => 'Read Only',
+    ];
+}
+
+/**
+ * Return true if the given date is in the past (before today).
+ *
+ * @param string|null $date
+ * @return bool
+ */
+function is_overdue(?string $date): bool
+{
+    if ($date === null || $date === '') {
+        return false;
+    }
+    return strtotime($date) < strtotime('today');
+}
+
+/**
+ * Return a human-friendly relative date label.
+ *
+ * @param string|null $date
+ * @return string  "Today", "Yesterday", "X days ago", or formatted date
+ */
+function days_ago(?string $date): string
+{
+    if ($date === null || $date === '') {
+        return '';
+    }
+
+    $ts    = strtotime($date);
+    if ($ts === false) {
+        return $date;
+    }
+
+    $today     = strtotime('today');
+    $yesterday = strtotime('yesterday');
+    $diff      = (int)(($today - strtotime(date('Y-m-d', $ts))) / 86400);
+
+    if ($diff === 0) {
+        return 'Today';
+    }
+    if ($diff === 1) {
+        return 'Yesterday';
+    }
+    if ($diff > 1) {
+        return $diff . ' days ago';
+    }
+
+    return date('M j, Y', $ts);
+}
+
+/**
+ * Insert a row into the activity_log table.
+ *
+ * @param string $action  short action identifier (e.g. "login", "create")
+ * @param string $desc    human-readable description
+ * @param string $type    related record type (e.g. "user", "work_order")
+ * @param int    $id      related record ID
+ * @param int    $uid     acting user ID; defaults to $_SESSION['user_id']
+ */
+function log_activity(string $action, string $desc, string $type = '', int $id = 0, int $uid = 0): void
+{
+    if ($uid === 0) {
+        $uid = (int)($_SESSION['user_id'] ?? 0);
+    }
+
+    $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+
+    db_insert('activity_log', [
+        'user_id'     => $uid,
+        'action'      => $action,
+        'description' => $desc,
+        'entity_type' => $type,
+        'entity_id'   => $id,
+        'ip_address'  => $ip,
+        'created_at'  => date('Y-m-d H:i:s'),
+    ]);
+}
