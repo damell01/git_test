@@ -2,6 +2,7 @@
 require_once dirname(__DIR__, 2) . '/includes/bootstrap.php';
 require_login();
 require_role('admin', 'office');
+$pdo = get_db();
 
 $id   = (int)($_GET['id'] ?? 0);
 $stmt = $pdo->prepare('SELECT * FROM work_orders WHERE id = ? LIMIT 1');
@@ -30,6 +31,6 @@ if ($dumpster_id) {
 }
 
 // ── Log & notify ──────────────────────────────────────────────────────────────
-log_activity('delete_work_order', 'Deleted work order ' . $wo_number, $id);
+log_activity('delete_work_order', 'Deleted work order ' . $wo_number, 'work_order', $id);
 flash_info('Work Order ' . htmlspecialchars($wo_number) . ' has been deleted.');
 redirect('index.php');

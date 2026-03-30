@@ -496,6 +496,77 @@ a:hover {
     color: var(--wh);
 }
 
+.card-header {
+    background-color: var(--dk2);
+    border-color: var(--st);
+    color: var(--wh);
+}
+
+/* Bootstrap outline buttons — dark theme override */
+.btn-outline-secondary {
+    color: var(--gl) !important;
+    border-color: var(--st2) !important;
+}
+.btn-outline-secondary:hover {
+    color: var(--wh) !important;
+    background-color: var(--st2) !important;
+    border-color: var(--st2) !important;
+}
+.btn-outline-primary {
+    color: var(--bl) !important;
+    border-color: var(--bl) !important;
+}
+.btn-outline-primary:hover {
+    color: var(--wh) !important;
+    background-color: var(--bl) !important;
+}
+.btn-outline-success {
+    color: var(--gr) !important;
+    border-color: var(--gr) !important;
+}
+.btn-outline-success:hover {
+    color: var(--wh) !important;
+    background-color: var(--gr) !important;
+}
+.btn-outline-danger {
+    color: var(--rd) !important;
+    border-color: var(--rd) !important;
+}
+.btn-outline-danger:hover {
+    color: var(--wh) !important;
+    background-color: var(--rd) !important;
+}
+
+/* Bootstrap form controls — dark theme override */
+.form-control, .form-select {
+    background-color: var(--dk2) !important;
+    border-color: var(--st2) !important;
+    color: var(--wh) !important;
+}
+.form-control:focus, .form-select:focus {
+    background-color: var(--dk2) !important;
+    border-color: var(--or) !important;
+    color: var(--wh) !important;
+    box-shadow: 0 0 0 3px rgba(249,115,22,.2) !important;
+}
+.form-control::placeholder { color: var(--gy) !important; }
+.form-select option { background: var(--dk2); color: var(--wh); }
+.form-text { color: var(--gy) !important; }
+.input-group-text {
+    background-color: var(--dk3) !important;
+    border-color: var(--st2) !important;
+    color: var(--gl) !important;
+}
+
+/* Bootstrap input-group addon dark */
+.input-group > .form-control:focus {
+    z-index: 3;
+}
+
+/* Bootstrap form-check */
+.form-check-label { color: var(--gl); }
+.form-check-input { accent-color: var(--or); }
+
 .table thead.table-light th {
     background-color: var(--dk3) !important;
     color: var(--wh) !important;
@@ -503,13 +574,14 @@ a:hover {
 }
 
 .table td, .table th {
-    color: var(--wh);
-    border-color: var(--st2);
+    color: var(--wh) !important;
+    background-color: var(--dk1) !important;
+    border-color: var(--st2) !important;
 }
 
 .table-hover > tbody > tr:hover > * {
-    background-color: rgba(255, 255, 255, .04);
-    color: var(--wh);
+    background-color: rgba(255, 255, 255, .04) !important;
+    color: var(--wh) !important;
 }
 
 
@@ -546,6 +618,45 @@ a:hover {
 }
 
 .filter-tab.active {
+    color: var(--or);
+    border-color: var(--or);
+    background-color: rgba(249, 115, 22, .1);
+}
+
+/* tp-filter-tabs: alias of filter-bar / filter-tab with tp- prefix */
+.tp-filter-tabs {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.tp-filter-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .35rem .875rem;
+    border-radius: 20px;
+    font-family: var(--font-cond);
+    font-size: .85rem;
+    font-weight: 500;
+    color: var(--gl);
+    background-color: transparent;
+    border: 1px solid var(--st2);
+    text-decoration: none;
+    transition: color .15s ease, border-color .15s ease, background-color .15s ease;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.tp-filter-tab:hover {
+    color: var(--wh);
+    border-color: var(--gl);
+    text-decoration: none;
+}
+
+.tp-filter-tab.active {
     color: var(--or);
     border-color: var(--or);
     background-color: rgba(249, 115, 22, .1);

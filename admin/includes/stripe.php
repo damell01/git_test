@@ -35,7 +35,7 @@ function stripe_create_checkout(array $booking, string $success_url, string $can
         fmt_date($booking['rental_end'])
     );
 
-    return stripe_client()->checkout->sessions->create([
+    $session_params = [
         'payment_method_types' => ['card'],
         'line_items' => [[
             'price_data' => [
@@ -56,7 +56,14 @@ function stripe_create_checkout(array $booking, string $success_url, string $can
             'booking_number' => $booking['booking_number'],
         ],
         'customer_email' => $booking['customer_email'] ?? null,
-    ]);
+    ];
+
+    // For $0 amounts, allow checkout completion without requiring a payment method.
+    if ($amount_cents === 0) {
+        $session_params['payment_method_collection'] = 'if_required';
+    }
+
+    return stripe_client()->checkout->sessions->create($session_params);
 }
 
 /**
