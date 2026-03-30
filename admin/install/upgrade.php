@@ -215,6 +215,33 @@ echo "\n--- Upgrade 5: customers table ---\n";
 $log[] = "[INFO] customers.active — no DB change needed (PHP code already fixed)";
 
 // =============================================================================
+// UPGRADE 6 — work_orders: add booking_id column to link bookings → work orders
+// =============================================================================
+echo "\n--- Upgrade 6: work_orders.booking_id ---\n";
+
+if (!column_exists($pdo, 'work_orders', 'booking_id')) {
+    run_step($pdo, "work_orders.booking_id", "ALTER TABLE `work_orders`
+        ADD COLUMN `booking_id` INT(11) DEFAULT NULL AFTER `quote_id`");
+
+    run_step($pdo, "work_orders.uq_wo_booking_id",
+        "ALTER TABLE `work_orders` ADD UNIQUE KEY `uq_wo_booking_id` (`booking_id`)"
+    );
+
+    // Add FK only if the bookings table already exists
+    if (table_exists($pdo, 'bookings')) {
+        run_step($pdo, "work_orders.fk_wo_booking_id",
+            "ALTER TABLE `work_orders`
+             ADD CONSTRAINT `fk_wo_booking_id`
+               FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE SET NULL"
+        );
+    } else {
+        $log[] = "[SKIP] fk_wo_booking_id (bookings table not yet present)";
+    }
+} else {
+    $log[] = "[SKIP] work_orders.booking_id (already exists)";
+}
+
+// =============================================================================
 // Summary
 // =============================================================================
 echo "\n" . str_repeat('=', 60) . "\n";

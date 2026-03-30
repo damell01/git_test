@@ -419,6 +419,89 @@ function days_ago(?string $date): string
 }
 
 /**
+ * Automatically create a work order from a confirmed/paid booking.
+ * Idempotent — returns the existing WO number if one has already been created
+ * for this booking.  Also marks the dumpster as 'reserved' so it is blocked
+ * from further bookings.
+ *
+ * @param array $booking  Full row from the bookings table
+ * @return string|null    Work order number on success, null on failure
+ */
+function booking_auto_create_work_order(array $booking): ?string
+{
+    // Idempotency: don't create a second WO for the same booking
+    $existing = db_fetch(
+        'SELECT wo_number FROM work_orders WHERE booking_id = ? LIMIT 1',
+        [(int)$booking['id']]
+    );
+    if ($existing) {
+        return $existing['wo_number'];
+    }
+
+    $wo_number    = next_number('WO', 'work_orders', 'wo_number');
+    $wo_footer    = get_setting('wo_footer', '');
+    $service_addr = trim((string)($booking['customer_address'] ?? ''));
+    if ($service_addr === '') {
+        $service_addr = 'See booking ' . ($booking['booking_number'] ?? '');
+    }
+
+    $wo_id = null;
+    try {
+        $wo_id = db_insert('work_orders', [
+            'wo_number'       => $wo_number,
+            'booking_id'      => (int)$booking['id'],
+            'quote_id'        => null,
+            'customer_id'     => null,
+            'cust_name'       => $booking['customer_name'],
+            'cust_phone'      => $booking['customer_phone'] ?: null,
+            'cust_email'      => $booking['customer_email'] ?: null,
+            'service_address' => $service_addr,
+            'service_city'    => $booking['customer_city'] ?: null,
+            'service_state'   => null,
+            'service_zip'     => null,
+            'size'            => $booking['unit_size'] ?: null,
+            'project_type'    => null,
+            'dumpster_id'     => $booking['dumpster_id'] ?: null,
+            'delivery_date'   => $booking['rental_start'],
+            'pickup_date'     => $booking['rental_end'],
+            'amount'          => (float)($booking['total_amount'] ?? 0),
+            'status'          => 'scheduled',
+            'priority'        => 'normal',
+            'internal_notes'  => $booking['notes'] ?: null,
+            'footer_notes'    => $wo_footer ?: null,
+            'created_by'      => null,
+            'created_at'      => date('Y-m-d H:i:s'),
+            'updated_at'      => date('Y-m-d H:i:s'),
+        ]);
+    } catch (\PDOException $e) {
+        // Duplicate booking_id key means another request already created the WO (race condition)
+        if (strpos($e->getMessage(), '1062') !== false || stripos($e->getMessage(), 'Duplicate') !== false) {
+            $race_winner = db_fetch(
+                'SELECT wo_number FROM work_orders WHERE booking_id = ? LIMIT 1',
+                [(int)$booking['id']]
+            );
+            return $race_winner ? $race_winner['wo_number'] : null;
+        }
+        throw $e;
+    }
+
+    if (!$wo_id) {
+        return null;
+    }
+
+    // Reserve the dumpster so it is blocked in inventory
+    if (!empty($booking['dumpster_id'])) {
+        db_execute(
+            "UPDATE dumpsters SET status = 'reserved', updated_at = NOW()
+             WHERE id = ? AND status = 'available'",
+            [(int)$booking['dumpster_id']]
+        );
+    }
+
+    return $wo_number;
+}
+
+/**
  * Insert a row into the activity_log table.
  *
  * @param string $action  short action identifier (e.g. "login", "create")

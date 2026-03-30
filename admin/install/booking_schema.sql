@@ -55,6 +55,17 @@ CREATE TABLE IF NOT EXISTS `inventory_blocks` (
   CONSTRAINT `fk_ib_created_by`   FOREIGN KEY (`created_by`)  REFERENCES `users`     (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Link work_orders back to the booking that generated them
+ALTER TABLE `work_orders`
+  ADD COLUMN IF NOT EXISTS `booking_id` INT(11) DEFAULT NULL AFTER `quote_id`;
+
+ALTER TABLE `work_orders`
+  ADD UNIQUE KEY IF NOT EXISTS `uq_wo_booking_id` (`booking_id`);
+
+ALTER TABLE `work_orders`
+  ADD CONSTRAINT IF NOT EXISTS `fk_wo_booking_id`
+    FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE SET NULL;
+
 -- Default Stripe / booking settings
 INSERT IGNORE INTO `settings` (`key`, `value`) VALUES
   ('stripe_publishable_key', ''),

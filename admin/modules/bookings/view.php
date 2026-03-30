@@ -20,6 +20,12 @@ if (!$booking) {
     redirect('index.php');
 }
 
+// Look up any work order created from this booking
+$linked_wo = db_fetch(
+    'SELECT id, wo_number, status FROM work_orders WHERE booking_id = ? LIMIT 1',
+    [$id]
+);
+
 layout_start('Booking Detail', 'bookings');
 ?>
 
@@ -47,6 +53,12 @@ layout_start('Booking Detail', 'bookings');
                 <i class="fa-solid fa-ban"></i> Cancel Booking
             </button>
         </form>
+        <?php endif; ?>
+        <?php if ($linked_wo): ?>
+        <a href="../work_orders/view.php?id=<?= (int)$linked_wo['id'] ?>"
+           class="btn-tp-ghost btn-tp-sm">
+            <i class="fa-solid fa-clipboard-list"></i> Work Order <?= e($linked_wo['wo_number']) ?>
+        </a>
         <?php endif; ?>
     </div>
 </div>
@@ -206,7 +218,7 @@ layout_start('Booking Detail', 'bookings');
 
         <!-- Stripe Info -->
         <?php if ($booking['stripe_session_id'] || $booking['stripe_payment_id']): ?>
-        <div class="tp-card">
+        <div class="tp-card mb-4">
             <div class="tp-card-header">
                 <i class="fa-brands fa-stripe me-2 text-muted"></i> Stripe
             </div>
@@ -223,6 +235,31 @@ layout_start('Booking Detail', 'bookings');
                     <div style="font-size:.8rem;word-break:break-all;"><?= e($booking['stripe_payment_id']) ?></div>
                 </div>
                 <?php endif; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Linked Work Order -->
+        <?php if ($linked_wo): ?>
+        <div class="tp-card">
+            <div class="tp-card-header">
+                <i class="fa-solid fa-clipboard-list me-2 text-muted"></i> Work Order
+            </div>
+            <div class="tp-card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="text-muted" style="font-size:.8rem;">WO Number</div>
+                        <div class="fw-semibold">
+                            <a href="../work_orders/view.php?id=<?= (int)$linked_wo['id'] ?>">
+                                <?= e($linked_wo['wo_number']) ?>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-muted" style="font-size:.8rem;">WO Status</div>
+                        <div class="mt-1"><?= status_badge($linked_wo['status']) ?></div>
+                    </div>
+                </div>
             </div>
         </div>
         <?php endif; ?>
