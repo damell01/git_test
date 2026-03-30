@@ -306,9 +306,10 @@ function updateTotal() {
         return;
     }
 
-    var rate = parseFloat(sel.options[sel.selectedIndex].dataset.rate) || 0;
-    var ms   = new Date(end) - new Date(start);
-    var days = Math.floor(ms / 86400000);
+    var rate     = parseFloat(sel.options[sel.selectedIndex].dataset.rate) || 0;
+    var startUTC = Date.UTC.apply(null, start.split('-').map(function(v,i){ return i===1?parseInt(v,10)-1:parseInt(v,10); }));
+    var endUTC   = Date.UTC.apply(null, end.split('-').map(function(v,i){ return i===1?parseInt(v,10)-1:parseInt(v,10); }));
+    var days     = Math.round((endUTC - startUTC) / 86400000);
 
     if (days <= 0) {
         disp.textContent = 'Invalid dates';

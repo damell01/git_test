@@ -54,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'smtp_encryption',
         'stripe_mode',
         'stripe_publishable_key',
+        'stripe_secret_key',
         'stripe_webhook_secret',
         'booking_terms',
         'currency',
@@ -68,6 +69,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($key === 'stripe_secret_key' && trim($_POST[$key] ?? '') === '') {
         if (!empty(get_setting('stripe_secret_key'))) {
+            continue;
+        }
+    }
+    if ($key === 'stripe_webhook_secret' && trim($_POST[$key] ?? '') === '') {
+        if (!empty(get_setting('stripe_webhook_secret'))) {
             continue;
         }
     }
@@ -386,7 +392,7 @@ layout_start('Settings', 'settings');
                        placeholder="<?= get_setting('stripe_webhook_secret') ? '••••••••' : 'whsec_…' ?>"
                        value="">
                 <div class="form-text" style="color:var(--gy);">
-                    Webhook endpoint: <code><?= e(APP_URL) ?>/../../public/api/stripe-webhook.php</code>
+                    Webhook endpoint: <code><?= e(rtrim(preg_replace('#/admin$#', '', APP_URL), '/')) ?>/public/api/stripe-webhook.php</code>
                 </div>
             </div>
 

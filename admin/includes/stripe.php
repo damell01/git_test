@@ -29,7 +29,7 @@ function stripe_create_checkout(array $booking, string $success_url, string $can
 
     $description = sprintf(
         '%s %s — %s to %s',
-        e($booking['unit_size'] ?? ''),
+        $booking['unit_size'] ?? '',
         ucfirst($booking['unit_type'] ?? 'Dumpster'),
         fmt_date($booking['rental_start']),
         fmt_date($booking['rental_end'])

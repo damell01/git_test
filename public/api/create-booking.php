@@ -118,9 +118,7 @@ $daily_rate = (float)$unit['daily_rate'];
 $total      = round($daily_rate * $days, 2);
 
 // Generate booking number
-$max_row        = db_fetch("SELECT MAX(CAST(SUBSTRING_INDEX(booking_number, '-', -1) AS UNSIGNED)) AS max_num FROM bookings");
-$next_num       = ($max_row && $max_row['max_num'] !== null) ? (int)$max_row['max_num'] + 1 : 1;
-$booking_number = 'BK-' . str_pad((string)$next_num, 4, '0', STR_PAD_LEFT);
+$booking_number = next_number('BK', 'bookings', 'booking_number');
 
 // Payment status
 $pay_status_map = [

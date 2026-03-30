@@ -291,8 +291,10 @@ function updateTotal() {
     var disp  = document.getElementById('totalDisplay');
 
     if (!sel.value || !start || !end) { disp.textContent = '—'; return; }
-    var rate = parseFloat(sel.options[sel.selectedIndex].dataset.rate) || 0;
-    var days = Math.floor((new Date(end) - new Date(start)) / 86400000);
+    var rate     = parseFloat(sel.options[sel.selectedIndex].dataset.rate) || 0;
+    var startUTC = Date.UTC.apply(null, start.split('-').map(function(v,i){ return i===1?parseInt(v,10)-1:parseInt(v,10); }));
+    var endUTC   = Date.UTC.apply(null, end.split('-').map(function(v,i){ return i===1?parseInt(v,10)-1:parseInt(v,10); }));
+    var days     = Math.round((endUTC - startUTC) / 86400000);
     if (days <= 0) { disp.textContent = 'Invalid dates'; return; }
     disp.textContent = days + ' day' + (days !== 1 ? 's' : '') + ' — $' + (rate * days).toFixed(2);
 }

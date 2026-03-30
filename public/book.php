@@ -485,7 +485,9 @@ function computeTotal() {
         return;
     }
 
-    var days = Math.floor((new Date(end) - new Date(start)) / 86400000);
+    var startUTC = Date.UTC.apply(null, start.split('-').map(function(v,i){ return i===1?parseInt(v,10)-1:parseInt(v,10); }));
+    var endUTC   = Date.UTC.apply(null, end.split('-').map(function(v,i){ return i===1?parseInt(v,10)-1:parseInt(v,10); }));
+    var days = Math.round((endUTC - startUTC) / 86400000);
     if (days <= 0) { disp.style.display = 'none'; return; }
 
     var total = selectedUnit.rate * days;
@@ -550,7 +552,9 @@ function goStep2() {
     }
 
     // Populate summary
-    var days = Math.floor((new Date(end) - new Date(start)) / 86400000);
+    var startUTC = Date.UTC.apply(null, document.getElementById('rental_start').value.split('-').map(function(v,i){ return i===1?parseInt(v,10)-1:parseInt(v,10); }));
+    var endUTC   = Date.UTC.apply(null, document.getElementById('rental_end').value.split('-').map(function(v,i){ return i===1?parseInt(v,10)-1:parseInt(v,10); }));
+    var days = Math.round((endUTC - startUTC) / 86400000);
     document.getElementById('sum-unit').textContent  = selectedUnit.code;
     document.getElementById('sum-size').textContent  = selectedUnit.size;
     document.getElementById('sum-dates').textContent = start + ' – ' + end;
