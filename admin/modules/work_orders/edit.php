@@ -3,6 +3,7 @@ require_once dirname(__DIR__, 2) . '/includes/bootstrap.php';
 require_once TMPL_PATH . '/layout.php';
 require_login();
 require_role('admin', 'office', 'dispatcher');
+$pdo = get_db();
 
 // ── Fetch work order ──────────────────────────────────────────────────────────
 $id   = (int)($_GET['id'] ?? 0);

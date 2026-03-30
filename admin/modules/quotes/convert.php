@@ -2,6 +2,7 @@
 require_once dirname(__DIR__, 2) . '/includes/bootstrap.php';
 require_login();
 require_role('admin', 'office');
+$pdo = get_db();
 
 $quote_id = (int)($_GET['quote_id'] ?? 0);
 
@@ -61,7 +62,8 @@ $upd->execute([$wo_id, $quote_id]);
 log_activity(
     'convert_quote',
     'Converted quote ' . $quote['quote_number'] . ' to Work Order ' . $wo_number,
-    $quote_id
+    'quote',
+    (int)$quote_id
 );
 
 flash_success('Quote converted to Work Order ' . $wo_number . ' successfully.');

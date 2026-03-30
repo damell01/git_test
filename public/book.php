@@ -464,7 +464,7 @@ var selectedUnit   = null;
 var availCheckTimer = null;
 
 // ─── Unit card selection ─────────────────────────────────────────────────────
-document.querySelectorAll('.unit-card input[type="radio"]').forEach(function(radio) {
+document.querySelectorAll('input[name="unit_id"]').forEach(function(radio) {
     radio.addEventListener('change', function() {
         document.querySelectorAll('.unit-card').forEach(function(c) { c.classList.remove('selected'); });
         this.closest('.unit-card').classList.add('selected');
@@ -491,7 +491,7 @@ document.querySelectorAll('.unit-card input[type="radio"]').forEach(function(rad
 });
 
 // ─── Payment method card selection ───────────────────────────────────────────
-document.querySelectorAll('label.unit-card input[type="radio"][name="payment_method"]').forEach(function(radio) {
+document.querySelectorAll('input[name="payment_method"]').forEach(function(radio) {
     radio.addEventListener('change', function() {
         document.querySelectorAll('label.unit-card input[name="payment_method"]').forEach(function(r) {
             r.closest('label').classList.remove('selected');

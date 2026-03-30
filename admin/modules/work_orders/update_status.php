@@ -1,6 +1,7 @@
 <?php
 require_once dirname(__DIR__, 2) . '/includes/bootstrap.php';
 require_login();
+$pdo = get_db();
 
 // POST-only endpoint
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -96,6 +97,7 @@ $ins_note->execute([$wo_id, $_SESSION['user_id'], $note_text, 'status_change']);
 log_activity(
     'update_wo_status',
     'Work order ' . $wo['wo_number'] . ': ' . $note_text,
+    'work_order',
     $wo_id
 );
 

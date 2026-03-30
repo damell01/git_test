@@ -3,6 +3,7 @@ require_once dirname(__DIR__, 2) . '/includes/bootstrap.php';
 require_once TMPL_PATH . '/layout.php';
 require_login();
 require_role('admin', 'office', 'dispatcher');
+$pdo = get_db();
 
 // ── Pre-fill from Quote ───────────────────────────────────────────────────────
 $quote_id   = null;
@@ -125,7 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ->execute(['reserved', $dumpster_id_v]);
         }
 
-        log_activity('create_work_order', 'Created work order ' . $wo_number, $wo_id);
+        log_activity('create_work_order', 'Created work order ' . $wo_number, 'work_order', (int)$wo_id);
         flash_success('Work Order ' . $wo_number . ' created successfully.');
         redirect('view.php?id=' . $wo_id);
     }
