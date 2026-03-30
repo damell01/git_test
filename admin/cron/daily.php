@@ -21,9 +21,13 @@ $is_cli = (PHP_SAPI === 'cli');
 
 if (!$is_cli) {
     $provided_key = $_GET['key'] ?? '';
-    if (!defined('CRON_KEY') || !hash_equals(CRON_KEY, $provided_key)) {
+    if (!defined('CRON_KEY')
+        || CRON_KEY === ''
+        || CRON_KEY === 'change-this-to-a-random-secret'
+        || !hash_equals(CRON_KEY, $provided_key)
+    ) {
         http_response_code(403);
-        echo "Forbidden: invalid cron key.\n";
+        echo "Forbidden: invalid or unconfigured cron key.\n";
         exit;
     }
     header('Content-Type: text/plain');

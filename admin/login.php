@@ -311,7 +311,7 @@ $asset_path = defined('ASSET_PATH') ? ASSET_PATH : '';
                     name="password"
                     class="tp-input"
                     placeholder="••••••••"
-                    autocomplete="off"
+                    autocomplete="current-password"
                     required
                 >
             </div>

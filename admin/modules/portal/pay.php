@@ -48,9 +48,22 @@ if ($amount_due <= 0) {
     exit;
 }
 
+// Generate a portal-session CSRF token
+if (empty($_SESSION['portal_csrf_token'])) {
+    $_SESSION['portal_csrf_token'] = bin2hex(random_bytes(32));
+}
+$portal_csrf = $_SESSION['portal_csrf_token'];
+
 // ── JSON: Create PaymentIntent ────────────────────────────────────────────────
 if (isset($_GET['action']) && $_GET['action'] === 'create_intent') {
     header('Content-Type: application/json');
+
+    $submitted_csrf = $_POST['portal_csrf'] ?? '';
+    if (empty($submitted_csrf) || !hash_equals($_SESSION['portal_csrf_token'] ?? '', $submitted_csrf)) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Invalid security token']);
+        exit;
+    }
 
     $pi = stripe_create_payment_intent($amount_due, STRIPE_CURRENCY, [
         'invoice_id' => $inv['id'],
@@ -86,6 +99,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'create_intent') {
 // ── JSON: Confirm Payment ─────────────────────────────────────────────────────
 if (isset($_GET['action']) && $_GET['action'] === 'confirm') {
     header('Content-Type: application/json');
+
+    $submitted_csrf = $_POST['portal_csrf'] ?? '';
+    if (empty($submitted_csrf) || !hash_equals($_SESSION['portal_csrf_token'] ?? '', $submitted_csrf)) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Invalid security token']);
+        exit;
+    }
 
     $pi_id  = trim($_POST['payment_intent_id'] ?? '');
     $pay_id = (int)($_POST['payment_id'] ?? 0);
@@ -243,7 +263,11 @@ if (isset($_GET['action']) && $_GET['action'] === 'confirm') {
         // Create intent
         let piData;
         try {
-            const r = await fetch('pay.php?action=create_intent&invoice_id=<?= $invoice_id ?>', { method: 'POST' });
+            const r = await fetch('pay.php?action=create_intent&invoice_id=<?= $invoice_id ?>', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'portal_csrf=' + encodeURIComponent('<?= htmlspecialchars($portal_csrf, ENT_QUOTES, 'UTF-8') ?>')
+            });
             piData = await r.json();
         } catch {
             showErr('Network error. Please try again.');
@@ -263,7 +287,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'confirm') {
         const cr = await fetch('pay.php?action=confirm', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: 'payment_intent_id=' + encodeURIComponent(paymentIntent.id) + '&payment_id=' + piData.payment_id
+            body: 'payment_intent_id=' + encodeURIComponent(paymentIntent.id)
+                + '&payment_id=' + piData.payment_id
+                + '&portal_csrf=' + encodeURIComponent('<?= htmlspecialchars($portal_csrf, ENT_QUOTES, 'UTF-8') ?>')
         });
         const cd = await cr.json();
         if (cd.error) { showErr(cd.error); resetBtn(); return; }

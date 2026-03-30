@@ -215,7 +215,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="mb-3">
             <input type="text" name="code" class="code-input"
-                   maxlength="8" pattern="[0-9A-Fa-f]+"
+                   maxlength="8" pattern="[0-9A-Fa-f]{6,8}"
                    placeholder="000000"
                    autocomplete="one-time-code"
                    inputmode="numeric"

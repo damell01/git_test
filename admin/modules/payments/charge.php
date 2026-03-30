@@ -48,6 +48,13 @@ $amount_due = $inv
 if (isset($_GET['action']) && $_GET['action'] === 'create_intent') {
     header('Content-Type: application/json');
 
+    // CSRF check for AJAX endpoints — token passed as POST field
+    if (!csrf_verify()) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Invalid security token']);
+        exit;
+    }
+
     $override_amount = (float)($_POST['amount'] ?? $amount_due);
     if ($override_amount <= 0) {
         echo json_encode(['error' => 'Invalid amount']);
@@ -92,6 +99,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'create_intent') {
 // ── JSON endpoint: confirm payment success ────────────────────────────────────
 if (isset($_GET['action']) && $_GET['action'] === 'confirm_payment') {
     header('Content-Type: application/json');
+
+    // CSRF check for AJAX endpoints
+    if (!csrf_verify()) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Invalid security token']);
+        exit;
+    }
 
     $pi_id     = trim($_POST['payment_intent_id'] ?? '');
     $pay_id    = (int)($_POST['payment_id'] ?? 0);
@@ -258,7 +272,7 @@ layout_start('Charge Customer', 'payments');
             const res = await fetch('charge.php?action=create_intent&invoice_id=<?= $invoice_id ?>&wo_id=<?= $wo['id'] ?>', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: 'amount=' + encodeURIComponent(amount)
+                body: 'amount=' + encodeURIComponent(amount) + '&<?= CSRF_TOKEN_NAME ?>=' + encodeURIComponent('<?= csrf_token() ?>')
             });
             piData = await res.json();
         } catch (err) {
@@ -290,6 +304,7 @@ layout_start('Charge Customer', 'payments');
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: 'payment_intent_id=' + encodeURIComponent(paymentIntent.id)
                 + '&payment_id=' + encodeURIComponent(piData.payment_id)
+                + '&<?= CSRF_TOKEN_NAME ?>=' + encodeURIComponent('<?= csrf_token() ?>')
         });
         const confirmData = await confirmRes.json();
 

@@ -31,24 +31,37 @@ if (!$wo) {
     redirect(APP_URL . '/modules/work_orders/index.php');
 }
 
-// ── Auto-create invoice if it doesn't exist ───────────────────────────────────
+// ── Auto-create invoice if it doesn't exist (protected against race conditions) ─
 $inv = db_fetch('SELECT * FROM invoices WHERE work_order_id = ? LIMIT 1', [$wo_id]);
 
 if (!$inv) {
-    $inv_number = next_number('INV', 'invoices', 'invoice_number');
-    $inv_id = db_insert('invoices', [
-        'invoice_number' => $inv_number,
-        'work_order_id'  => $wo_id,
-        'customer_id'    => $wo['customer_id'],
-        'amount'         => $wo['amount'],
-        'amount_paid'    => 0,
-        'status'         => 'unpaid',
-        'due_date'       => date('Y-m-d', strtotime('+30 days')),
-        'created_at'     => date('Y-m-d H:i:s'),
-        'updated_at'     => date('Y-m-d H:i:s'),
-    ]);
-    $inv = db_fetch('SELECT * FROM invoices WHERE id = ? LIMIT 1', [(int)$inv_id]);
-    log_activity('create', 'Invoice ' . $inv_number . ' created for WO# ' . $wo['wo_number'], 'invoice', (int)$inv_id);
+    // Use a transaction to prevent duplicate creation under concurrent requests
+    try {
+        get_db()->beginTransaction();
+        $inv_number = next_number('INV', 'invoices', 'invoice_number');
+        $inv_id = db_insert('invoices', [
+            'invoice_number' => $inv_number,
+            'work_order_id'  => $wo_id,
+            'customer_id'    => $wo['customer_id'],
+            'amount'         => $wo['amount'],
+            'amount_paid'    => 0,
+            'status'         => 'unpaid',
+            'due_date'       => date('Y-m-d', strtotime('+30 days')),
+            'created_at'     => date('Y-m-d H:i:s'),
+            'updated_at'     => date('Y-m-d H:i:s'),
+        ]);
+        get_db()->commit();
+        $inv = db_fetch('SELECT * FROM invoices WHERE id = ? LIMIT 1', [(int)$inv_id]);
+        log_activity('create', 'Invoice ' . $inv_number . ' created for WO# ' . $wo['wo_number'], 'invoice', (int)$inv_id);
+    } catch (\Throwable $e) {
+        get_db()->rollBack();
+        // Another request may have created it simultaneously — re-fetch
+        $inv = db_fetch('SELECT * FROM invoices WHERE work_order_id = ? LIMIT 1', [$wo_id]);
+        if (!$inv) {
+            flash_error('Failed to create invoice. Please try again.');
+            redirect(APP_URL . '/modules/work_orders/view.php?id=' . $wo_id);
+        }
+    }
 }
 
 // ── Handle actions ────────────────────────────────────────────────────────────
