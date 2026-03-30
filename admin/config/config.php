@@ -6,7 +6,15 @@ define('DB_PASS', 'your_pass');
 define('DB_CHARSET', 'utf8mb4');
 define('APP_NAME', 'Trash Panda Roll-Offs');
 define('APP_VERSION', '1.0.0');
-define('APP_URL', 'https://yourdomain.com/admin');  // no trailing slash
+// Dynamically build APP_URL from the current request so the admin panel
+// works on any domain without manual configuration.
+// HTTP_HOST is sanitised to prevent host-header injection.
+$_app_scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$_raw_host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
+// Allow only valid hostname characters (letters, digits, hyphens, dots) and an optional :port
+$_app_host   = preg_replace('/[^a-zA-Z0-9\-\.:]/', '', $_raw_host);
+define('APP_URL', $_app_scheme . '://' . $_app_host . '/admin');  // no trailing slash
+unset($_app_scheme, $_raw_host, $_app_host);
 define('SESSION_NAME', 'tp_session');
 define('CSRF_TOKEN_NAME', 'tp_csrf');
 define('SESSION_LIFETIME', 7200);

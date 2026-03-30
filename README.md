@@ -116,7 +116,7 @@ define('DB_HOST', 'localhost');       // usually localhost on shared hosting
 define('DB_NAME', 'your_db_name');   // create this DB first in cPanel → MySQL Databases
 define('DB_USER', 'your_db_user');
 define('DB_PASS', 'your_db_password');
-define('APP_URL', 'https://yourdomain.com/admin');  // no trailing slash
+// APP_URL is now auto-detected from the server's host — no manual edit needed.
 
 define('CRON_KEY', 'change-me-to-a-random-secret'); // used to secure the cron URL
 ```
@@ -125,10 +125,10 @@ define('CRON_KEY', 'change-me-to-a-random-secret'); // used to secure the cron U
 
 ## ④ Run the Installer
 
-Navigate to:
+Navigate to your site's installer URL, for example:
 
 ```
-https://yourdomain.com/admin/install/install.php
+https://your-actual-domain.com/admin/install/install.php
 ```
 
 The installer will:
@@ -214,6 +214,8 @@ Or call it via URL with the secure key:
 ```
 https://yourdomain.com/admin/cron/daily.php?key=YOUR_CRON_KEY
 ```
+
+Replace `yourdomain.com` with your actual domain.
 
 The cron job:
 - Sends delivery reminder emails (for tomorrow's scheduled deliveries)
