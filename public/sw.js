@@ -19,6 +19,7 @@ const PRECACHE_URLS = [
   '/faq.html',
   '/contact.html',
   '/book.php',
+  '/my-bookings.php',
   '/shared.css',
   '/shared-components.js',
   '/assets/logo.jpeg',

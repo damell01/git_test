@@ -169,6 +169,23 @@ db_update('dumpsters', [
     'updated_at' => date('Y-m-d H:i:s'),
 ], 'id', $unit_id);
 
+// Push notification to admins for new booking (best-effort)
+$_push_autoload = $_admin_root . '/vendor/autoload.php';
+if (file_exists($_push_autoload)) {
+    require_once $_push_autoload;
+}
+if (file_exists(INC_PATH . '/push.php')) {
+    require_once INC_PATH . '/push.php';
+    $pm_label   = ['stripe' => 'Card', 'cash' => 'Cash', 'check' => 'Check'][$payment_method] ?? $payment_method;
+    $view_url   = defined('APP_URL') ? APP_URL . '/modules/bookings/index.php' : '/admin/modules/bookings/index.php';
+    push_notify_admins(
+        '📦 New Booking — ' . $booking_number,
+        $customer_name . ' · ' . $unit['unit_code'] . ' · $' . number_format($total, 2) . ' (' . $pm_label . ')',
+        $view_url
+    );
+}
+unset($_push_autoload);
+
 // Token for success page (prevents enumeration)
 $token = hash_hmac('sha256', (string)$new_id, get_setting('stripe_secret_key', 'booking-token-secret'));
 

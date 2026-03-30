@@ -16,6 +16,7 @@ const navHTML = `
       <li><a href="service-areas.html">Service Areas</a></li>
       <li><a href="about.html">About</a></li>
       <li><a href="faq.html">FAQ</a></li>
+      <li><a href="/my-bookings.php">My Bookings</a></li>
       <li><a href="/book.php" class="nav-cta-btn">Book Now</a></li>
     </ul>
     <a href="tel:+12513334444" class="nav-phone d-none d-xl-flex"><i class="fas fa-phone"></i>(251) 333-4444</a>
@@ -32,6 +33,7 @@ const navHTML = `
     <li><a href="service-areas.html">Service Areas</a></li>
     <li><a href="about.html">About</a></li>
     <li><a href="faq.html">FAQ</a></li>
+    <li><a href="/my-bookings.php">My Bookings</a></li>
     <li><a href="/book.php">Book Now</a></li>
     <li><a href="tel:+12513334444"><i class="fas fa-phone me-2" style="color:var(--orange)"></i>(251) 333-4444</a></li>
   </ul>
@@ -90,6 +92,7 @@ const footerHTML = `
             <li><a href="service-areas.html">Service Areas</a></li>
             <li><a href="contact.html">Contact</a></li>
             <li><a href="sizes.html">Dumpster Sizes</a></li>
+            <li><a href="/my-bookings.php">My Bookings</a></li>
           </ul>
         </div>
         <div class="col-lg-4">

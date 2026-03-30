@@ -505,7 +505,7 @@ var availCheckTimer = null;
 // ─── Unit card selection ─────────────────────────────────────────────────────
 document.querySelectorAll('input[name="unit_id"]').forEach(function(radio) {
     radio.addEventListener('change', function() {
-        document.querySelectorAll('.unit-card').forEach(function(c) { c.classList.remove('selected'); });
+        document.querySelectorAll('.unit-grid .unit-card').forEach(function(c) { c.classList.remove('selected'); });
         this.closest('.unit-card').classList.add('selected');
         selectedUnit = {
             id:    this.value,
