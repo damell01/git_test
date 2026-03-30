@@ -281,7 +281,7 @@ layout_start('Edit Dumpster', 'inventory');
                 <?php endif; ?>
                 <input type="file" id="image" name="image" class="form-control"
                        accept="image/jpeg,image/png,image/gif,image/webp">
-                <small class="text-muted">Max 5 MB — JPG, PNG, or WebP. Upload a new photo to replace the current one.</small>
+                <small class="text-muted">Max 5 MB — JPG, PNG, GIF, or WebP. Upload a new photo to replace the current one.</small>
             </div>
 
             <!-- Submit -->

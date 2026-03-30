@@ -305,8 +305,7 @@ $stripe_pub_key = get_setting('stripe_publishable_key', '');
                          alt="<?= htmlspecialchars($u['unit_code'], ENT_QUOTES, 'UTF-8') ?>"
                          style="width:100%;border-radius:4px;margin-bottom:.5rem;object-fit:cover;max-height:80px;">
                     <?php endif; ?>
-                    <div class="unit-size-label"><?= htmlspecialchars($u['size'], ENT_QUOTES, 'UTF-8') ?> Yard</div>
-                    <div class="unit-code"><?= htmlspecialchars($u['unit_code'], ENT_QUOTES, 'UTF-8') ?></div>
+                    <div class="unit-size-label"><?= htmlspecialchars($u['size'], ENT_QUOTES, 'UTF-8') ?></div>                    <div class="unit-code"><?= htmlspecialchars($u['unit_code'], ENT_QUOTES, 'UTF-8') ?></div>
                     <div class="unit-rate">$<?= number_format((float)$u['daily_rate'], 2) ?>/day</div>
                     <div class="unit-type-badge"><?= htmlspecialchars(ucfirst($u['type']), ENT_QUOTES, 'UTF-8') ?></div>
                 </label>

@@ -236,7 +236,7 @@ layout_start('Add Dumpster', 'inventory');
             <!-- Image -->
             <div class="col-12">
                 <label class="form-label" for="image">
-                    Dumpster Photo <span style="color:var(--gy);font-size:.8rem;">(optional, max 5 MB — JPG/PNG/WebP)</span>
+                    Dumpster Photo <span style="color:var(--gy);font-size:.8rem;">(optional, max 5 MB — JPG/PNG/GIF/WebP)</span>
                 </label>
                 <input type="file" id="image" name="image" class="form-control"
                        accept="image/jpeg,image/png,image/gif,image/webp">

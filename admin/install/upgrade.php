@@ -22,7 +22,7 @@ if (!$isCli) {
     $provided = $_GET['secret'] ?? '';
     if ($provided !== UPGRADE_SECRET || UPGRADE_SECRET === 'change-this-to-a-random-string-before-use') {
         http_response_code(403);
-        die('<pre>Access denied. Set UPGRADE_SECRET in upgrade.php and pass ?secret=YOUR_SECRET in the URL.</pre>');
+        die('<pre>Access denied. Set a custom UPGRADE_SECRET in upgrade.php and pass ?secret=YOUR_SECRET in the URL.</pre>');
     }
     header('Content-Type: text/plain; charset=utf-8');
 }
