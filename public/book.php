@@ -760,6 +760,11 @@ function submitBooking() {
     .then(function(r) { return r.json(); })
     .then(function(data) {
         if (data.success) {
+            // Offer push notifications using the customer's email or phone as identifier
+            var pushId = email || phone;
+            if (pushId) {
+                requestPushPermission(pushId);
+            }
             if (data.checkout_url) {
                 window.location.href = data.checkout_url;
             } else {
@@ -779,6 +784,57 @@ function submitBooking() {
         btnEl.disabled      = false;
         btnEl.innerHTML     = '<i class="fas fa-calendar-check"></i> Confirm Booking';
     });
+}
+</script>
+
+    <script>
+// ── Push Notification Helper ───────────────────────────────────────────────────
+var _pushIdentifier = '';
+
+function urlBase64ToUint8Array(base64String) {
+    var padding = '='.repeat((4 - base64String.length % 4) % 4);
+    var base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    var raw     = window.atob(base64);
+    var arr     = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; ++i) arr[i] = raw.charCodeAt(i);
+    return arr;
+}
+
+function subscribeToPush(identifier) {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    navigator.serviceWorker.ready.then(function(reg) {
+        fetch('/api/push-subscribe.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'getVapidKey' }) })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (!d.vapidPublicKey) return;
+                return reg.pushManager.subscribe({
+                    userVisibleOnly:      true,
+                    applicationServerKey: urlBase64ToUint8Array(d.vapidPublicKey)
+                });
+            })
+            .then(function(sub) {
+                if (!sub) return;
+                return fetch('/api/push-subscribe.php', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ action: 'subscribe', subscription: sub.toJSON(), identifier: identifier })
+                });
+            })
+            .catch(function() {});
+    });
+}
+
+function requestPushPermission(identifier) {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'granted') {
+        subscribeToPush(identifier);
+        return;
+    }
+    if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(function(perm) {
+            if (perm === 'granted') subscribeToPush(identifier);
+        });
+    }
 }
 </script>
 

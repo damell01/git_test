@@ -7,7 +7,7 @@
  *   - No offline fallback for admin pages (auth state depends on server session).
  */
 
-const CACHE_VERSION = 'tp-admin-v1';
+const CACHE_VERSION = 'tp-admin-v2';
 
 const PRECACHE_URLS = [
   '/admin/assets/css/app.css',
@@ -100,3 +100,34 @@ async function networkFirst(request) {
     return cached || new Response('', { status: 503, statusText: 'Service Unavailable' });
   }
 }
+
+// ── Push Notifications ─────────────────────────────────────────────────────
+self.addEventListener('push', (event) => {
+  let data = { title: 'Trash Panda Admin', body: 'You have a new notification.' };
+  if (event.data) {
+    try { data = event.data.json(); } catch { data.body = event.data.text(); }
+  }
+  const title   = data.title  || 'Trash Panda Admin';
+  const options = {
+    body:    data.body  || '',
+    icon:    data.icon  || '/admin/assets/img/icon-192.png',
+    badge:   data.badge || '/admin/assets/img/icon-192.png',
+    data:    { url: data.url || '/admin/dashboard.php' },
+    vibrate: [200, 100, 200],
+    requireInteraction: true,
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/admin/dashboard.php';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url === url && 'focus' in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow(url);
+    })
+  );
+});

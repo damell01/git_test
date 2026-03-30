@@ -50,7 +50,7 @@ if ($event->type === 'checkout.session.completed') {
 
     if (!empty($session_id)) {
         $booking = db_fetch(
-            'SELECT id, booking_number FROM bookings WHERE stripe_session_id = ? LIMIT 1',
+            'SELECT id, booking_number, customer_name, total_amount FROM bookings WHERE stripe_session_id = ? LIMIT 1',
             [$session_id]
         );
 
@@ -63,12 +63,37 @@ if ($event->type === 'checkout.session.completed') {
             ], 'id', (int)$booking['id']);
 
             // Mark dumpster as reserved now that payment is confirmed
-            $paid_booking = db_fetch('SELECT dumpster_id FROM bookings WHERE id = ? LIMIT 1', [(int)$booking['id']]);
+            $paid_booking = db_fetch('SELECT dumpster_id, customer_email, customer_phone FROM bookings WHERE id = ? LIMIT 1', [(int)$booking['id']]);
             if ($paid_booking && !empty($paid_booking['dumpster_id'])) {
                 db_update('dumpsters', [
                     'status'     => 'reserved',
                     'updated_at' => date('Y-m-d H:i:s'),
                 ], 'id', (int)$paid_booking['dumpster_id']);
+            }
+
+            // Push notification to admins on confirmed Stripe payment
+            $autoload_push = $_admin_root . '/vendor/autoload.php';
+            if (file_exists($autoload_push)) {
+                require_once $autoload_push;
+            }
+            if (file_exists(INC_PATH . '/push.php')) {
+                require_once INC_PATH . '/push.php';
+                $bk_num   = $booking['booking_number'] ?? '';
+                $cust     = $booking['customer_name']  ?? 'Customer';
+                $total    = '$' . number_format((float)($booking['total_amount'] ?? 0), 2);
+                $view_url = defined('APP_URL') ? APP_URL . '/modules/bookings/index.php' : '/admin/modules/bookings/index.php';
+                push_notify_admins(
+                    '💳 Payment Received — ' . $bk_num,
+                    $cust . ' paid ' . $total . ' via Stripe',
+                    $view_url
+                );
+                // Notify customer via push too
+                foreach (array_filter([
+                    !empty($paid_booking['customer_email']) ? strtolower(trim($paid_booking['customer_email'])) : '',
+                    !empty($paid_booking['customer_phone']) ? preg_replace('/\D/', '', $paid_booking['customer_phone']) : '',
+                ]) as $id) {
+                    push_notify_customer($id, '✅ Payment Confirmed — ' . $bk_num, 'Your Stripe payment of ' . $total . ' has been received.');
+                }
             }
         }
     }
