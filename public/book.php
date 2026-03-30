@@ -9,9 +9,9 @@ require_once INC_PATH . '/db.php';
 require_once INC_PATH . '/helpers.php';
 
 $units = db_fetchall(
-    "SELECT id, unit_code, type, size, daily_rate, image
+    "SELECT id, unit_code, type, size, daily_rate, image, status
      FROM dumpsters
-     WHERE active = 1 AND status = 'available'
+     WHERE active = 1 AND status != 'maintenance'
      ORDER BY daily_rate ASC, size ASC, unit_code ASC"
 );
 
@@ -231,6 +231,34 @@ $stripe_pub_key = get_setting('stripe_publishable_key', '');
         }
         .book-nav-brand span { color: var(--orange); }
 
+        /* Unit unavailable overlay */
+        .unit-card.unavailable {
+            opacity: .5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .unit-card.date-unavailable {
+            opacity: .55;
+            cursor: not-allowed;
+            pointer-events: none;
+            border-color: rgba(239,68,68,.5) !important;
+            background: rgba(239,68,68,.05) !important;
+        }
+        .unit-status-badge {
+            display: inline-block;
+            font-size: .65rem;
+            font-weight: 700;
+            border-radius: 4px;
+            padding: 2px 7px;
+            margin-top: .3rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+        .unit-status-available  { background: rgba(34,197,94,.15); color: #86efac; border: 1px solid rgba(34,197,94,.3); }
+        .unit-status-reserved   { background: rgba(239,68,68,.15); color: #fca5a5; border: 1px solid rgba(239,68,68,.3); }
+        .unit-status-in_use     { background: rgba(239,68,68,.15); color: #fca5a5; border: 1px solid rgba(239,68,68,.3); }
+        .unit-status-checking   { background: rgba(249,115,22,.12); color: #fdba74; border: 1px solid rgba(249,115,22,.3); }
+
         /* Loading spinner */
         .spinner-inline {
             width: 1rem; height: 1rem;
@@ -287,27 +315,38 @@ $stripe_pub_key = get_setting('stripe_publishable_key', '');
         <div class="book-card">
             <h2><i class="fas fa-dumpster"></i> Select a Unit</h2>
             <?php if (empty($units)): ?>
-                <p style="color:var(--gray);">No units are currently available for online booking. Please call us!</p>
+                <p style="color:var(--gray);">No units are currently available for online booking. Please call us to check availability!</p>
             <?php else: ?>
             <div class="unit-grid">
-                <?php foreach ($units as $u): ?>
-                <label class="unit-card<?= ((int)$u['id'] === $preselect_unit_id) ? ' selected' : '' ?>"
-                       for="unit_<?= (int)$u['id'] ?>">
+                <?php
+                $statusLabels = ['reserved' => 'Reserved', 'in_use' => 'In Use'];
+                foreach ($units as $u):
+                    $isUnavailable = in_array($u['status'], ['reserved', 'in_use'], true);
+                    $statusLabel   = $statusLabels[$u['status']] ?? 'Available';
+                    $statusClass   = 'unit-status-' . ($u['status'] === 'available' ? 'available' : $u['status']);
+                ?>
+                <label class="unit-card<?= ((int)$u['id'] === $preselect_unit_id) ? ' selected' : '' ?><?= $isUnavailable ? ' unavailable' : '' ?>"
+                       for="unit_<?= (int)$u['id'] ?>"
+                       data-unit-id="<?= (int)$u['id'] ?>">
                     <input type="radio" name="unit_id" id="unit_<?= (int)$u['id'] ?>"
                            value="<?= (int)$u['id'] ?>"
                            data-rate="<?= htmlspecialchars($u['daily_rate'], ENT_QUOTES, 'UTF-8') ?>"
                            data-code="<?= htmlspecialchars($u['unit_code'], ENT_QUOTES, 'UTF-8') ?>"
                            data-size="<?= htmlspecialchars($u['size'], ENT_QUOTES, 'UTF-8') ?>"
                            data-type="<?= htmlspecialchars($u['type'], ENT_QUOTES, 'UTF-8') ?>"
-                           <?= ((int)$u['id'] === $preselect_unit_id) ? 'checked' : '' ?>>
+                           data-status="<?= htmlspecialchars($u['status'], ENT_QUOTES, 'UTF-8') ?>"
+                           <?= ((int)$u['id'] === $preselect_unit_id) ? 'checked' : '' ?>
+                           <?= $isUnavailable ? 'disabled' : '' ?>>
                     <?php if (!empty($u['image'])): ?>
                     <img src="<?= htmlspecialchars($u['image'], ENT_QUOTES, 'UTF-8') ?>"
                          alt="<?= htmlspecialchars($u['unit_code'], ENT_QUOTES, 'UTF-8') ?>"
                          style="width:100%;border-radius:4px;margin-bottom:.5rem;object-fit:cover;max-height:80px;">
                     <?php endif; ?>
-                    <div class="unit-size-label"><?= htmlspecialchars($u['size'], ENT_QUOTES, 'UTF-8') ?></div>                    <div class="unit-code"><?= htmlspecialchars($u['unit_code'], ENT_QUOTES, 'UTF-8') ?></div>
+                    <div class="unit-size-label"><?= htmlspecialchars($u['size'], ENT_QUOTES, 'UTF-8') ?></div>
+                    <div class="unit-code"><?= htmlspecialchars($u['unit_code'], ENT_QUOTES, 'UTF-8') ?></div>
                     <div class="unit-rate">$<?= number_format((float)$u['daily_rate'], 2) ?>/day</div>
                     <div class="unit-type-badge"><?= htmlspecialchars(ucfirst($u['type']), ENT_QUOTES, 'UTF-8') ?></div>
+                    <div class="unit-status-badge <?= $statusClass ?>" data-status-badge="<?= (int)$u['id'] ?>"><?= htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8') ?></div>
                 </label>
                 <?php endforeach; ?>
             </div>
@@ -538,12 +577,69 @@ function triggerAvailCheck() {
 }
 
 function checkAvailability() {
-    var start   = document.getElementById('rental_start').value;
-    var end     = document.getElementById('rental_end').value;
+    var start    = document.getElementById('rental_start').value;
+    var end      = document.getElementById('rental_end').value;
     var statusEl = document.getElementById('avail-status');
 
-    if (!selectedUnit || !start || !end) { statusEl.style.display = 'none'; return; }
-    if (new Date(end) <= new Date(start)) { statusEl.style.display = 'none'; return; }
+    var startDate = new Date(start);
+    var endDate   = new Date(end);
+    if (!start || !end || endDate <= startDate) {
+        // Reset all date-based unavailability when dates are cleared/invalid
+        document.querySelectorAll('.unit-card.date-unavailable').forEach(function(c) {
+            c.classList.remove('date-unavailable');
+            var radio = c.querySelector('input[type="radio"]');
+            if (radio && radio.dataset.status === 'available') {
+                radio.disabled = false;
+                c.style.pointerEvents = '';
+                var badge = document.querySelector('[data-status-badge="' + radio.value + '"]');
+                if (badge) { badge.textContent = 'Available'; badge.className = 'unit-status-badge unit-status-available'; }
+            }
+        });
+        statusEl.style.display = 'none';
+        return;
+    }
+
+    // Show "checking" badge on all available-status units
+    document.querySelectorAll('input[name="unit_id"]').forEach(function(radio) {
+        if (radio.dataset.status === 'available') {
+            var badge = document.querySelector('[data-status-badge="' + radio.value + '"]');
+            if (badge) { badge.textContent = 'Checking…'; badge.className = 'unit-status-badge unit-status-checking'; }
+        }
+    });
+
+    // Batch check all units for selected dates
+    fetch('/api/batch-availability.php?start=' + encodeURIComponent(start) + '&end=' + encodeURIComponent(end))
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.available) return;
+            document.querySelectorAll('input[name="unit_id"]').forEach(function(radio) {
+                if (radio.dataset.status !== 'available') return; // don't touch already-marked units
+                var uid  = radio.value;
+                var card = radio.closest('.unit-card');
+                var badge = document.querySelector('[data-status-badge="' + uid + '"]');
+                var isAvail = data.available[uid] === true;
+                if (isAvail) {
+                    card.classList.remove('date-unavailable');
+                    radio.disabled = false;
+                    if (badge) { badge.textContent = 'Available'; badge.className = 'unit-status-badge unit-status-available'; }
+                } else {
+                    card.classList.add('date-unavailable');
+                    card.classList.remove('selected');
+                    radio.disabled = true;
+                    if (badge) { badge.textContent = 'Booked'; badge.className = 'unit-status-badge unit-status-reserved'; }
+                    // Deselect if this unit was selected
+    if (selectedUnit && selectedUnit.id === uid) {
+                        radio.checked = false;
+                        selectedUnit = null;
+                        document.getElementById('totalDisplay').style.display = 'none';
+                    }
+                }
+            });
+        })
+        .catch(function() { /* silently fail — single-unit check below still runs */ });
+
+    // Also update the selected-unit availability alert as before
+    if (!selectedUnit) { statusEl.style.display = 'none'; return; }
 
     statusEl.style.display = 'block';
     statusEl.textContent   = 'Checking availability…';
