@@ -1,17 +1,25 @@
-# Trash Panda Roll-Offs — Work Order Management System
+# Trash Panda Roll-Offs — Dumpster Rental Website & Work Order System
 
-A web-based work order and customer management system for dumpster roll-off companies.
+A complete dumpster rental business platform including a public-facing website and an internal admin work order management system. Payments are handled outside the system by the business.
+
+## Project Structure
+
+```
+/public/   — Client-facing public website (Home, Sizes, Contact, etc.)
+/admin/    — Internal staff admin panel (protected, login required)
+```
 
 ## Features
 
 - Leads Management
 - Customer Database
 - Quote Builder with print layout
-- Work Order Management
+- Work Order Management (with printable invoice)
 - Dumpster Inventory
 - Scheduling Calendar
 - Reports & Revenue Tracking
 - User & Role Management
+- Public website with quote request form (saves leads to admin database)
 
 ## Tech Stack
 
@@ -143,26 +151,6 @@ Update or delete these through the **Inventory** module after logging in.
 
 ---
 
-## Stripe Setup
-
-1. Create a Stripe account at [stripe.com](https://stripe.com)
-2. Get your API keys from Dashboard → Developers → API Keys
-3. Add to `config/config.php`:
-   - `STRIPE_SECRET_KEY` (sk_live_...)
-   - `STRIPE_PUBLISHABLE_KEY` (pk_live_...)
-4. In Stripe Dashboard, create a webhook pointing to:
-   `https://yourdomain.com/admin/modules/payments/webhook.php`
-5. Add the webhook signing secret to `config/config.php`:
-   - `STRIPE_WEBHOOK_SECRET` (whsec_...)
-6. Register these webhook events:
-   - `payment_intent.succeeded`
-   - `payment_intent.payment_failed`
-   - `charge.refunded`
-
-You can also manage Stripe keys via **Settings → Stripe Configuration** in the admin panel.
-
----
-
 ## Two-Factor Authentication
 
 1. Log in and go to **Settings → Two-Factor Authentication**
@@ -170,16 +158,6 @@ You can also manage Stripe keys via **Settings → Stripe Configuration** in the
 3. Enter the 6-digit code to confirm setup
 4. Save your 8 backup codes in a secure location (shown only once)
 5. Admins can disable 2FA for any user via **Settings → Users**
-
----
-
-## Customer Portal
-
-1. Customers visit: `https://yourdomain.com/admin/modules/portal/`
-2. They enter their email address to receive a magic login link
-3. The link expires in 24 hours
-4. Customers can view their work orders and pay invoices
-5. Portal sessions expire after 2 hours of inactivity
 
 ---
 

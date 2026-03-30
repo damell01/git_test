@@ -287,7 +287,7 @@ require_once __DIR__ . '/includes/header.php';
             <a href="/public/contact.php" class="btn-primary-cta">
                 <i class="bi bi-chat-dots-fill"></i> Request a Free Quote
             </a>
-            <a href="tel:5558675309" class="btn-secondary-cta">
+            <a href="tel:<?= preg_replace('/[^0-9]/','',SITE_PHONE) ?>" class="btn-secondary-cta">
                 <i class="bi bi-telephone-fill"></i> <?php echo SITE_PHONE; ?>
             </a>
         </div>

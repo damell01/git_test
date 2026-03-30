@@ -27,13 +27,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         try {
             $pdo = db();
+            // Build message with rental duration appended if provided
+            $full_message = $old['message'];
+            if (!empty($old['rental_duration'])) {
+                $full_message = trim($full_message . "\n\nRental Duration: " . $old['rental_duration']);
+            }
+            if (!empty($old['delivery_date'])) {
+                $full_message = trim($full_message . "\nPreferred Delivery: " . $old['delivery_date']);
+            }
             $stmt = $pdo->prepare("
                 INSERT INTO leads
                     (name, email, phone, address, city, size_needed, project_type,
-                     rental_duration, source, message, status, created_at)
+                     source, message, status, created_at)
                 VALUES
                     (:name, :email, :phone, :address, :city, :size_needed, :project_type,
-                     :rental_duration, :source, :message, 'new', :created_at)
+                     :source, :message, 'new', :created_at)
             ");
             $stmt->execute([
                 ':name'             => $old['name'],
@@ -43,9 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':city'             => $old['city'],
                 ':size_needed'      => $old['size_needed'],
                 ':project_type'     => $old['project_type'],
-                ':rental_duration'  => $old['rental_duration'],
                 ':source'           => $old['source'],
-                ':message'          => $old['message'],
+                ':message'          => $full_message,
                 ':created_at'       => date('Y-m-d H:i:s'),
             ]);
             $success = true;
