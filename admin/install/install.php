@@ -35,7 +35,7 @@ $fatal  = false;
 // from causing authentication failures (common after copy/paste).
 $dbHost = preg_replace('/^\s+|\s+$/u', '', (string) DB_HOST) ?? (string) DB_HOST;
 $dbName = preg_replace('/^\s+|\s+$/u', '', (string) DB_NAME) ?? (string) DB_NAME;
-$dbUser = preg_replace('/^\s+|\s+$/u', '', (string) DB_USER) ?? (string) DB_USER;
+$dbUser = preg_replace('/\s+/u', '', (string) DB_USER) ?? (string) DB_USER;
 $dbPass = (string) DB_PASS;
 
 /**

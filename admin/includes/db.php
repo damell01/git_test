@@ -15,7 +15,7 @@ function get_db(): PDO
         // Trim config values that commonly pick up accidental whitespace.
         $dbHost = preg_replace('/^\s+|\s+$/u', '', (string) DB_HOST) ?? (string) DB_HOST;
         $dbName = preg_replace('/^\s+|\s+$/u', '', (string) DB_NAME) ?? (string) DB_NAME;
-        $dbUser = preg_replace('/^\s+|\s+$/u', '', (string) DB_USER) ?? (string) DB_USER;
+        $dbUser = preg_replace('/\s+/u', '', (string) DB_USER) ?? (string) DB_USER;
 
         $dsn = sprintf(
             'mysql:host=%s;dbname=%s;charset=%s',
