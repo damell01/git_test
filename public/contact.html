@@ -111,37 +111,40 @@
             <p style="font-family:var(--font-cond);font-size:.9rem;color:var(--gray);margin-bottom:2rem;letter-spacing:.04em;">We'll get back to you within the hour. Fields marked * are required.</p>
 
             <div id="successMsg" class="success-msg"><i class="fas fa-check-circle" style="font-size:1.5rem;margin-bottom:.5rem;display:block;"></i>Your quote request was sent! We'll be in touch shortly.</div>
+            <div id="errorMsg" style="display:none;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);border-radius:var(--radius);padding:1.2rem;margin-bottom:1rem;font-family:var(--font-cond);font-weight:700;font-size:.95rem;color:#f87171;letter-spacing:.03em;"></div>
 
             <form id="quoteForm" novalidate>
+              <!-- Honeypot anti-spam field — hidden from humans -->
+              <input type="text" name="website" tabindex="-1" autocomplete="off" style="position:absolute;opacity:0;pointer-events:none;height:0;width:0;" aria-hidden="true"/>
               <div class="form-row">
-                <div class="form-field"><label>First Name *</label><input type="text" placeholder="John" required/></div>
-                <div class="form-field"><label>Last Name *</label><input type="text" placeholder="Doe" required/></div>
+                <div class="form-field"><label>First Name *</label><input type="text" name="first_name" placeholder="John" required/></div>
+                <div class="form-field"><label>Last Name *</label><input type="text" name="last_name" placeholder="Doe" required/></div>
               </div>
               <div class="form-row">
-                <div class="form-field"><label>Phone Number *</label><input type="tel" placeholder="(251) 555-5555" required/></div>
-                <div class="form-field"><label>Email Address</label><input type="email" placeholder="john@email.com"/></div>
+                <div class="form-field"><label>Phone Number *</label><input type="tel" name="phone" placeholder="(251) 555-5555" required/></div>
+                <div class="form-field"><label>Email Address</label><input type="email" name="email" placeholder="john@email.com"/></div>
               </div>
               <div class="form-field">
                 <label>Delivery Address *</label>
-                <input type="text" placeholder="123 Main St, Gulf Shores, AL 36542" required/>
+                <input type="text" name="address" placeholder="123 Main St, Gulf Shores, AL 36542" required/>
               </div>
               <div class="form-field">
                 <label>Dumpster Size Needed</label>
                 <div class="size-selector">
-                  <label class="size-opt"><input type="radio" name="size" value="10"/><div class="size-opt-num">10</div><div class="size-opt-yd">Yard</div></label>
-                  <label class="size-opt"><input type="radio" name="size" value="20"/><div class="size-opt-num">20</div><div class="size-opt-yd">Yard</div></label>
-                  <label class="size-opt"><input type="radio" name="size" value="30"/><div class="size-opt-num">30</div><div class="size-opt-yd">Yard</div></label>
-                  <label class="size-opt"><input type="radio" name="size" value="40"/><div class="size-opt-num">40</div><div class="size-opt-yd">Yard</div></label>
+                  <label class="size-opt"><input type="radio" name="size" value="10 yard"/><div class="size-opt-num">10</div><div class="size-opt-yd">Yard</div></label>
+                  <label class="size-opt"><input type="radio" name="size" value="20 yard"/><div class="size-opt-num">20</div><div class="size-opt-yd">Yard</div></label>
+                  <label class="size-opt"><input type="radio" name="size" value="30 yard"/><div class="size-opt-num">30</div><div class="size-opt-yd">Yard</div></label>
+                  <label class="size-opt"><input type="radio" name="size" value="40 yard"/><div class="size-opt-num">40</div><div class="size-opt-yd">Yard</div></label>
                 </div>
               </div>
               <div class="form-row">
                 <div class="form-field">
                   <label>Preferred Delivery Date</label>
-                  <input type="date"/>
+                  <input type="date" name="delivery_date"/>
                 </div>
                 <div class="form-field">
                   <label>Project Type</label>
-                  <select>
+                  <select name="project_type">
                     <option value="" disabled selected>Select project type...</option>
                     <option>Home Renovation</option>
                     <option>Roofing Project</option>
@@ -156,9 +159,9 @@
               </div>
               <div class="form-field">
                 <label>Tell Us About Your Project</label>
-                <textarea placeholder="Describe what you're hauling, how long you need it, any access concerns..."></textarea>
+                <textarea name="message" placeholder="Describe what you're hauling, how long you need it, any access concerns..."></textarea>
               </div>
-              <button type="submit" class="submit-btn"><i class="fas fa-paper-plane"></i> Send My Quote Request</button>
+              <button type="submit" class="submit-btn" id="submitBtn"><i class="fas fa-paper-plane"></i> Send My Quote Request</button>
               <p class="form-note"><i class="fas fa-lock" style="color:var(--orange);"></i> Your info is private. We never share or sell it.</p>
             </form>
 
@@ -187,11 +190,69 @@ document.querySelectorAll('.size-opt').forEach(opt => {
   });
 });
 
-// Form submit
-document.getElementById('quoteForm')?.addEventListener('submit', function(e) {
+// Form submit — POST to backend API
+document.getElementById('quoteForm')?.addEventListener('submit', async function(e) {
   e.preventDefault();
-  this.style.display = 'none';
-  document.getElementById('successMsg').style.display = 'block';
+
+  const form      = this;
+  const btn       = document.getElementById('submitBtn');
+  const successEl = document.getElementById('successMsg');
+  const errorEl   = document.getElementById('errorMsg');
+
+  // Collect data
+  const data = {
+    first_name:    form.querySelector('[name="first_name"]')?.value.trim()   || '',
+    last_name:     form.querySelector('[name="last_name"]')?.value.trim()    || '',
+    phone:         form.querySelector('[name="phone"]')?.value.trim()        || '',
+    email:         form.querySelector('[name="email"]')?.value.trim()        || '',
+    address:       form.querySelector('[name="address"]')?.value.trim()      || '',
+    size:          form.querySelector('[name="size"]:checked')?.value        || '',
+    delivery_date: form.querySelector('[name="delivery_date"]')?.value       || '',
+    project_type:  form.querySelector('[name="project_type"]')?.value        || '',
+    message:       form.querySelector('[name="message"]')?.value.trim()      || '',
+    website:       form.querySelector('[name="website"]')?.value             || '',
+  };
+
+  // Basic client-side validation
+  if (!data.first_name) {
+    errorEl.textContent = 'Please enter your first name.';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if (!data.phone && !data.email) {
+    errorEl.textContent = 'Please provide a phone number or email address.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  // Disable button & show loading state
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending…';
+  errorEl.style.display = 'none';
+
+  try {
+    const res  = await fetch('api/contact.php', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(data),
+    });
+    const json = await res.json();
+
+    if (json.success) {
+      form.style.display = 'none';
+      successEl.style.display = 'block';
+    } else {
+      errorEl.textContent = json.error || 'Something went wrong. Please call us directly.';
+      errorEl.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send My Quote Request';
+    }
+  } catch (err) {
+    errorEl.textContent = 'Network error. Please try again or call us at (251) 333-4444.';
+    errorEl.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send My Quote Request';
+  }
 });
 </script>
 </body>

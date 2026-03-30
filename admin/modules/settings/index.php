@@ -46,9 +46,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'logo_path',
         'email_from_name',
         'email_from_email',
+        'notification_emails',
+        'smtp_host',
+        'smtp_port',
+        'smtp_username',
+        'smtp_password',
+        'smtp_encryption',
     ];
 
     foreach ($fields as $key) {
+    if ($key === 'smtp_password' && trim($_POST[$key] ?? '') === '') {
+        // Only skip if a password is already saved; allow setting one from scratch
+        if (!empty(get_setting('smtp_password'))) {
+            continue;
+        }
+    }
         $value = trim($_POST[$key] ?? '');
         set_setting($key, $value);
     }
@@ -224,11 +236,70 @@ layout_start('Settings', 'settings');
             </div>
 
             <div class="col-12">
+                <label class="form-label" for="notification_emails">
+                    Notification Email(s)
+                    <span style="font-weight:400;color:var(--gy);font-size:.8rem;"> — receive alerts for new contact-form leads</span>
+                </label>
+                <input type="text" id="notification_emails" name="notification_emails" class="form-control"
+                       placeholder="admin@example.com, manager@example.com"
+                       value="<?= e(get_setting('notification_emails', get_setting('company_email', ''))) ?>">
+                <div class="form-text" style="color:var(--gy);">Comma-separated. These addresses get an email whenever the public contact form is submitted.</div>
+            </div>
+
+        </div>
+
+        <h6 class="mb-3 mt-2" style="font-weight:600;border-bottom:1px solid var(--st);padding-bottom:.5rem;">
+            <i class="fa-solid fa-server" style="color:var(--or);"></i> SMTP Settings
+            <span style="font-weight:400;font-size:.8rem;color:var(--gy);"> — leave Host blank to use PHP mail()</span>
+        </h6>
+
+        <div class="row g-3 mb-4">
+
+            <div class="col-md-8">
+                <label class="form-label" for="smtp_host">SMTP Host</label>
+                <input type="text" id="smtp_host" name="smtp_host" class="form-control"
+                       placeholder="smtp.mailgun.org / smtp.sendgrid.net / smtp.gmail.com"
+                       value="<?= e(get_setting('smtp_host', '')) ?>">
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label" for="smtp_port">SMTP Port</label>
+                <input type="number" id="smtp_port" name="smtp_port" class="form-control"
+                       placeholder="587"
+                       value="<?= e(get_setting('smtp_port', '587')) ?>">
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label" for="smtp_username">SMTP Username</label>
+                <input type="text" id="smtp_username" name="smtp_username" class="form-control"
+                       value="<?= e(get_setting('smtp_username', '')) ?>">
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label" for="smtp_password">SMTP Password</label>
+                <input type="password" id="smtp_password" name="smtp_password" class="form-control"
+                       placeholder="<?= get_setting('smtp_password') ? '••••••••' : 'Enter password' ?>"
+                       value="">
+                <div class="form-text" style="color:var(--gy);">Leave blank to keep existing password.</div>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label" for="smtp_encryption">Encryption</label>
+                <select id="smtp_encryption" name="smtp_encryption" class="form-select">
+                    <?php
+                    $enc_cur = get_setting('smtp_encryption', 'tls');
+                    foreach (['tls' => 'TLS (STARTTLS — port 587)', 'ssl' => 'SSL (port 465)', 'none' => 'None (not recommended)'] as $val => $lbl): ?>
+                    <option value="<?= e($val) ?>" <?= $enc_cur === $val ? 'selected' : '' ?>><?= e($lbl) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div class="col-12">
                 <div class="alert alert-info mb-0" style="font-size:.85rem;">
                     <i class="fa-solid fa-circle-info me-2"></i>
-                    <strong>SMTP Note:</strong> The system uses PHP <code>mail()</code>.
-                    For reliable email delivery, configure your hosting's built-in SMTP relay,
-                    or use SendGrid/Mailgun as an SMTP relay via your hosting control panel.
+                    <strong>PHPMailer:</strong> Install PHPMailer via Composer for reliable SMTP delivery.
+                    Run <code>composer install</code> inside the <code>admin/</code> folder.
+                    Without it, the system falls back to PHP <code>mail()</code>.
                 </div>
             </div>
 

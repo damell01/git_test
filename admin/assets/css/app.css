@@ -1,6 +1,6 @@
 /* ==========================================================================
    Trash Panda Roll-Offs — Admin App Styles
-   Dark industrial theme
+   Dark industrial theme — aligned with public site design system
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -18,11 +18,25 @@
     --wh:    #F8F8F8;
     --or:    #F97316;
     --or-d:  #C2410C;
-    --bl:    #3B82F6;
-    --gr:    #10B981;
+    --or-xd: #9A3412;
+    --or-l:  #FED7AA;
     --am:    #F59E0B;
+    --bl:    #3B82F6;
+    --bl-d:  #1D4ED8;
+    --gr:    #10B981;
     --rd:    #EF4444;
     --pu:    #8B5CF6;
+
+    --font-display: 'Black Han Sans', sans-serif;
+    --font-cond:    'Barlow Condensed', sans-serif;
+    --font-body:    'Barlow', sans-serif;
+
+    --radius-sm: 6px;
+    --radius:    10px;
+    --radius-lg: 16px;
+
+    --shadow-orange: 0 20px 60px rgba(249,115,22,0.2);
+    --transition:    all 0.25s cubic-bezier(0.4,0,0.2,1);
 }
 
 /* --------------------------------------------------------------------------
@@ -37,7 +51,7 @@
 body {
     background-color: var(--bg);
     color: var(--wh);
-    font-family: 'Barlow', sans-serif;
+    font-family: var(--font-body);
     font-size: 16px;
     margin: 0;
     padding: 0;
@@ -71,6 +85,11 @@ a:hover {
     border-right: 1px solid var(--st);
 }
 
+/* Scrollbar */
+.tp-sidebar::-webkit-scrollbar { width: 4px; }
+.tp-sidebar::-webkit-scrollbar-track { background: var(--dk1); }
+.tp-sidebar::-webkit-scrollbar-thumb { background: var(--or); border-radius: 2px; }
+
 /* Brand */
 .sb-brand {
     padding: 1.25rem 1rem;
@@ -79,21 +98,32 @@ a:hover {
     align-items: center;
     gap: .75rem;
     flex-shrink: 0;
+    background: linear-gradient(135deg, var(--dk1) 0%, rgba(249,115,22,0.04) 100%);
 }
 
 .sb-brand img {
-    max-height: 40px;
-    width: auto;
+    height: 40px;
+    width: 40px;
+    border-radius: 50%;
+    object-fit: contain;
+    border: 2px solid var(--or);
+    box-shadow: 0 0 14px rgba(249,115,22,0.3);
     display: block;
+    flex-shrink: 0;
 }
 
 .sb-brand-text {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-size: 1.1rem;
-    font-weight: 700;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    line-height: 1.15;
     color: var(--wh);
     text-transform: uppercase;
-    letter-spacing: .05em;
+    letter-spacing: .02em;
+}
+
+.sb-brand-text em {
+    font-style: normal;
+    color: var(--or);
 }
 
 /* Nav */
@@ -115,13 +145,14 @@ a:hover {
     padding: .6rem 1rem;
     color: var(--gl);
     text-decoration: none;
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: var(--font-cond);
     font-size: .95rem;
-    font-weight: 500;
-    letter-spacing: .03em;
-    transition: color .15s ease, background-color .15s ease, border-left-color .15s ease;
+    font-weight: 600;
+    letter-spacing: .04em;
+    transition: var(--transition);
     border-left: 3px solid transparent;
     white-space: nowrap;
+    text-transform: uppercase;
 }
 
 .sb-item:hover {
@@ -133,7 +164,7 @@ a:hover {
 .sb-item.active {
     color: var(--or);
     border-left-color: var(--or);
-    background-color: rgba(249, 115, 22, .08);
+    background: linear-gradient(90deg, rgba(249,115,22,0.12) 0%, rgba(249,115,22,0.03) 100%);
 }
 
 .sb-item .sb-icon {
@@ -148,13 +179,14 @@ a:hover {
 }
 
 .sb-count {
-    background-color: var(--or);
-    color: #fff;
+    background: var(--or);
+    color: var(--bg);
     font-size: .65rem;
-    font-weight: 700;
-    padding: 1px 6px;
+    font-weight: 900;
+    padding: 1px 7px;
     border-radius: 10px;
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: var(--font-cond);
+    letter-spacing: .06em;
     line-height: 1.4;
     flex-shrink: 0;
 }
@@ -170,6 +202,8 @@ a:hover {
 .sb-user {
     font-size: .8rem;
     color: var(--gl);
+    font-family: var(--font-cond);
+    letter-spacing: .03em;
 }
 
 /* --------------------------------------------------------------------------
@@ -188,6 +222,16 @@ a:hover {
     padding: 0 1.5rem;
     gap: 1rem;
     z-index: 99;
+}
+
+.tp-topbar-title {
+    font-family: var(--font-cond);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--wh);
+    flex: 1;
 }
 
 /* Hamburger button hidden on desktop, shown on mobile */
@@ -230,7 +274,7 @@ a:hover {
 }
 
 .page-title {
-    font-family: 'Black Han Sans', sans-serif;
+    font-family: var(--font-display);
     font-size: 1.75rem;
     font-weight: 400;
     color: var(--wh);
@@ -267,11 +311,18 @@ a:hover {
 .kpi-card {
     background-color: var(--dk1);
     border: 1px solid var(--st);
-    border-radius: 8px;
+    border-radius: var(--radius);
     padding: 1.25rem;
     display: flex;
     align-items: center;
     gap: 1rem;
+    transition: var(--transition);
+}
+
+.kpi-card:hover {
+    border-color: rgba(249,115,22,0.35);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-orange);
 }
 
 /* Accent left borders */
@@ -305,7 +356,7 @@ a:hover {
 }
 
 .kpi-val {
-    font-family: 'Black Han Sans', sans-serif;
+    font-family: var(--font-display);
     font-size: 1.75rem;
     font-weight: 400;
     line-height: 1;
@@ -313,7 +364,7 @@ a:hover {
 }
 
 .kpi-label {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: var(--font-cond);
     font-size: .8rem;
     color: var(--gy);
     text-transform: uppercase;
@@ -327,8 +378,9 @@ a:hover {
 .tp-card {
     background-color: var(--dk1);
     border: 1px solid var(--st);
-    border-radius: 8px;
+    border-radius: var(--radius-lg);
     margin-bottom: 1.5rem;
+    transition: var(--transition);
 }
 
 .tp-card-header {
@@ -339,15 +391,17 @@ a:hover {
     justify-content: space-between;
     gap: .75rem;
     flex-wrap: wrap;
+    background: linear-gradient(90deg, rgba(249,115,22,0.04) 0%, transparent 60%);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
 .tp-card-title {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: var(--font-cond);
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--wh);
     text-transform: uppercase;
-    letter-spacing: .05em;
+    letter-spacing: .08em;
     margin: 0;
 }
 
@@ -371,7 +425,7 @@ a:hover {
 .tp-table th {
     background-color: var(--dk3);
     color: var(--gl);
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: var(--font-cond);
     font-size: .8rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -419,7 +473,7 @@ a:hover {
     gap: .35rem;
     padding: .35rem .875rem;
     border-radius: 20px;
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: var(--font-cond);
     font-size: .85rem;
     font-weight: 500;
     color: var(--gl);
@@ -450,7 +504,7 @@ a:hover {
     border-radius: 6px;
     padding: .4rem .75rem;
     font-size: .875rem;
-    font-family: 'Barlow', sans-serif;
+    font-family: var(--font-body);
     outline: none;
     transition: border-color .15s ease;
 }
@@ -470,14 +524,15 @@ a:hover {
 .btn-tp-outline,
 .btn-tp-ghost,
 .btn-tp-danger {
-    font-family: 'Barlow Condensed', sans-serif;
-    font-weight: 600;
+    font-family: var(--font-cond);
+    font-weight: 700;
     font-size: .9rem;
-    letter-spacing: .04em;
+    letter-spacing: .07em;
+    text-transform: uppercase;
     padding: .45rem 1.1rem;
-    border-radius: 6px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+    transition: var(--transition);
     text-decoration: none;
     display: inline-flex;
     align-items: center;
@@ -489,16 +544,18 @@ a:hover {
 
 /* Primary — orange fill */
 .btn-tp-primary {
-    background-color: var(--or);
+    background: var(--or);
     border: 1px solid var(--or);
-    color: #fff;
+    color: var(--bg);
 }
 
 .btn-tp-primary:hover {
-    background-color: var(--or-d);
+    background: var(--or-d);
     border-color: var(--or-d);
     color: #fff;
     text-decoration: none;
+    box-shadow: 0 8px 24px rgba(249,115,22,0.35);
+    transform: translateY(-1px);
 }
 
 /* Outline — orange border */
@@ -509,9 +566,10 @@ a:hover {
 }
 
 .btn-tp-outline:hover {
-    background-color: rgba(249, 115, 22, .1);
-    color: var(--or);
+    background-color: var(--or);
+    color: var(--bg);
     text-decoration: none;
+    box-shadow: 0 8px 24px rgba(249,115,22,0.25);
 }
 
 /* Ghost — subtle border */
@@ -524,6 +582,7 @@ a:hover {
 .btn-tp-ghost:hover {
     border-color: var(--gl);
     color: var(--wh);
+    background-color: rgba(255,255,255,0.05);
     text-decoration: none;
 }
 
@@ -565,7 +624,7 @@ a:hover {
     display: inline-block;
     padding: 2px 8px;
     border-radius: 4px;
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: var(--font-cond);
     font-size: .75rem;
     font-weight: 600;
     letter-spacing: .04em;
@@ -610,7 +669,7 @@ a:hover {
 
 .tp-label {
     display: block;
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: var(--font-cond);
     font-size: .85rem;
     font-weight: 600;
     color: var(--gl);
@@ -629,7 +688,7 @@ a:hover {
     border-radius: 6px;
     padding: .45rem .75rem;
     font-size: .9rem;
-    font-family: 'Barlow', sans-serif;
+    font-family: var(--font-body);
     outline: none;
     transition: border-color .15s ease, background-color .15s ease;
     display: block;
@@ -711,7 +770,7 @@ a:hover {
 .tl-meta {
     font-size: .75rem;
     color: var(--gy);
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: var(--font-cond);
 }
 
 .tl-text {
@@ -737,7 +796,7 @@ a:hover {
     color: var(--gl);
     border-radius: 4px;
     text-decoration: none;
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: var(--font-cond);
     font-size: .85rem;
     transition: color .15s ease, border-color .15s ease, background-color .15s ease;
     display: inline-flex;
@@ -778,7 +837,7 @@ a:hover {
 }
 
 .detail-field-label {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: var(--font-cond);
     font-size: .8rem;
     color: var(--gy);
     text-transform: uppercase;
@@ -859,7 +918,7 @@ a:hover {
     border-radius: 6px;
     text-decoration: none;
     color: var(--gl);
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: var(--font-cond);
     font-size: .75rem;
     text-transform: uppercase;
     letter-spacing: .04em;
@@ -893,7 +952,7 @@ a:hover {
 .cal-dow {
     background-color: var(--dk3);
     padding: .375rem .5rem;
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: var(--font-cond);
     font-size: .75rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -925,7 +984,7 @@ a:hover {
 }
 
 .cal-day-num {
-    font-family: 'Barlow Condensed', sans-serif;
+    font-family: var(--font-cond);
     font-size: .85rem;
     color: var(--gl);
 }
@@ -962,7 +1021,7 @@ a:hover {
    -------------------------------------------------------------------------- */
 .alert {
     border-radius: 6px;
-    font-family: 'Barlow', sans-serif;
+    font-family: var(--font-body);
     font-size: .9rem;
     border-width: 1px;
 }
@@ -1110,3 +1169,72 @@ hr {
         grid-template-columns: repeat(3, 1fr);
     }
 }
+
+/* --------------------------------------------------------------------------
+   Bootstrap form-control dark overrides — aligns with the public site design
+   -------------------------------------------------------------------------- */
+.form-control,
+.form-select {
+    background-color: var(--dk2);
+    border: 1px solid var(--st2);
+    color: var(--wh);
+    border-radius: var(--radius);
+    font-family: var(--font-body);
+    font-size: .9rem;
+    transition: border-color .2s, box-shadow .2s;
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: var(--dk3);
+    border-color: var(--or);
+    color: var(--wh);
+    box-shadow: 0 0 0 3px rgba(249,115,22,0.15);
+}
+
+.form-control::placeholder {
+    color: var(--gy);
+}
+
+.form-select option {
+    background-color: var(--dk3);
+    color: var(--wh);
+}
+
+.form-label {
+    font-family: var(--font-cond);
+    font-size: .82rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--gl);
+    margin-bottom: .4rem;
+}
+
+.form-text {
+    font-family: var(--font-cond);
+    font-size: .78rem;
+    letter-spacing: .03em;
+}
+
+/* Orange accent line under page section titles */
+.section-divider {
+    width: 48px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--or), var(--am));
+    border-radius: 2px;
+    margin: .5rem 0 1.5rem;
+}
+
+/* Gradient text utility */
+.gradient-text {
+    background: linear-gradient(135deg, var(--or) 0%, var(--am) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Orange scrollbar for the whole page */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--or); border-radius: 3px; }
