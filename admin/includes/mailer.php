@@ -386,6 +386,25 @@ function notify_booking_confirmed(array $booking): void
         'New Booking — ' . $bk_num . ' (' . ($booking['customer_name'] ?? '') . ')',
         $body
     );
+
+    // ── Push notifications ────────────────────────────────────────────────────
+    if (function_exists('push_notify_admins')) {
+        $admin_url = defined('APP_URL') ? APP_URL . '/modules/bookings/index.php' : '/admin/modules/bookings/index.php';
+        push_notify_admins(
+            '🗑️ New Booking — ' . $bk_num,
+            ($booking['customer_name'] ?? 'Customer') . ' · ' . $total,
+            $admin_url
+        );
+    }
+    if (function_exists('push_notify_customer')) {
+        $identifiers = array_filter([
+            !empty($booking['customer_email']) ? strtolower(trim($booking['customer_email'])) : '',
+            !empty($booking['customer_phone']) ? preg_replace('/\D/', '', $booking['customer_phone']) : '',
+        ]);
+        foreach ($identifiers as $id) {
+            push_notify_customer($id, 'Booking Confirmed — ' . $bk_num, 'Your rental starts ' . $start);
+        }
+    }
 }
 
 /**
@@ -418,6 +437,17 @@ function notify_booking_expiry_reminder(array $booking): void
 
     $html = email_template('Rental Ending Soon — ' . $bk_num, $body);
     send_email($email, 'Your Dumpster Rental Ends on ' . $end . ' — ' . $bk_num, $html);
+
+    // ── Push notifications ────────────────────────────────────────────────────
+    if (function_exists('push_notify_customer')) {
+        $identifiers = array_filter([
+            filter_var($email, FILTER_VALIDATE_EMAIL) ? strtolower($email) : '',
+            !empty($booking['customer_phone']) ? preg_replace('/\D/', '', $booking['customer_phone']) : '',
+        ]);
+        foreach ($identifiers as $id) {
+            push_notify_customer($id, '⏰ Rental Ending Soon — ' . $bk_num, 'Your rental ends on ' . $end . '. Contact us to extend or schedule pickup.');
+        }
+    }
 }
 
 /**
@@ -440,4 +470,15 @@ function notify_booking_cancelled(array $booking): void
 
     $html = email_template('Booking Cancelled — ' . $bk_num, $body);
     send_email($email, 'Booking Cancelled — ' . $bk_num, $html);
+
+    // ── Push notifications ────────────────────────────────────────────────────
+    if (function_exists('push_notify_customer')) {
+        $identifiers = array_filter([
+            filter_var($email, FILTER_VALIDATE_EMAIL) ? strtolower($email) : '',
+            !empty($booking['customer_phone']) ? preg_replace('/\D/', '', $booking['customer_phone']) : '',
+        ]);
+        foreach ($identifiers as $id) {
+            push_notify_customer($id, 'Booking Cancelled — ' . $bk_num, 'Your booking has been cancelled. Contact us if this was an error.');
+        }
+    }
 }

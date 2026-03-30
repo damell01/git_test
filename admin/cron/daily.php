@@ -16,6 +16,14 @@ require_once INC_PATH . '/helpers.php';
 require_once INC_PATH . '/auth.php';
 require_once INC_PATH . '/mailer.php';
 
+// Load push support when the library is available
+$_push_autoload = ROOT_PATH . '/vendor/autoload.php';
+if (file_exists($_push_autoload)) {
+    require_once $_push_autoload;
+}
+require_once INC_PATH . '/push.php';
+unset($_push_autoload);
+
 // ── Auth: accept cron key or CLI ─────────────────────────────────────────────
 $is_cli = (PHP_SAPI === 'cli');
 
@@ -89,7 +97,63 @@ try {
     $log[] = '  → ERROR: ' . $e->getMessage();
 }
 
-// ── Task 4: Log completion ────────────────────────────────────────────────────
+// ── Task 4: Booking expiry reminders (3 days out) ────────────────────────────
+$log[] = '';
+$log[] = '[Task 4] Booking Expiry Reminders (3 days)';
+try {
+    $remind_date = date('Y-m-d', strtotime('+3 days'));
+    $expiring    = db_fetchall(
+        "SELECT * FROM bookings
+          WHERE rental_end = ?
+            AND booking_status IN ('confirmed','paid')
+          ORDER BY id ASC",
+        [$remind_date]
+    );
+    $count = 0;
+    foreach ($expiring as $bk) {
+        notify_booking_expiry_reminder($bk);
+
+        // Push to admins once per batch (only first iteration)
+        if ($count === 0) {
+            $admin_url = defined('APP_URL') ? APP_URL . '/modules/bookings/index.php' : '/admin/modules/bookings/index.php';
+            push_notify_admins(
+                '⏳ Rentals Ending in 3 Days',
+                count($expiring) . ' booking(s) end on ' . date('M j, Y', strtotime($remind_date)),
+                $admin_url
+            );
+        }
+        $count++;
+    }
+    $log[] = '  → Sent reminders for ' . $count . ' booking(s)';
+} catch (\Throwable $e) {
+    $log[] = '  → ERROR: ' . $e->getMessage();
+}
+
+// ── Task 5: Push alert for overdue bookings ───────────────────────────────────
+$log[] = '';
+$log[] = '[Task 5] Push Alert: Overdue Bookings';
+try {
+    $today    = date('Y-m-d');
+    $overdue  = db_fetchall(
+        "SELECT COUNT(*) AS cnt FROM bookings
+          WHERE rental_end < ? AND booking_status IN ('confirmed','paid')",
+        [$today]
+    );
+    $cnt = (int)($overdue[0]['cnt'] ?? 0);
+    if ($cnt > 0) {
+        $admin_url = defined('APP_URL') ? APP_URL . '/modules/bookings/index.php' : '/admin/modules/bookings/index.php';
+        push_notify_admins(
+            '🚨 Overdue Rentals',
+            $cnt . ' booking(s) are past their rental end date.',
+            $admin_url
+        );
+    }
+    $log[] = '  → ' . $cnt . ' overdue booking(s) notified';
+} catch (\Throwable $e) {
+    $log[] = '  → ERROR: ' . $e->getMessage();
+}
+
+// ── Task 6: Log completion ────────────────────────────────────────────────────
 $elapsed = round(microtime(true) - $start, 2);
 $log[]   = '';
 $log[]   = '[Task 4] Logging to activity_log';

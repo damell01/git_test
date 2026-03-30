@@ -361,6 +361,65 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
+<!-- Push Notification Registration (Admin) -->
+<script>
+(function() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;
+
+    function urlBase64ToUint8Array(b64) {
+        var pad = '='.repeat((4 - b64.length % 4) % 4);
+        var s   = (b64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+        var raw = atob(s);
+        var out = new Uint8Array(raw.length);
+        for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+        return out;
+    }
+
+    function subscribeAdmin() {
+        navigator.serviceWorker.ready.then(function(reg) {
+            // First get the VAPID public key (action=getVapidKey triggers key generation server-side)
+            fetch('<?= htmlspecialchars($app_url, ENT_QUOTES, 'UTF-8') ?>/api/push-subscribe.php', {
+                method:      'POST',
+                headers:     { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body:        JSON.stringify({ action: 'getVapidKey' })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (!d.vapidPublicKey) return;
+                return reg.pushManager.subscribe({
+                    userVisibleOnly:      true,
+                    applicationServerKey: urlBase64ToUint8Array(d.vapidPublicKey)
+                });
+            })
+            .then(function(sub) {
+                if (!sub) return;
+                return fetch('<?= htmlspecialchars($app_url, ENT_QUOTES, 'UTF-8') ?>/api/push-subscribe.php', {
+                    method:      'POST',
+                    headers:     { 'Content-Type': 'application/json' },
+                    credentials: 'same-origin',
+                    body:        JSON.stringify({ action: 'subscribe', subscription: sub.toJSON() })
+                });
+            })
+            .catch(function() {});
+        });
+    }
+
+    if (Notification.permission === 'granted') {
+        subscribeAdmin();
+    } else if (Notification.permission !== 'denied') {
+        // Show a subtle one-time prompt the first time
+        var _prompted = sessionStorage.getItem('tp_push_prompted');
+        if (!_prompted) {
+            sessionStorage.setItem('tp_push_prompted', '1');
+            Notification.requestPermission().then(function(perm) {
+                if (perm === 'granted') subscribeAdmin();
+            });
+        }
+    }
+})();
+</script>
+
 </body>
 </html>
 <?php
