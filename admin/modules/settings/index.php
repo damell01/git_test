@@ -55,10 +55,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ];
 
     foreach ($fields as $key) {
-        // Don't overwrite the SMTP password if the field was left blank
-        if ($key === 'smtp_password' && trim($_POST[$key] ?? '') === '') {
+    if ($key === 'smtp_password' && trim($_POST[$key] ?? '') === '') {
+        // Only skip if a password is already saved; allow setting one from scratch
+        if (!empty(get_setting('smtp_password'))) {
             continue;
         }
+    }
         $value = trim($_POST[$key] ?? '');
         set_setting($key, $value);
     }

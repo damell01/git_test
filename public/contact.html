@@ -214,8 +214,8 @@ document.getElementById('quoteForm')?.addEventListener('submit', async function(
   };
 
   // Basic client-side validation
-  if (!data.first_name && !data.last_name) {
-    errorEl.textContent = 'Please enter your name.';
+  if (!data.first_name) {
+    errorEl.textContent = 'Please enter your first name.';
     errorEl.style.display = 'block';
     return;
   }

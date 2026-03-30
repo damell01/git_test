@@ -3,7 +3,7 @@
     "description": "Trash Panda Roll-Offs Admin Panel",
     "type": "project",
     "require": {
-        "php": ">=8.1",
+        "php": "^8.1",
         "phpmailer/phpmailer": "^6.9"
     },
     "config": {

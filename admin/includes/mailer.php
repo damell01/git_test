@@ -35,7 +35,7 @@ function send_email(string $to, string $subject, string $html_body, string $from
 
     if (!empty($from)) {
         // Parse "Name <email>" if provided, otherwise use as-is for the email address
-        if (preg_match('/^(.+)<(.+)>$/', $from, $m)) {
+    if (preg_match('/^(.+?)\s*<(.+)>$/', $from, $m)) {
             $from_name  = trim($m[1]);
             $from_email = trim($m[2]);
         } else {

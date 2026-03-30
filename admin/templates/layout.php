@@ -183,11 +183,11 @@ function layout_start(string $page_title, string $active_nav = ''): void
     <!-- Brand -->
     <div class="sb-brand">
         <?php
-        // Try logo.png first, then fall back to Logo.jpeg (root-level asset)
-        $logo_setting = get_setting('logo_path', '');
-        $logo_url     = '';
-        if (!empty($logo_setting)) {
-            $logo_url = htmlspecialchars($logo_setting, ENT_QUOTES, 'UTF-8');
+        // Try custom logo from settings first, then fall back to bundled logo
+        $custom_logo_path = get_setting('logo_path', '');
+        $logo_url         = '';
+        if (!empty($custom_logo_path)) {
+            $logo_url = htmlspecialchars($custom_logo_path, ENT_QUOTES, 'UTF-8');
         } elseif (!empty($asset_path)) {
             $logo_url = htmlspecialchars($asset_path, ENT_QUOTES, 'UTF-8') . '/img/logo.png';
         }
