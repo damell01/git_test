@@ -1,5 +1,6 @@
 <?php
 require_once dirname(__DIR__, 2) . '/includes/bootstrap.php';
+require_once TMPL_PATH . '/layout.php';
 require_login();
 
 // ── Filters ───────────────────────────────────────────────────────────────────
