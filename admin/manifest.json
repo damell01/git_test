@@ -1,0 +1,28 @@
+{
+  "name": "Trash Panda Admin",
+  "short_name": "TP Admin",
+  "description": "Trash Panda Roll-Offs admin panel — manage work orders, customers, leads, scheduling and more.",
+  "start_url": "/admin/dashboard.php",
+  "scope": "/admin/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0a0a",
+  "theme_color": "#f97316",
+  "icons": [
+    {
+      "src": "/admin/assets/img/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/admin/assets/img/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "en-US",
+  "dir": "ltr"
+}

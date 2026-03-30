@@ -123,6 +123,17 @@ $asset_path = defined('ASSET_PATH') ? ASSET_PATH : '';
     <link rel="stylesheet" href="<?= e($asset_path) ?>/css/app.css">
     <?php endif; ?>
 
+    <!-- PWA -->
+    <link rel="manifest" href="<?= e(APP_URL) ?>/manifest.json">
+    <meta name="theme-color" content="#f97316">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TP Admin">
+    <?php if ($asset_path): ?>
+    <link rel="apple-touch-icon" href="<?= e($asset_path) ?>/img/icon-192.png">
+    <?php endif; ?>
+
     <style>
         body {
             background: #0f1117;
@@ -329,6 +340,14 @@ $asset_path = defined('ASSET_PATH') ? ASSET_PATH : '';
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
         crossorigin="anonymous"></script>
+
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('<?= e(APP_URL) ?>/sw.js', {
+        scope: '<?= e(APP_URL) ?>/'
+    }).catch(function(){});
+}
+</script>
 
 </body>
 </html>
