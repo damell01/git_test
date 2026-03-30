@@ -16,7 +16,7 @@ const navHTML = `
       <li><a href="service-areas.html">Service Areas</a></li>
       <li><a href="about.html">About</a></li>
       <li><a href="faq.html">FAQ</a></li>
-      <li><a href="contact.html" class="nav-cta-btn">Get a Quote</a></li>
+      <li><a href="/book.php" class="nav-cta-btn">Book Now</a></li>
     </ul>
     <a href="tel:+12513334444" class="nav-phone d-none d-xl-flex"><i class="fas fa-phone"></i>(251) 333-4444</a>
     <button class="nav-hamburger" id="navHamburger" aria-label="Menu">
@@ -32,7 +32,7 @@ const navHTML = `
     <li><a href="service-areas.html">Service Areas</a></li>
     <li><a href="about.html">About</a></li>
     <li><a href="faq.html">FAQ</a></li>
-    <li><a href="contact.html">Get a Quote</a></li>
+    <li><a href="/book.php">Book Now</a></li>
     <li><a href="tel:+12513334444"><i class="fas fa-phone me-2" style="color:var(--orange)"></i>(251) 333-4444</a></li>
   </ul>
 </div>`;

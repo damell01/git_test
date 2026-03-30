@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $status    = trim($_POST['status']    ?? 'available');
     $condition = trim($_POST['condition'] ?? 'good');
     $notes     = trim($_POST['notes']     ?? '');
+    $image     = null;
 
     // Required field validation
     if ($unit_code === '') {
@@ -40,6 +41,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Invalid size selected.';
     }
 
+    // Handle image upload
+    if (!empty($_FILES['image']['name'])) {
+        $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $max_size      = 5 * 1024 * 1024; // 5 MB
+        $upload_dir    = dirname(__DIR__, 3) . '/public/uploads/dumpsters/';
+
+        $file_type = mime_content_type($_FILES['image']['tmp_name']);
+        if (!in_array($file_type, $allowed_types, true)) {
+            $errors[] = 'Invalid image type. Allowed: JPG, PNG, GIF, WebP.';
+        } elseif ($_FILES['image']['size'] > $max_size) {
+            $errors[] = 'Image must be under 5 MB.';
+        } elseif ($_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+            $errors[] = 'Image upload failed. Please try again.';
+        } else {
+            $ext      = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+            $filename = 'dumpster_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+            if (!move_uploaded_file($_FILES['image']['tmp_name'], $upload_dir . $filename)) {
+                $errors[] = 'Failed to save image. Check directory permissions.';
+            } else {
+                $image = '/uploads/dumpsters/' . $filename;
+            }
+        }
+    }
+
     // Check unit_code uniqueness
     if ($unit_code !== '' && empty($errors)) {
         $existing = db_fetch('SELECT id FROM dumpsters WHERE unit_code = ? LIMIT 1', [$unit_code]);
@@ -50,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errors)) {
-        $id = db_insert('dumpsters', [
+        $insert_data = [
             'unit_code'  => $unit_code,
             'type'       => $type,
             'size'       => $size,
@@ -61,7 +89,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'notes'      => $notes,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
-        ]);
+        ];
+        if ($image !== null) {
+            $insert_data['image'] = $image;
+        }
+        $id = db_insert('dumpsters', $insert_data);
 
         log_activity('create', "Created dumpster $unit_code ($size)", 'dumpster', (int)$id);
         flash_success("Dumpster $unit_code added successfully.");
@@ -102,7 +134,7 @@ layout_start('Add Dumpster', 'inventory');
 <?php endif; ?>
 
 <div class="tp-card" style="max-width:640px;">
-    <form method="POST" action="create.php">
+    <form method="POST" action="create.php" enctype="multipart/form-data">
         <?= csrf_field() ?>
 
         <div class="row g-3">
@@ -199,6 +231,15 @@ layout_start('Add Dumpster', 'inventory');
                           class="form-control"
                           rows="3"
                           placeholder="Optional notes about this dumpster…"><?= e($f['notes']) ?></textarea>
+            </div>
+
+            <!-- Image -->
+            <div class="col-12">
+                <label class="form-label" for="image">
+                    Dumpster Photo <span style="color:var(--gy);font-size:.8rem;">(optional, max 5 MB — JPG/PNG/WebP)</span>
+                </label>
+                <input type="file" id="image" name="image" class="form-control"
+                       accept="image/jpeg,image/png,image/gif,image/webp">
             </div>
 
             <!-- Submit -->

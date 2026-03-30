@@ -30,6 +30,9 @@ if ($search !== '') {
 
 $where_sql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
+// ── Database connection ───────────────────────────────────────────────────────
+$pdo = get_db();
+
 // ── Count ─────────────────────────────────────────────────────────────────────
 $count_stmt = $pdo->prepare(
     "SELECT COUNT(*) FROM quotes

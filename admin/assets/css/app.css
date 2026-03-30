@@ -421,13 +421,14 @@ a:hover {
     width: 100%;
     border-collapse: collapse;
     --bs-table-color: var(--wh);
-    --bs-table-bg: transparent;
+    --bs-table-bg: var(--dk1);
     --bs-table-border-color: var(--st);
+    background-color: var(--dk1);
 }
 
 .tp-table th {
-    background-color: var(--dk3);
-    color: var(--gl);
+    background-color: var(--dk3) !important;
+    color: var(--wh) !important;
     font-family: var(--font-cond);
     font-size: .8rem;
     font-weight: 600;
@@ -442,7 +443,8 @@ a:hover {
 .tp-table td {
     padding: .6rem 1rem;
     border-bottom: 1px solid var(--st2);
-    color: var(--wh);
+    color: var(--wh) !important;
+    background-color: var(--dk1) !important;
     font-size: .9rem;
     vertical-align: middle;
 }
@@ -451,17 +453,66 @@ a:hover {
     border-bottom: none;
 }
 
-.tp-table tbody tr:hover {
-    background-color: rgba(255, 255, 255, .02);
+.tp-table tbody tr:hover td {
+    background-color: rgba(255, 255, 255, .04) !important;
 }
 
 .tp-table .text-muted {
-    color: var(--gy) !important;
+    color: var(--gl) !important;
 }
 
 /* --------------------------------------------------------------------------
-   Filter Bar
+   Bootstrap nav-tabs — dark theme override
    -------------------------------------------------------------------------- */
+.nav-tabs {
+    border-bottom-color: var(--st);
+}
+
+.nav-tabs .nav-link {
+    color: var(--gl);
+    border-color: transparent;
+    background: transparent;
+}
+
+.nav-tabs .nav-link:hover {
+    color: var(--wh);
+    border-color: var(--st);
+}
+
+.nav-tabs .nav-link.active {
+    color: var(--or);
+    background-color: var(--dk2);
+    border-color: var(--st) var(--st) var(--dk2);
+}
+
+/* Bootstrap card — force dark in admin */
+.card {
+    background-color: var(--dk1);
+    border-color: var(--st);
+    color: var(--wh);
+}
+
+.card-body {
+    color: var(--wh);
+}
+
+.table thead.table-light th {
+    background-color: var(--dk3) !important;
+    color: var(--wh) !important;
+    border-color: var(--st) !important;
+}
+
+.table td, .table th {
+    color: var(--wh);
+    border-color: var(--st2);
+}
+
+.table-hover > tbody > tr:hover > * {
+    background-color: rgba(255, 255, 255, .04);
+    color: var(--wh);
+}
+
+
 .filter-bar {
     display: flex;
     align-items: center;
