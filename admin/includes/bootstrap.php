@@ -6,6 +6,51 @@
  * Trash Panda Roll-Offs
  */
 
+// ── Temporary Debug Mode (?debug=1) ─────────────────────────────────────────
+// Use this on a failing admin URL to surface HTTP 500 root-cause details.
+$debugMode = (isset($_GET['debug']) && $_GET['debug'] === '1')
+    || (defined('APP_DEBUG') && APP_DEBUG === true);
+
+if ($debugMode) {
+    ini_set('display_errors', '1');
+    ini_set('display_startup_errors', '1');
+    error_reporting(E_ALL);
+
+    set_exception_handler(function (Throwable $e): void {
+        if (!headers_sent()) {
+            http_response_code(500);
+        }
+        echo '<pre style="white-space:pre-wrap;background:#111;color:#f5f5f5;padding:16px;border:1px solid #444;">';
+        echo 'UNCAUGHT EXCEPTION\n';
+        echo get_class($e) . ': ' . $e->getMessage() . "\n\n";
+        echo $e->getFile() . ':' . $e->getLine() . "\n\n";
+        echo $e->getTraceAsString();
+        echo '</pre>';
+    });
+
+    register_shutdown_function(function (): void {
+        $err = error_get_last();
+        if (!$err) {
+            return;
+        }
+
+        $fatalTypes = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+        if (!in_array($err['type'], $fatalTypes, true)) {
+            return;
+        }
+
+        if (!headers_sent()) {
+            http_response_code(500);
+        }
+
+        echo '<pre style="white-space:pre-wrap;background:#111;color:#f5f5f5;padding:16px;border:1px solid #444;">';
+        echo 'FATAL ERROR\n';
+        echo ($err['message'] ?? 'Unknown error') . "\n\n";
+        echo ($err['file'] ?? 'unknown file') . ':' . ($err['line'] ?? 0);
+        echo '</pre>';
+    });
+}
+
 // ── Security Headers ─────────────────────────────────────────────────────────
 header('X-Frame-Options: SAMEORIGIN');
 header('X-Content-Type-Options: nosniff');
