@@ -14,4 +14,4 @@ define('ROOT_PATH', dirname(__DIR__));  // points to /admin/
 define('INC_PATH', ROOT_PATH . '/includes');
 define('TMPL_PATH', ROOT_PATH . '/templates');
 define('ASSET_PATH', APP_URL . '/assets');
-define('APP_INSTALLED', false);  // set true after running installer
+define('APP_INSTALLED', false);  // set true after running the installer (see install/install.php)

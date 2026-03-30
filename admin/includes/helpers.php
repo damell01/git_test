@@ -118,13 +118,33 @@ function status_badge(string $status): string
  * Generate the next sequential number for a given prefix / table / column.
  * Example output: "Q-0001", "WO-0042"
  *
+ * $table and $col are validated against an explicit whitelist to prevent SQL
+ * injection, since PDO cannot parameterise identifier names.
+ *
  * @param string $prefix  e.g. "Q" or "WO"
- * @param string $table   database table name
- * @param string $col     column that holds the number string
+ * @param string $table   database table name (must be whitelisted)
+ * @param string $col     column that holds the number string (must be whitelisted)
  * @return string
+ * @throws InvalidArgumentException if $table or $col are not in the whitelist
  */
 function next_number(string $prefix, string $table, string $col): string
 {
+    // Whitelist of tables and columns permitted for sequence generation.
+    static $allowed_tables = [
+        'quotes', 'work_orders', 'invoices', 'leads', 'estimates',
+    ];
+    static $allowed_cols = [
+        'quote_number', 'wo_number', 'invoice_number', 'lead_number', 'estimate_number',
+    ];
+
+    if (!in_array($table, $allowed_tables, true)) {
+        throw new InvalidArgumentException("next_number: table '$table' is not whitelisted.");
+    }
+    if (!in_array($col, $allowed_cols, true)) {
+        throw new InvalidArgumentException("next_number: column '$col' is not whitelisted.");
+    }
+
+    // Identifiers are now safe to interpolate (validated against static whitelist).
     $row = db_fetch(
         'SELECT MAX(CAST(SUBSTRING_INDEX(`' . $col . '`, \'-\', -1) AS UNSIGNED)) AS max_num FROM `' . $table . '`'
     );

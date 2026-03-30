@@ -84,7 +84,11 @@ function require_role(string ...$roles): void
 
     if (!has_role(...$roles)) {
         http_response_code(403);
-        die('<h1>403 Forbidden</h1>');
+        die(
+            '<h1>403 Forbidden</h1>' .
+            '<p>You do not have permission to access this page. ' .
+            'If you believe this is an error, please contact your administrator.</p>'
+        );
     }
 }
 
@@ -163,6 +167,7 @@ function csrf_verify(): bool
 function csrf_check(): void
 {
     if (!csrf_verify()) {
-        die('CSRF mismatch');
+        http_response_code(400);
+        die('Invalid security token. Please refresh the page and try again.');
     }
 }
