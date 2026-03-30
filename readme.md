@@ -556,3 +556,234 @@ Complete all items below before going live with real customers.
 
 Manage inventory via **Admin → Inventory** after first login.
 
+
+---
+
+## 📲 How to Install the App on a Phone (PWA)
+
+This app is a **Progressive Web App (PWA)** — customers and staff can install it directly to their phone's home screen without going through an app store.
+
+### Install on iPhone / iPad (Safari)
+1. Open your site in **Safari** (must be Safari, not Chrome)
+2. Tap the **Share** button (box with arrow pointing up) at the bottom of the screen
+3. Scroll down and tap **"Add to Home Screen"**
+4. Confirm the name and tap **Add**
+5. The app icon now appears on your home screen — tap it to open in full-screen mode
+
+### Install on Android (Chrome)
+1. Open your site in **Google Chrome**
+2. Tap the **three-dot menu** (⋮) in the top-right corner
+3. Tap **"Add to Home screen"** or **"Install app"**
+4. Tap **Install** to confirm
+5. The app icon appears on your home screen
+
+### Install on Desktop (Chrome / Edge)
+1. Open your site in Chrome or Edge
+2. Look for the **install icon** (➕ or computer icon) in the address bar
+3. Click it and select **Install**
+4. The app opens in its own window without browser UI
+
+> **Note:** For the PWA to install, your site must be served over **HTTPS**. HTTP will not work.
+
+---
+
+## 🗄️ Database Upgrade Script
+
+If you are **updating an existing installation** (not doing a fresh install), run the upgrade script to apply new database columns and tables added in recent updates.
+
+### What the upgrade script adds:
+| Table | Column / Change |
+|-------|----------------|
+| `dumpsters` | `type` (dumpster or trailer) |
+| `dumpsters` | `daily_rate` (per-day pricing) |
+| `dumpsters` | `active` (show/hide from booking page) |
+| `dumpsters` | `image` (photo path for booking page) |
+| `bookings` | Creates full table if missing |
+| `inventory_blocks` | Creates full table if missing |
+| `settings` | Adds Stripe & booking default keys |
+
+### How to run:
+
+**Step 1 — Edit the secret**
+
+Open `admin/install/upgrade.php` and change this line:
+```php
+define('UPGRADE_SECRET', 'change-this-to-a-random-string-before-use');
+```
+Replace it with something like:
+```php
+define('UPGRADE_SECRET', 'myUpgrade2026!abc');
+```
+
+**Step 2 — Run it**
+
+*Option A — Browser:*
+```
+https://your-domain.com/admin/install/upgrade.php?secret=myUpgrade2026!abc
+```
+
+*Option B — Command line (SSH/CLI):*
+```bash
+php admin/install/upgrade.php
+```
+
+**Step 3 — Delete the file after use**
+```bash
+rm admin/install/upgrade.php
+# or rename it:
+mv admin/install/upgrade.php admin/install/upgrade.php.done
+```
+
+> The script is **safe to run multiple times** — it skips steps that have already been applied.
+
+---
+
+## 💳 Stripe Setup Guide
+
+### Mode Overview
+| Mode | Use For | Real Money? |
+|------|---------|-------------|
+| **Test (Sandbox)** | Development & testing — use fake card numbers | ❌ No |
+| **Live (Production)** | Real customers paying real money | ✅ Yes |
+
+---
+
+### Step 1 — Create a Stripe Account
+1. Go to [https://dashboard.stripe.com/register](https://dashboard.stripe.com/register) and create a free account
+2. Verify your email address
+3. For **Live mode** (taking real payments): complete Stripe's identity verification and add a bank account under **Settings → Bank Accounts**
+
+---
+
+### Step 2 — Get Your API Keys
+
+#### Test / Sandbox Keys
+1. In the Stripe Dashboard, make sure the **"Test mode"** toggle (top-right) is **ON** (shows orange "TEST" label)
+2. Go to **Developers → API keys**
+3. Copy:
+   - **Publishable key** — starts with `pk_test_...`
+   - **Secret key** — click "Reveal test key", starts with `sk_test_...`
+
+#### Live / Production Keys
+1. Turn **Test mode OFF** in the Stripe Dashboard (toggle off)
+2. Go to **Developers → API keys**
+3. Copy:
+   - **Publishable key** — starts with `pk_live_...`
+   - **Secret key** — click "Reveal live key", starts with `sk_live_...`
+
+> ⚠️ **Never commit secret keys to Git.** The keys go in Admin → Settings, not in code files.
+
+---
+
+### Step 3 — Enter Keys in Admin Settings
+1. Log in to your admin panel
+2. Go to **Settings → Stripe & Booking Configuration**
+3. Fill in:
+   | Field | Value |
+   |-------|-------|
+   | Stripe Mode | `test` (sandbox) or `live` (production) |
+   | Publishable Key | `pk_test_...` or `pk_live_...` |
+   | Secret Key | `sk_test_...` or `sk_live_...` |
+   | Webhook Signing Secret | (from Step 4 below) |
+4. Click **Save Settings**
+
+---
+
+### Step 4 — Set Up the Stripe Webhook
+
+The webhook tells your app when a payment is completed so bookings get marked as paid automatically.
+
+#### For Test Mode (local/staging)
+
+Use the **Stripe CLI** to forward webhooks to your local machine:
+
+```bash
+# Install Stripe CLI: https://stripe.com/docs/stripe-cli
+stripe login
+stripe listen --forward-to https://your-domain.com/api/stripe-webhook.php
+```
+
+The CLI will print a **webhook signing secret** starting with `whsec_...` — copy it into Admin → Settings → Webhook Signing Secret.
+
+#### For Live Mode (production)
+
+1. In Stripe Dashboard → **Developers → Webhooks**
+2. Click **"Add endpoint"**
+3. Enter your endpoint URL:
+   ```
+   https://your-domain.com/api/stripe-webhook.php
+   ```
+4. Under **"Events to listen to"**, add:
+   - `checkout.session.completed`
+   - `checkout.session.expired`
+5. Click **"Add endpoint"**
+6. Click on the new endpoint → **"Reveal"** the Signing Secret (`whsec_...`)
+7. Paste it into **Admin → Settings → Webhook Signing Secret**
+
+---
+
+### Step 5 — Install the Stripe PHP SDK (if not already installed)
+
+The Stripe SDK must be installed via Composer:
+
+```bash
+# Navigate to the admin folder
+cd admin/
+
+# Install Stripe SDK
+composer require stripe/stripe-php
+
+# Or if you already have a composer.json, just run:
+composer install
+```
+
+If you don't have Composer installed:
+- **Windows:** Download from [https://getcomposer.org/download/](https://getcomposer.org/download/)
+- **Linux/Mac:** `curl -sS https://getcomposer.org/installer | php && mv composer.phar /usr/local/bin/composer`
+- **Hostinger/cPanel:** Use the cPanel Terminal or File Manager to upload a pre-built `vendor/` folder
+
+> If Stripe SDK is missing, the app automatically falls back to **Cash payment** so bookings still work — but card payments won't be processed until the SDK is installed.
+
+---
+
+### Step 6 — Test Stripe Payments (Sandbox)
+
+Use these **test card numbers** in Stripe sandbox mode — they don't charge real money:
+
+| Card Number | Result |
+|-------------|--------|
+| `4242 4242 4242 4242` | ✅ Payment succeeds |
+| `4000 0000 0000 0002` | ❌ Payment declined |
+| `4000 0025 0000 3155` | 🔐 Requires 3D Secure (extra auth step) |
+
+For all test cards:
+- Use any future **expiry date** (e.g. `12/29`)
+- Use any 3-digit **CVC** (e.g. `123`)
+- Use any 5-digit **ZIP** (e.g. `12345`)
+
+---
+
+### Step 7 — Go Live Checklist
+
+Before switching to live mode, confirm:
+
+- [ ] Stripe account is **fully verified** (identity + bank account added)
+- [ ] You tested at least one **sandbox payment** end-to-end
+- [ ] Live **publishable key** and **secret key** are entered in Admin → Settings
+- [ ] Stripe Mode is set to **`live`** in Admin → Settings
+- [ ] Live **webhook endpoint** is registered in Stripe Dashboard with correct URL
+- [ ] **Webhook Signing Secret** (`whsec_live_...`) is entered in Admin → Settings
+- [ ] HTTPS is enabled on your domain (required by Stripe for live payments)
+- [ ] Tested a **real $1 charge** with your own card and confirmed it shows in Stripe Dashboard
+
+---
+
+### Stripe Troubleshooting
+
+| Problem | Likely Cause | Fix |
+|---------|-------------|-----|
+| Booking saved but no Stripe redirect | Stripe SDK not installed | Run `composer install` in `admin/` folder |
+| Webhook not firing | Wrong endpoint URL or not registered | Check Stripe Dashboard → Webhooks |
+| `Invalid API Key` error | Wrong key entered or wrong mode | Check key matches mode (test vs live) |
+| Payment succeeds but booking still "pending" | Webhook not reaching server | Check webhook signing secret; check server firewall allows Stripe IPs |
+| `Stripe\Exception\AuthenticationException` | Secret key is wrong or missing | Re-enter secret key in Admin → Settings |
