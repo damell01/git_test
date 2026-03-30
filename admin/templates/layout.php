@@ -186,6 +186,15 @@ function layout_start(string $page_title, string $active_nav = ''): void
 
     <!-- App styles -->
     <link rel="stylesheet" href="<?= htmlspecialchars($asset_path, ENT_QUOTES, 'UTF-8') ?>/css/app.css">
+
+    <!-- PWA -->
+    <link rel="manifest" href="<?= htmlspecialchars($app_url, ENT_QUOTES, 'UTF-8') ?>/manifest.json">
+    <meta name="theme-color" content="#f97316">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TP Admin">
+    <link rel="apple-touch-icon" href="<?= htmlspecialchars($asset_path, ENT_QUOTES, 'UTF-8') ?>/img/icon-192.png">
 </head>
 <body>
 
@@ -329,6 +338,7 @@ function layout_start(string $page_title, string $active_nav = ''): void
 function layout_end(): void
 {
     $asset_path = defined('ASSET_PATH') ? ASSET_PATH : '';
+    $app_url    = defined('APP_URL')    ? APP_URL    : '';
 ?>
         </div><!-- /.tp-content-inner -->
     </div><!-- /.tp-content -->
@@ -341,6 +351,15 @@ function layout_end(): void
 
 <!-- App scripts -->
 <script src="<?= htmlspecialchars($asset_path, ENT_QUOTES, 'UTF-8') ?>/js/app.js"></script>
+
+<!-- Service Worker registration -->
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('<?= htmlspecialchars($app_url, ENT_QUOTES, 'UTF-8') ?>/sw.js', {
+        scope: '<?= htmlspecialchars($app_url, ENT_QUOTES, 'UTF-8') ?>/'
+    }).catch(function(){});
+}
+</script>
 
 </body>
 </html>

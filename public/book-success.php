@@ -44,6 +44,14 @@ $company_phone = get_setting('company_phone', '');
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" crossorigin="anonymous">
     <link rel="stylesheet" href="/shared.css">
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json"/>
+    <meta name="theme-color" content="#f97316"/>
+    <meta name="mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-capable" content="yes"/>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+    <meta name="apple-mobile-web-app-title" content="Trash Panda"/>
+    <link rel="apple-touch-icon" href="/assets/icon-192.png"/>
     <style>
         body { background: var(--black); color: var(--white); font-family: var(--font-body); }
         .book-nav {
@@ -207,5 +215,6 @@ $company_phone = get_setting('company_phone', '');
     </div>
 </div>
 
+    <script>if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js').catch(()=>{});</script>
 </body>
 </html>
