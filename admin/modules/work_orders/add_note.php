@@ -1,6 +1,7 @@
 <?php
 require_once dirname(__DIR__, 2) . '/includes/bootstrap.php';
 require_login();
+$pdo = get_db();
 
 // POST-only endpoint
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -41,6 +42,6 @@ $ins = $pdo->prepare(
 $ins->execute([$wo_id, $_SESSION['user_id'], $note_text, 'note']);
 
 // ── Log activity ──────────────────────────────────────────────────────────────
-log_activity('add_wo_note', 'Added note to work order ' . $wo['wo_number'], $wo_id);
+log_activity('add_wo_note', 'Added note to work order ' . $wo['wo_number'], 'work_order', $wo_id);
 
 redirect('view.php?id=' . $wo_id);

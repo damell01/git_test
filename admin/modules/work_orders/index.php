@@ -233,7 +233,7 @@ layout_start('Work Orders', 'work_orders');
                         <td><?= htmlspecialchars($wo['size'] ?? '—') ?></td>
                         <td>
                             <?php if (!empty($wo['dumpster_code'])): ?>
-                                <span class="badge bg-light text-dark border"><?= htmlspecialchars($wo['dumpster_code']) ?></span>
+                                <span class="tp-badge badge-available"><?= htmlspecialchars($wo['dumpster_code']) ?></span>
                             <?php else: ?>
                                 <span class="text-muted">—</span>
                             <?php endif; ?>
@@ -254,11 +254,11 @@ layout_start('Work Orders', 'work_orders');
                             <div class="btn-group btn-group-sm">
                                 <a href="view.php?id=<?= (int)$wo['id'] ?>"
                                    class="btn btn-outline-secondary" title="View">
-                                    <i class="fas fa-eye"></i>
+                                    <i class="fas fa-eye"></i> View
                                 </a>
                                 <a href="edit.php?id=<?= (int)$wo['id'] ?>"
                                    class="btn btn-outline-primary" title="Edit">
-                                    <i class="fas fa-edit"></i>
+                                    <i class="fas fa-edit"></i> Edit
                                 </a>
                             </div>
                         </td>

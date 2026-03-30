@@ -1,5 +1,6 @@
 <?php
 require_once dirname(__DIR__, 2) . '/includes/bootstrap.php';
+require_once TMPL_PATH . '/layout.php';
 require_login();
 
 // ── Filters ──────────────────────────────────────────────────────────────────
@@ -181,22 +182,22 @@ layout_start('Quotes', 'quotes');
                             <div class="btn-group btn-group-sm">
                                 <a href="view.php?id=<?= (int)$q['id'] ?>"
                                    class="btn btn-outline-secondary" title="View">
-                                    <i class="fas fa-eye"></i>
+                                    <i class="fas fa-eye"></i> View
                                 </a>
                                 <a href="edit.php?id=<?= (int)$q['id'] ?>"
                                    class="btn btn-outline-primary" title="Edit">
-                                    <i class="fas fa-edit"></i>
+                                    <i class="fas fa-edit"></i> Edit
                                 </a>
                                 <?php if ($q['status'] === 'approved' && empty($q['converted_to'])): ?>
                                 <a href="convert.php?quote_id=<?= (int)$q['id'] ?>"
                                    class="btn btn-outline-success" title="Convert to Work Order">
-                                    <i class="fas fa-exchange-alt"></i>
+                                    <i class="fas fa-exchange-alt"></i> Convert
                                 </a>
                                 <?php endif; ?>
                                 <a href="delete.php?id=<?= (int)$q['id'] ?>"
                                    class="btn btn-outline-danger" title="Delete"
                                    onclick="return confirm('Permanently delete quote <?= htmlspecialchars($q['quote_number'], ENT_QUOTES) ?>?')">
-                                    <i class="fas fa-trash"></i>
+                                    <i class="fas fa-trash"></i> Delete
                                 </a>
                             </div>
                         </td>
