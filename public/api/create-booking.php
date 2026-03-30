@@ -113,7 +113,9 @@ if ((int)($block['cnt'] ?? 0) > 0) {
 }
 
 // Calculate totals
-$days       = max(1, (int)((strtotime($rental_end) - strtotime($rental_start)) / 86400));
+$d1         = new \DateTime($rental_start);
+$d2         = new \DateTime($rental_end);
+$days       = max(1, (int)$d1->diff($d2)->days);
 $daily_rate = (float)$unit['daily_rate'];
 $total      = round($daily_rate * $days, 2);
 

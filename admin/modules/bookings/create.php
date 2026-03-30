@@ -51,8 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Invalid payment method.';
     }
 
-    if (empty($errors) && $rental_start >= $rental_end) {
-        $errors[] = 'End Date must be after Start Date.';
+    if (empty($errors) && $rental_start > $rental_end) {
+        $errors[] = 'End Date must be on or after Start Date.';
     }
 
     // Fetch unit
@@ -97,9 +97,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errors) && $unit) {
-        $start_ts   = strtotime($rental_start);
-        $end_ts     = strtotime($rental_end);
-        $days       = max(1, (int)(($end_ts - $start_ts) / 86400));
+        $d1         = new \DateTime($rental_start);
+        $d2         = new \DateTime($rental_end);
+        $days       = max(1, (int)$d1->diff($d2)->days);
         $daily_rate = (float)$unit['daily_rate'];
         $total      = round($daily_rate * $days, 2);
 
