@@ -1,0 +1,27 @@
+# Composer dependencies
+admin/vendor/
+vendor/
+
+# Composer lock file (keep composer.json but ignore lock in shared deployments)
+# composer.lock
+
+# Environment / local config overrides
+*.env
+.env.local
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Upload / cache directories
+admin/assets/img/uploads/
+admin/cache/

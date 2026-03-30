@@ -1,41 +1,122 @@
 <?php
 /**
- * Mailer – PHP mail() wrapper with HTML template support
+ * Mailer – PHPMailer (preferred) or PHP mail() fallback
  * Trash Panda Roll-Offs
+ *
+ * When Composer dependencies are installed (composer install run inside admin/),
+ * PHPMailer is used automatically for reliable SMTP delivery.
+ * Otherwise the system falls back to PHP's built-in mail().
+ *
+ * SMTP settings are read from the admin settings table:
+ *   smtp_host, smtp_port, smtp_username, smtp_password, smtp_encryption (tls|ssl|none)
+ * Leave smtp_host blank to use PHP mail() even if PHPMailer is installed.
  */
 
+// Load PHPMailer autoloader when available
+$_tp_phpmailer_autoload = ROOT_PATH . '/vendor/autoload.php';
+if (file_exists($_tp_phpmailer_autoload)) {
+    require_once $_tp_phpmailer_autoload;
+}
+unset($_tp_phpmailer_autoload);
+
 /**
- * Send an HTML email using PHP mail().
- * Falls back gracefully on failure by logging to the notifications table.
+ * Send an HTML email, using PHPMailer+SMTP when configured, otherwise mail().
  *
  * @param string $to
  * @param string $subject
  * @param string $html_body
- * @param string $from       Override From address; defaults to company email from settings
+ * @param string $from  Override From; defaults to company email from settings
  * @return bool
  */
 function send_email(string $to, string $subject, string $html_body, string $from = ''): bool
 {
-    if (empty($from)) {
-        $from_name  = get_setting('email_from_name',  get_setting('company_name', 'Trash Panda Roll-Offs'));
-        $from_email = get_setting('email_from_email', get_setting('company_email', 'noreply@example.com'));
-        $from       = $from_name . ' <' . $from_email . '>';
+    $from_name  = get_setting('email_from_name',  get_setting('company_name', 'Trash Panda Roll-Offs'));
+    $from_email = get_setting('email_from_email', get_setting('company_email', 'noreply@example.com'));
+
+    if (!empty($from)) {
+        // Parse "Name <email>" if provided, otherwise use as-is for the email address
+        if (preg_match('/^(.+)<(.+)>$/', $from, $m)) {
+            $from_name  = trim($m[1]);
+            $from_email = trim($m[2]);
+        } else {
+            $from_email = $from;
+        }
     }
 
-    $boundary = md5(uniqid('', true));
+    $smtp_host = get_setting('smtp_host', '');
 
+    // ── PHPMailer + SMTP ─────────────────────────────────────────────────────
+    if (!empty($smtp_host) && class_exists('PHPMailer\\PHPMailer\\PHPMailer')) {
+        try {
+            $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+            $mail->isSMTP();
+            $mail->Host       = $smtp_host;
+            $mail->Port       = (int) get_setting('smtp_port', 587);
+            $mail->SMTPAuth   = true;
+            $mail->Username   = get_setting('smtp_username', '');
+            $mail->Password   = get_setting('smtp_password', '');
+
+            $enc = strtolower(get_setting('smtp_encryption', 'tls'));
+            if ($enc === 'ssl') {
+                $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
+            } elseif ($enc === 'tls') {
+                $mail->SMTPSecure = PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+            } else {
+                $mail->SMTPAutoTLS = false;
+            }
+
+            $mail->setFrom($from_email, $from_name);
+            $mail->addAddress($to);
+            $mail->isHTML(true);
+            $mail->CharSet = 'UTF-8';
+            $mail->Subject = $subject;
+            $mail->Body    = $html_body;
+            $mail->AltBody = strip_tags($html_body);
+
+            $mail->send();
+            _log_notification('email', $to, $subject, $html_body, 'sent');
+            return true;
+        } catch (\Throwable $e) {
+            _log_notification('email', $to, $subject, $html_body, 'failed');
+            return false;
+        }
+    }
+
+    // ── PHP mail() fallback ──────────────────────────────────────────────────
     $headers  = 'MIME-Version: 1.0' . "\r\n";
     $headers .= 'Content-Type: text/html; charset=UTF-8' . "\r\n";
-    $headers .= 'From: ' . $from . "\r\n";
-    $headers .= 'Reply-To: ' . $from . "\r\n";
+    $headers .= 'From: ' . $from_name . ' <' . $from_email . '>' . "\r\n";
+    $headers .= 'Reply-To: ' . $from_email . "\r\n";
     $headers .= 'X-Mailer: PHP/' . PHP_VERSION . "\r\n";
 
     $result = @mail($to, $subject, $html_body, $headers);
 
-    // Log to notifications table regardless of result
     _log_notification('email', $to, $subject, $html_body, $result ? 'sent' : 'failed');
 
     return (bool)$result;
+}
+
+/**
+ * Send an email to every address listed in the admin notification_emails setting.
+ * Comma-separated list. Silently skips invalid addresses.
+ *
+ * @param string $subject
+ * @param string $html_body
+ * @return int  Number of successfully sent messages
+ */
+function notify_admins(string $subject, string $html_body): int
+{
+    $raw     = get_setting('notification_emails', get_setting('company_email', ''));
+    $emails  = array_filter(array_map('trim', explode(',', $raw)));
+    $sent    = 0;
+    foreach ($emails as $email) {
+        if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            if (send_email($email, $subject, $html_body)) {
+                $sent++;
+            }
+        }
+    }
+    return $sent;
 }
 
 /**

@@ -1,0 +1,7 @@
+# Restrict to PHP files only — no directory listing
+Options -Indexes
+
+# Only allow access to .php files
+<FilesMatch "^(?!contact\.php$)">
+  Require all denied
+</FilesMatch>

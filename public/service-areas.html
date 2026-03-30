@@ -7,6 +7,7 @@
   <meta name="description" content="Trash Panda Roll-Offs serves Gulf Shores, Orange Beach, Foley, Fairhope, Daphne, Spanish Fort, Mobile and all of Baldwin County, Alabama."/>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.min.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
   <link rel="stylesheet" href="shared.css"/>
   <style>
     .page-hero {
@@ -242,40 +243,13 @@
 <!-- ── MAP ── -->
 <section class="map-section section-pad-sm">
   <div class="container" style="max-width:1300px;">
-    <div class="map-placeholder">
-      <!-- Decorative pin map of South Alabama -->
-      <div style="position:relative;width:100%;height:100%;">
-        <!-- Gulf Shores -->
-        <div class="map-pin" style="left:38%;top:78%;"><div class="map-pin-dot"></div><div class="map-pin-label">Gulf Shores</div></div>
-        <!-- Orange Beach -->
-        <div class="map-pin" style="left:48%;top:80%;"><div class="map-pin-dot"></div><div class="map-pin-label">Orange Beach</div></div>
-        <!-- Foley -->
-        <div class="map-pin" style="left:42%;top:65%;"><div class="map-pin-dot"></div><div class="map-pin-label">Foley</div></div>
-        <!-- Fairhope -->
-        <div class="map-pin" style="left:30%;top:50%;"><div class="map-pin-dot"></div><div class="map-pin-label">Fairhope</div></div>
-        <!-- Daphne -->
-        <div class="map-pin" style="left:26%;top:42%;"><div class="map-pin-dot"></div><div class="map-pin-label">Daphne</div></div>
-        <!-- Spanish Fort -->
-        <div class="map-pin" style="left:22%;top:36%;"><div class="map-pin-dot"></div><div class="map-pin-label">Spanish Fort</div></div>
-        <!-- Mobile -->
-        <div class="map-pin" style="left:14%;top:32%;"><div class="map-pin-dot" style="background:var(--blue);box-shadow:0 0 12px rgba(59,130,246,0.7);"></div><div class="map-pin-label" style="border-color:rgba(59,130,246,0.4);">Mobile</div></div>
-        <!-- Robertsdale -->
-        <div class="map-pin" style="left:50%;top:56%;"><div class="map-pin-dot"></div><div class="map-pin-label">Robertsdale</div></div>
-        <!-- Loxley -->
-        <div class="map-pin" style="left:44%;top:48%;"><div class="map-pin-dot"></div><div class="map-pin-label">Loxley</div></div>
-        <!-- Bay Minette -->
-        <div class="map-pin" style="left:58%;top:38%;"><div class="map-pin-dot"></div><div class="map-pin-label">Bay Minette</div></div>
-        <!-- Saraland -->
-        <div class="map-pin" style="left:10%;top:22%;"><div class="map-pin-dot"></div><div class="map-pin-label">Saraland</div></div>
-
-        <div style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:20px;align-items:center;">
-          <div style="display:flex;align-items:center;gap:8px;font-family:var(--font-cond);font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray);">
-            <div style="width:10px;height:10px;background:var(--orange);border-radius:50%;box-shadow:0 0 8px var(--orange);"></div> Baldwin County
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;font-family:var(--font-cond);font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray);">
-            <div style="width:10px;height:10px;background:var(--blue);border-radius:50%;box-shadow:0 0 8px var(--blue);"></div> Mobile County
-          </div>
-        </div>
+    <div id="serviceAreaMap" style="width:100%;height:460px;border-radius:var(--radius-lg);border:1px solid var(--steel);overflow:hidden;"></div>
+    <div style="display:flex;gap:20px;align-items:center;margin-top:14px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;gap:8px;font-family:var(--font-cond);font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray);">
+        <div style="width:10px;height:10px;background:var(--orange);border-radius:50%;box-shadow:0 0 8px var(--orange);"></div> Baldwin County
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;font-family:var(--font-cond);font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gray);">
+        <div style="width:10px;height:10px;background:var(--blue);border-radius:50%;box-shadow:0 0 8px var(--blue);"></div> Mobile County
       </div>
     </div>
   </div>
@@ -511,6 +485,68 @@
 
 <div id="footer-placeholder"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.min.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WPnw=" crossorigin=""></script>
 <script src="shared-components.js"></script>
-</body>
+<script>
+// ── Leaflet Service Area Map ──────────────────────────────────────────────────
+(function () {
+  // Dark tile layer (CartoDB dark matter — free, no API key)
+  const map = L.map('serviceAreaMap', {
+    center: [30.55, -87.85],
+    zoom: 9,
+    zoomControl: true,
+    scrollWheelZoom: false,
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19,
+  }).addTo(map);
+
+  // Custom orange icon
+  function makeIcon(color) {
+    return L.divIcon({
+      className: '',
+      html: `<div style="width:16px;height:16px;background:${color};border:2px solid #fff;border-radius:50%;box-shadow:0 0 12px ${color};"></div>`,
+      iconSize:   [16, 16],
+      iconAnchor: [8,  8],
+      popupAnchor:[0, -10],
+    });
+  }
+
+  const orange = makeIcon('#F97316');
+  const blue   = makeIcon('#3B82F6');
+
+  const areas = [
+    { name: 'Gulf Shores',  lat: 30.2460, lng: -87.7005, icon: orange, desc: 'Residential & commercial dumpster rentals' },
+    { name: 'Orange Beach', lat: 30.2757, lng: -87.5697, icon: orange, desc: 'Renovation, roofing & cleanout specialists' },
+    { name: 'Foley',        lat: 30.4060, lng: -87.6836, icon: orange, desc: 'Same-day delivery available' },
+    { name: 'Fairhope',     lat: 30.5213, lng: -87.9033, icon: orange, desc: 'Residential & estate cleanouts' },
+    { name: 'Daphne',       lat: 30.6035, lng: -87.9036, icon: orange, desc: 'Construction & commercial projects' },
+    { name: 'Spanish Fort', lat: 30.6746, lng: -87.8672, icon: orange, desc: 'Storm debris & landscaping' },
+    { name: 'Robertsdale',  lat: 30.5527, lng: -87.7122, icon: orange, desc: 'All size dumpsters available' },
+    { name: 'Loxley',       lat: 30.6249, lng: -87.7540, icon: orange, desc: 'Contractor-friendly service' },
+    { name: 'Bay Minette',  lat: 30.8832, lng: -87.7730, icon: orange, desc: 'Serving Baldwin County' },
+    { name: 'Silverhill',   lat: 30.5349, lng: -87.7569, icon: orange, desc: 'Residential rentals' },
+    { name: 'Summerdale',   lat: 30.4832, lng: -87.6992, icon: orange, desc: 'All project types welcome' },
+    { name: 'Mobile',       lat: 30.6954, lng: -88.0399, icon: blue,   desc: 'Mobile County service hub' },
+    { name: 'Saraland',     lat: 30.8210, lng: -88.0725, icon: blue,   desc: 'North Mobile County' },
+    { name: 'Semmes',       lat: 30.7760, lng: -88.2417, icon: blue,   desc: 'West Mobile County' },
+    { name: 'Chickasaw',    lat: 30.7710, lng: -88.0736, icon: blue,   desc: 'Mobile area service' },
+  ];
+
+  areas.forEach(function (a) {
+    L.marker([a.lat, a.lng], { icon: a.icon })
+      .addTo(map)
+      .bindPopup(
+        `<div style="font-family:'Barlow Condensed',sans-serif;min-width:140px;">
+           <strong style="font-size:1rem;color:#F97316;">${a.name}</strong><br>
+           <span style="font-size:.82rem;color:#555;">${a.desc}</span><br>
+           <a href="contact.html" style="color:#F97316;font-size:.82rem;font-weight:700;">Get a Quote →</a>
+         </div>`
+      );
+  });
+})();
+</script>
 </html>

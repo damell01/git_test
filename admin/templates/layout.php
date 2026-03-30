@@ -168,7 +168,7 @@ function layout_start(string $page_title, string $active_nav = ''): void
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500&family=Black+Han+Sans:wght@400&display=swap">
+          href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Barlow+Condensed:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap">
 
     <!-- App styles -->
     <link rel="stylesheet" href="<?= htmlspecialchars($asset_path, ENT_QUOTES, 'UTF-8') ?>/css/app.css">
@@ -182,16 +182,23 @@ function layout_start(string $page_title, string $active_nav = ''): void
 
     <!-- Brand -->
     <div class="sb-brand">
-        <?php if (!empty($asset_path)): ?>
-        <img src="<?= htmlspecialchars($asset_path, ENT_QUOTES, 'UTF-8') ?>/img/logo.png"
+        <?php
+        // Try logo.png first, then fall back to Logo.jpeg (root-level asset)
+        $logo_setting = get_setting('logo_path', '');
+        $logo_url     = '';
+        if (!empty($logo_setting)) {
+            $logo_url = htmlspecialchars($logo_setting, ENT_QUOTES, 'UTF-8');
+        } elseif (!empty($asset_path)) {
+            $logo_url = htmlspecialchars($asset_path, ENT_QUOTES, 'UTF-8') . '/img/logo.png';
+        }
+        ?>
+        <?php if (!empty($logo_url)): ?>
+        <img src="<?= $logo_url ?>"
              alt="<?= $app_name ?>"
-             onerror="this.style.display='none';document.getElementById('sb-brand-fallback').style.display='block'">
-        <span class="sb-brand-text" id="sb-brand-fallback" style="display:none;">
-            Trash Panda Roll-Offs
-        </span>
-        <?php else: ?>
-        <span class="sb-brand-text">Trash Panda Roll-Offs</span>
+             id="sb-logo"
+             onerror="this.style.display='none';">
         <?php endif; ?>
+        <div class="sb-brand-text">TRASH PANDA<br><em>ROLL-OFFS</em></div>
     </div>
 
     <!-- Navigation -->
@@ -271,7 +278,7 @@ function layout_start(string $page_title, string $active_nav = ''): void
         </button>
 
         <!-- Page title -->
-        <h4 class="mb-0 me-auto" style="font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:600;color:var(--wh);letter-spacing:.04em;">
+        <h4 class="mb-0 me-auto tp-topbar-title">
             <?= $escaped_title ?>
         </h4>
 
