@@ -6,10 +6,10 @@ Options -Indexes
   Require all denied
 </FilesMatch>
 
-# Block access to includes/ and config/ directories
+# Block access to sensitive server-side directories
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteRule ^(includes|config|install|cron)/.*$ - [F,L]
+  RewriteRule ^(includes|config|cron)/.*$ - [F,L]
 </IfModule>
 
 # Force HTTPS (uncomment when SSL is active)
