@@ -6,10 +6,18 @@
  * Manually bootstraps config, db, helpers, auth, and starts the session.
  */
 
+// Security headers
+header('X-Frame-Options: SAMEORIGIN');
+header('X-Content-Type-Options: nosniff');
+header('X-XSS-Protection: 1; mode=block');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header("Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; style-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data:; connect-src 'self';");
+
 require_once __DIR__ . '/config/config.php';
 require_once INC_PATH . '/db.php';
 require_once INC_PATH . '/helpers.php';
 require_once INC_PATH . '/auth.php';
+require_once INC_PATH . '/rate_limit.php';
 session_init();
 
 // Already logged in? Send them home.
@@ -17,14 +25,19 @@ if (!empty($_SESSION['user_id'])) {
     redirect(APP_URL . '/dashboard.php');
 }
 
-$error = '';
+$error            = '';
+$attempts_warning = '';
 
 // ── Handle POST ──────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
 
-    $email    = trim($_POST['email']    ?? '');
+    $ip    = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    $email = trim($_POST['email']    ?? '');
     $password = trim($_POST['password'] ?? '');
+
+    // Rate limit check before processing
+    check_rate_limit($ip);
 
     $user = db_fetch(
         'SELECT * FROM users WHERE email = ? AND active = 1 LIMIT 1',
@@ -32,18 +45,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     );
 
     if ($user && password_verify($password, $user['password'])) {
+        // Successful password verification — clear failed attempts
+        clear_attempts($ip);
+
+        // Check if 2FA is enabled for this user
+        $tfs = db_fetch(
+            'SELECT * FROM two_factor_secrets WHERE user_id = ? AND enabled = 1 LIMIT 1',
+            [$user['id']]
+        );
+
+        if ($tfs) {
+            // Store pending user id, redirect to 2FA verify
+            session_regenerate_id(true);
+            $_SESSION['2fa_pending_user_id'] = $user['id'];
+            redirect(APP_URL . '/modules/two_factor/verify.php');
+        }
+
+        // No 2FA — log in normally
         login_user($user);
 
         if (!empty($user['must_change_pw'])) {
-            redirect(APP_URL . '/change_password.php');
+            redirect(APP_URL . '/modules/settings/change_password.php');
         }
 
         redirect(APP_URL . '/dashboard.php');
     }
 
-    // Failed login – slow down brute-force attempts
+    // Failed login
     sleep(1);
-    flash_error('Invalid credentials. Please check your email and password.');
+    record_failed_attempt($ip, $email);
+
+    $recent_count = count_recent_attempts($ip);
+    if ($recent_count >= 5 && $recent_count < RATE_LIMIT_MAX_ATTEMPTS) {
+        $remaining = RATE_LIMIT_MAX_ATTEMPTS - $recent_count;
+        flash_error('Invalid credentials. Warning: ' . $remaining . ' attempt' . ($remaining === 1 ? '' : 's') . ' remaining before lockout.');
+    } else {
+        flash_error('Invalid credentials. Please check your email and password.');
+    }
     redirect(APP_URL . '/login.php');
 }
 
@@ -273,7 +311,7 @@ $asset_path = defined('ASSET_PATH') ? ASSET_PATH : '';
                     name="password"
                     class="tp-input"
                     placeholder="••••••••"
-                    autocomplete="current-password"
+                    autocomplete="off"
                     required
                 >
             </div>

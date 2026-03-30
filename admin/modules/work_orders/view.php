@@ -523,6 +523,50 @@ layout_start('WO: ' . $wo['wo_number'], 'work_orders');
             </div>
         </div>
 
+        <!-- Invoice Card -->
+        <?php
+        $wo_inv = db_fetch('SELECT * FROM invoices WHERE work_order_id = ? LIMIT 1', [$id]);
+        $inv_status_map = ['unpaid'=>['danger','Unpaid'],'partial'=>['warning','Partial'],'paid'=>['success','Paid'],'void'=>['secondary','Void']];
+        ?>
+        <div class="card shadow-sm mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"><i class="fas fa-file-invoice-dollar me-2"></i>Invoice</h5>
+                <?php if ($wo_inv): ?>
+                <?php [$ic, $il] = $inv_status_map[$wo_inv['status']] ?? ['secondary', ucfirst($wo_inv['status'])]; ?>
+                <span class="badge bg-<?= $ic ?>"><?= $il ?></span>
+                <?php endif; ?>
+            </div>
+            <div class="card-body">
+                <?php if ($wo_inv): ?>
+                <dl class="row mb-3 small">
+                    <dt class="col-6 text-muted">Invoice #</dt>
+                    <dd class="col-6 fw-semibold"><?= htmlspecialchars($wo_inv['invoice_number']) ?></dd>
+                    <dt class="col-6 text-muted">Total</dt>
+                    <dd class="col-6">$<?= number_format((float)$wo_inv['amount'], 2) ?></dd>
+                    <dt class="col-6 text-muted">Paid</dt>
+                    <dd class="col-6" style="color:#22c55e;">$<?= number_format((float)$wo_inv['amount_paid'], 2) ?></dd>
+                    <dt class="col-6 text-muted">Balance Due</dt>
+                    <dd class="col-6 fw-bold" style="color:#f97316;">$<?= number_format(max(0, (float)$wo_inv['amount'] - (float)$wo_inv['amount_paid']), 2) ?></dd>
+                </dl>
+                <div class="d-grid gap-2">
+                    <a href="<?= e(APP_URL) ?>/modules/work_orders/invoice.php?wo_id=<?= $id ?>" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-eye me-1"></i>View Invoice
+                    </a>
+                    <?php if ($wo_inv['status'] !== 'paid' && $wo_inv['status'] !== 'void'): ?>
+                    <a href="<?= e(APP_URL) ?>/modules/payments/charge.php?invoice_id=<?= (int)$wo_inv['id'] ?>" class="btn btn-sm btn-success">
+                        <i class="fas fa-credit-card me-1"></i>Charge Customer
+                    </a>
+                    <?php endif; ?>
+                </div>
+                <?php else: ?>
+                <p class="text-muted small mb-2">No invoice generated yet.</p>
+                <a href="<?= e(APP_URL) ?>/modules/work_orders/invoice.php?wo_id=<?= $id ?>" class="btn btn-sm btn-outline-primary w-100">
+                    <i class="fas fa-plus me-1"></i>Generate Invoice
+                </a>
+                <?php endif; ?>
+            </div>
+        </div>
+
         <!-- WO Meta -->
         <div class="card shadow-sm">
             <div class="card-header">
@@ -550,5 +594,60 @@ layout_start('WO: ' . $wo['wo_number'], 'work_orders');
 
     </div>
 </div>
+
+<!-- Payment History -->
+<?php
+$wo_payments = db_fetchall(
+    "SELECT p.*, u.name AS paid_by
+     FROM payments p
+     LEFT JOIN users u ON p.created_by = u.id
+     WHERE p.work_order_id = ?
+     ORDER BY p.created_at DESC",
+    [$id]
+);
+if (!empty($wo_payments)):
+?>
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="fas fa-receipt me-2"></i>Payment History</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Status</th>
+                                <th>By</th>
+                                <th>Receipt</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($wo_payments as $wp): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($wp['paid_at'] ? date('M j, Y', strtotime($wp['paid_at'])) : date('M j, Y', strtotime($wp['created_at']))) ?></td>
+                            <td style="color:#22c55e;font-weight:600;">$<?= number_format((float)$wp['amount'], 2) ?></td>
+                            <td><?= htmlspecialchars(ucfirst($wp['method'])) ?></td>
+                            <td><span class="badge bg-<?= $wp['status'] === 'paid' ? 'success' : ($wp['status'] === 'failed' ? 'danger' : 'secondary') ?>">
+                                <?= htmlspecialchars(ucfirst($wp['status'])) ?>
+                            </span></td>
+                            <td><?= htmlspecialchars($wp['paid_by'] ?? '—') ?></td>
+                            <td><a href="<?= e(APP_URL) ?>/modules/payments/receipt.php?id=<?= (int)$wp['id'] ?>">
+                                <i class="fas fa-receipt"></i>
+                            </a></td>
+                        </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <?php layout_end(); ?>

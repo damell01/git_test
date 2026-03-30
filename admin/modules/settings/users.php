@@ -42,8 +42,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'toggl
     redirect('users.php');
 }
 
-// ── Fetch all users ────────────────────────────────────────────────────────────
-$users = db_fetchall('SELECT * FROM users ORDER BY name ASC');
+// ── Handle POST: disable 2FA ──────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'disable-2fa') {
+    csrf_check();
+
+    $target_id = (int)($_POST['user_id'] ?? 0);
+
+    if ($target_id <= 0) {
+        flash_error('Invalid user ID.');
+        redirect('users.php');
+    }
+
+    db_execute(
+        'UPDATE two_factor_secrets SET enabled = 0, updated_at = NOW() WHERE user_id = ?',
+        [$target_id]
+    );
+    $target = db_fetch('SELECT name FROM users WHERE id = ? LIMIT 1', [$target_id]);
+    log_activity('update', '2FA disabled for user ' . ($target['name'] ?? 'ID ' . $target_id), 'user', $target_id);
+    flash_success('2FA has been disabled for ' . ($target['name'] ?? 'the user') . '.');
+    redirect('users.php');
+}
+
+// ── Fetch all users with 2FA status ───────────────────────────────────────────
+$users = db_fetchall(
+    'SELECT u.*,
+            tfs.enabled AS tfa_enabled
+     FROM users u
+     LEFT JOIN two_factor_secrets tfs ON tfs.user_id = u.id
+     ORDER BY u.name ASC'
+);
 
 $role_labels = user_roles();
 
@@ -68,7 +95,8 @@ layout_start('Users', 'users');
                     <th>Name</th>
                     <th>Email</th>
                     <th>Role</th>
-                    <th>Active</th>
+                     <th>Active</th>
+                    <th>2FA</th>
                     <th>Last Login</th>
                     <th class="text-end">Actions</th>
                 </tr>
@@ -97,6 +125,24 @@ layout_start('Users', 'users');
                             <span class="tp-badge badge-available">Active</span>
                         <?php else: ?>
                             <span class="tp-badge badge-canceled">Inactive</span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <?php if (!empty($u['tfa_enabled'])): ?>
+                            <span class="badge bg-success">
+                                <i class="fa-solid fa-shield-halved"></i> On
+                            </span>
+                            <form method="POST" action="users.php" class="d-inline ms-1">
+                                <?= csrf_field() ?>
+                                <input type="hidden" name="action" value="disable-2fa">
+                                <input type="hidden" name="user_id" value="<?= (int)$u['id'] ?>">
+                                <button type="submit" class="btn btn-link btn-sm p-0" style="color:#ef4444;font-size:.75rem;"
+                                        onclick="return confirm('Disable 2FA for <?= e(addslashes($u['name'])) ?>?')">
+                                    Disable
+                                </button>
+                            </form>
+                        <?php else: ?>
+                            <span class="badge bg-secondary">Off</span>
                         <?php endif; ?>
                     </td>
                     <td>

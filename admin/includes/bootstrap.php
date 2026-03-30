@@ -6,6 +6,13 @@
  * Trash Panda Roll-Offs
  */
 
+// ── Security Headers ─────────────────────────────────────────────────────────
+header('X-Frame-Options: SAMEORIGIN');
+header('X-Content-Type-Options: nosniff');
+header('X-XSS-Protection: 1; mode=block');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header("Content-Security-Policy: default-src 'self'; script-src 'self' https://js.stripe.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; style-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https://chart.googleapis.com; frame-src https://js.stripe.com; connect-src 'self' https://api.stripe.com;");
+
 // ── 1. Configuration ────────────────────────────────────────────────────────
 require_once __DIR__ . '/../config/config.php';
 

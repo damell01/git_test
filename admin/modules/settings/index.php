@@ -13,6 +13,28 @@ require_role('admin', 'office');
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
 
+    $action = trim($_POST['action'] ?? 'save_settings');
+
+    if ($action === 'test_email') {
+        require_once INC_PATH . '/mailer.php';
+        $to = get_setting('company_email', '');
+        if (empty($to)) {
+            flash_error('No company email set. Please save settings first.');
+        } else {
+            $html = email_template(
+                'Test Email',
+                '<p>This is a test email from your Trash Panda Roll-Offs Manager.</p><p>If you received this, email sending is working correctly.</p>'
+            );
+            $result = send_email($to, 'Test Email from ' . get_setting('company_name', 'Trash Panda Roll-Offs'), $html);
+            if ($result) {
+                flash_success('Test email sent to ' . $to . '.');
+            } else {
+                flash_error('Failed to send test email. Check your PHP mail() configuration.');
+            }
+        }
+        redirect('index.php');
+    }
+
     $fields = [
         'company_name',
         'company_phone',
@@ -22,7 +44,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'quote_terms',
         'wo_footer',
         'logo_path',
+        'email_from_name',
+        'email_from_email',
     ];
+
+    // Stripe keys (only save if non-empty or clearing)
+    foreach (['stripe_secret_key', 'stripe_publishable_key', 'stripe_webhook_secret'] as $sk) {
+        $val = trim($_POST[$sk] ?? '');
+        if ($val !== '') {
+            set_setting($sk, $val);
+        }
+    }
 
     foreach ($fields as $key) {
         $value = trim($_POST[$key] ?? '');
@@ -175,6 +207,147 @@ layout_start('Settings', 'settings');
 
     </form>
 </div>
+
+<!-- ── Stripe Configuration ─────────────────────────────────────────────── -->
+<div class="tp-card mt-4" style="max-width:780px;">
+    <h6 class="mb-3" style="font-weight:600;border-bottom:1px solid #e5e7eb;padding-bottom:.5rem;">
+        <i class="fa-brands fa-stripe" style="color:#635BFF;"></i> Stripe Configuration
+    </h6>
+
+    <form method="POST" action="index.php">
+        <?= csrf_field() ?>
+
+        <div class="row g-3 mb-4">
+
+            <div class="col-md-6">
+                <label class="form-label" for="stripe_publishable_key">Publishable Key</label>
+                <div class="input-group">
+                    <input type="password" id="stripe_publishable_key" name="stripe_publishable_key"
+                           class="form-control" placeholder="pk_live_…"
+                           value="<?= e(get_setting('stripe_publishable_key')) ?>">
+                    <button type="button" class="btn btn-outline-secondary"
+                            onclick="toggleField('stripe_publishable_key')">
+                        <i class="fa-solid fa-eye" id="stripe_publishable_key-icon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label" for="stripe_secret_key">Secret Key</label>
+                <div class="input-group">
+                    <input type="password" id="stripe_secret_key" name="stripe_secret_key"
+                           class="form-control" placeholder="sk_live_…"
+                           value="<?= e(get_setting('stripe_secret_key')) ?>">
+                    <button type="button" class="btn btn-outline-secondary"
+                            onclick="toggleField('stripe_secret_key')">
+                        <i class="fa-solid fa-eye" id="stripe_secret_key-icon"></i>
+                    </button>
+                </div>
+                <div class="form-text text-danger">Never share this key publicly.</div>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label" for="stripe_webhook_secret">Webhook Secret</label>
+                <div class="input-group">
+                    <input type="password" id="stripe_webhook_secret" name="stripe_webhook_secret"
+                           class="form-control" placeholder="whsec_…"
+                           value="<?= e(get_setting('stripe_webhook_secret')) ?>">
+                    <button type="button" class="btn btn-outline-secondary"
+                            onclick="toggleField('stripe_webhook_secret')">
+                        <i class="fa-solid fa-eye" id="stripe_webhook_secret-icon"></i>
+                    </button>
+                </div>
+                <div class="form-text">
+                    Set your webhook endpoint in Stripe Dashboard to:<br>
+                    <code><?= e(APP_URL) ?>/modules/payments/webhook.php</code>
+                </div>
+            </div>
+
+        </div>
+
+        <button type="submit" class="btn-tp-primary">
+            <i class="fa-solid fa-floppy-disk"></i> Save Stripe Settings
+        </button>
+    </form>
+</div>
+
+<!-- ── Email Configuration ──────────────────────────────────────────────── -->
+<div class="tp-card mt-4" style="max-width:780px;">
+    <h6 class="mb-3" style="font-weight:600;border-bottom:1px solid #e5e7eb;padding-bottom:.5rem;">
+        <i class="fa-solid fa-envelope" style="color:#f97316;"></i> Email Configuration
+    </h6>
+
+    <form method="POST" action="index.php">
+        <?= csrf_field() ?>
+
+        <div class="row g-3 mb-4">
+
+            <div class="col-md-6">
+                <label class="form-label" for="email_from_name">From Name</label>
+                <input type="text" id="email_from_name" name="email_from_name" class="form-control"
+                       value="<?= e(get_setting('email_from_name', get_setting('company_name', 'Trash Panda Roll-Offs'))) ?>">
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label" for="email_from_email">From Email</label>
+                <input type="email" id="email_from_email" name="email_from_email" class="form-control"
+                       value="<?= e(get_setting('email_from_email', get_setting('company_email', ''))) ?>">
+            </div>
+
+            <div class="col-12">
+                <div class="alert alert-info mb-0" style="font-size:.85rem;">
+                    <i class="fa-solid fa-circle-info me-2"></i>
+                    <strong>SMTP Note:</strong> The system uses PHP <code>mail()</code>.
+                    For reliable email delivery, configure your hosting's built-in SMTP relay,
+                    or use SendGrid/Mailgun as an SMTP relay via your hosting control panel.
+                </div>
+            </div>
+
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn-tp-primary">
+                <i class="fa-solid fa-floppy-disk"></i> Save Email Settings
+            </button>
+
+            <form method="POST" action="index.php" class="d-inline">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="test_email">
+                <button type="submit" class="btn-tp-ghost btn-tp-sm">
+                    <i class="fa-solid fa-paper-plane"></i> Send Test Email
+                </button>
+            </form>
+        </div>
+
+    </form>
+</div>
+
+<!-- ── 2FA Setup Link ────────────────────────────────────────────────────── -->
+<div class="tp-card mt-4" style="max-width:780px;">
+    <h6 class="mb-2" style="font-weight:600;">
+        <i class="fa-solid fa-shield-halved" style="color:#f97316;"></i> Two-Factor Authentication
+    </h6>
+    <p style="font-size:.9rem;color:var(--gy);">
+        Enable 2FA on your account using an authenticator app (Google Authenticator, Authy, etc.)
+    </p>
+    <a href="<?= e(APP_URL) ?>/modules/two_factor/setup.php" class="btn-tp-ghost btn-tp-sm">
+        <i class="fa-solid fa-qrcode"></i> Manage 2FA
+    </a>
+</div>
+
+<script>
+function toggleField(id) {
+    var inp  = document.getElementById(id);
+    var icon = document.getElementById(id + '-icon');
+    if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+        inp.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+}
+</script>
 
 <?php
 layout_end();
