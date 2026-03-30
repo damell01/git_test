@@ -1,8 +1,8 @@
 <?php
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'your_db');
-define('DB_USER', 'your_user');
-define('DB_PASS', 'your_pass');
+define('DB_HOST', '193.203.166.222');
+define('DB_NAME', 'u307979562_trashpanda');
+define('DB_USER', '	u307979562_trashpanda');
+define('DB_PASS', 'ReallyStrongPassword1!');
 define('DB_CHARSET', 'utf8mb4');
 define('APP_NAME', 'Trash Panda Roll-Offs');
 define('APP_VERSION', '1.0.0');
