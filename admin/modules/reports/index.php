@@ -55,7 +55,7 @@ $today         = date('Y-m-d');
 $in_7_days     = date('Y-m-d', strtotime('+7 days'));
 
 $upcoming_deliveries = db_fetchall(
-    "SELECT wo.id, wo.wo_number, wo.customer_name, wo.service_address,
+    "SELECT wo.id, wo.wo_number, wo.cust_name, wo.service_address,
             wo.delivery_date, wo.size, wo.status
      FROM work_orders wo
      WHERE wo.delivery_date BETWEEN ? AND ?
@@ -66,7 +66,7 @@ $upcoming_deliveries = db_fetchall(
 
 // ── Section 5: Upcoming Pickups (next 7 days) ─────────────────────────────────
 $upcoming_pickups = db_fetchall(
-    "SELECT wo.id, wo.wo_number, wo.customer_name, wo.service_address,
+    "SELECT wo.id, wo.wo_number, wo.cust_name, wo.service_address,
             wo.pickup_date, wo.size, wo.status
      FROM work_orders wo
      WHERE wo.pickup_date BETWEEN ? AND ?
@@ -77,7 +77,7 @@ $upcoming_pickups = db_fetchall(
 
 // ── Section 6: Overdue Pickups ────────────────────────────────────────────────
 $overdue_pickups = db_fetchall(
-    "SELECT wo.id, wo.wo_number, wo.customer_name, wo.service_address,
+    "SELECT wo.id, wo.wo_number, wo.cust_name, wo.service_address,
             wo.pickup_date, wo.size, wo.status,
             DATEDIFF(CURDATE(), wo.pickup_date) AS days_overdue
      FROM work_orders wo
@@ -274,7 +274,7 @@ layout_start('Reports', 'reports');
                             <?= e($wo['wo_number']) ?>
                         </a>
                     </td>
-                    <td><?= e($wo['customer_name']) ?></td>
+                    <td><?= e($wo['cust_name']) ?></td>
                     <td><?= e($wo['service_address'] ?? '—') ?></td>
                     <td><?= e(fmt_date($wo['delivery_date'])) ?></td>
                     <td><?= e($wo['size'] ?? '—') ?></td>
@@ -316,7 +316,7 @@ layout_start('Reports', 'reports');
                             <?= e($wo['wo_number']) ?>
                         </a>
                     </td>
-                    <td><?= e($wo['customer_name']) ?></td>
+                    <td><?= e($wo['cust_name']) ?></td>
                     <td><?= e($wo['service_address'] ?? '—') ?></td>
                     <td><?= e(fmt_date($wo['pickup_date'])) ?></td>
                     <td><?= e($wo['size'] ?? '—') ?></td>
@@ -359,7 +359,7 @@ layout_start('Reports', 'reports');
                             <?= e($wo['wo_number']) ?>
                         </a>
                     </td>
-                    <td><?= e($wo['customer_name']) ?></td>
+                    <td><?= e($wo['cust_name']) ?></td>
                     <td><?= e($wo['service_address'] ?? '—') ?></td>
                     <td><?= e(fmt_date($wo['pickup_date'])) ?></td>
                     <td>

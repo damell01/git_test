@@ -10,7 +10,7 @@
  */
 
 // ── Bootstrap config (without the full app bootstrap) ────────────────────────
-$config_path = dirname(__DIR__) . '/admin/config/config.php';
+$config_path = dirname(__DIR__) . '/config/config.php';
 if (!is_readable($config_path)) {
     die('ERROR: Cannot read admin/config/config.php. Verify the file exists and is readable.');
 }

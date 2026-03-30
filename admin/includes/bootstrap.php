@@ -23,12 +23,12 @@ session_init();
 // password page unless they are already on it (avoids an infinite loop).
 if (!empty($_SESSION['user_id'])) {
     $current_script = $_SERVER['SCRIPT_FILENAME'] ?? '';
-    $change_pw_file = ROOT_PATH . '/change_password.php';
+    $change_pw_file = ROOT_PATH . '/modules/settings/change_password.php';
 
     if (realpath($current_script) !== realpath($change_pw_file)) {
         $user = current_user();
         if ($user && !empty($user['must_change_pw'])) {
-            redirect(APP_URL . '/change_password.php');
+            redirect(APP_URL . '/modules/settings/change_password.php?force=1');
         }
     }
 }

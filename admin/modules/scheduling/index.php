@@ -42,7 +42,7 @@ $month_wos = db_fetchall(
             wo.delivery_date,
             wo.pickup_date,
             wo.status,
-            wo.customer_name
+            wo.cust_name
      FROM work_orders wo
      WHERE (
                (wo.delivery_date BETWEEN ? AND ?)
@@ -69,7 +69,7 @@ $upcoming_start = date('Y-m-d');
 $upcoming_end   = date('Y-m-d', strtotime('+14 days'));
 
 $upcoming_deliveries = db_fetchall(
-    "SELECT wo.id, wo.wo_number, wo.customer_name, wo.service_address,
+    "SELECT wo.id, wo.wo_number, wo.cust_name, wo.service_address,
             wo.size, wo.delivery_date, wo.status
      FROM work_orders wo
      WHERE wo.delivery_date BETWEEN ? AND ?
@@ -79,7 +79,7 @@ $upcoming_deliveries = db_fetchall(
 );
 
 $upcoming_pickups = db_fetchall(
-    "SELECT wo.id, wo.wo_number, wo.customer_name, wo.service_address,
+    "SELECT wo.id, wo.wo_number, wo.cust_name, wo.service_address,
             wo.size, wo.pickup_date, wo.status
      FROM work_orders wo
      WHERE wo.pickup_date BETWEEN ? AND ?
@@ -216,17 +216,17 @@ layout_start('Scheduling', 'scheduling');
         <?php foreach ($day_dels as $wo): ?>
         <a href="<?= e(APP_URL) ?>/modules/work_orders/view.php?id=<?= (int)$wo['id'] ?>"
            class="cal-ev del"
-           title="Delivery: <?= e($wo['wo_number']) ?> — <?= e($wo['customer_name']) ?>">
+           title="Delivery: <?= e($wo['wo_number']) ?> — <?= e($wo['cust_name']) ?>">
             <i class="fa-solid fa-truck-arrow-right fa-xs"></i>
-            <?= e($wo['wo_number']) ?> <?= e(mb_strimwidth($wo['customer_name'], 0, 12, '…')) ?>
+            <?= e($wo['wo_number']) ?> <?= e(mb_strimwidth($wo['cust_name'], 0, 12, '…')) ?>
         </a>
         <?php endforeach; ?>
         <?php foreach ($day_pkups as $wo): ?>
         <a href="<?= e(APP_URL) ?>/modules/work_orders/view.php?id=<?= (int)$wo['id'] ?>"
            class="cal-ev pck"
-           title="Pickup: <?= e($wo['wo_number']) ?> — <?= e($wo['customer_name']) ?>">
+           title="Pickup: <?= e($wo['wo_number']) ?> — <?= e($wo['cust_name']) ?>">
             <i class="fa-solid fa-dumpster fa-xs"></i>
-            <?= e($wo['wo_number']) ?> <?= e(mb_strimwidth($wo['customer_name'], 0, 12, '…')) ?>
+            <?= e($wo['wo_number']) ?> <?= e(mb_strimwidth($wo['cust_name'], 0, 12, '…')) ?>
         </a>
         <?php endforeach; ?>
     </div>
@@ -276,7 +276,7 @@ layout_start('Scheduling', 'scheduling');
                                     <?= e($wo['wo_number']) ?>
                                 </a>
                             </td>
-                            <td><?= e($wo['customer_name']) ?></td>
+                            <td><?= e($wo['cust_name']) ?></td>
                             <td><?= e($wo['service_address'] ?? '—') ?></td>
                             <td><?= e($wo['size'] ?? '—') ?></td>
                             <td><?= e(fmt_date($wo['delivery_date'])) ?></td>
@@ -327,7 +327,7 @@ layout_start('Scheduling', 'scheduling');
                                     <?= e($wo['wo_number']) ?>
                                 </a>
                             </td>
-                            <td><?= e($wo['customer_name']) ?></td>
+                            <td><?= e($wo['cust_name']) ?></td>
                             <td><?= e($wo['service_address'] ?? '—') ?></td>
                             <td><?= e($wo['size'] ?? '—') ?></td>
                             <td><?= e(fmt_date($wo['pickup_date'])) ?></td>

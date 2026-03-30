@@ -103,7 +103,7 @@ layout_start('Schedule: ' . fmt_date($date), 'scheduling');
                             <?= e($wo['wo_number']) ?>
                         </a>
                     </td>
-                    <td><?= e($wo['customer_name']) ?></td>
+                    <td><?= e($wo['cust_name']) ?></td>
                     <td><?= e($wo['service_address'] ?? '—') ?></td>
                     <td><?= e($wo['size'] ?? '—') ?></td>
                     <td>
@@ -189,7 +189,7 @@ layout_start('Schedule: ' . fmt_date($date), 'scheduling');
                             <?= e($wo['wo_number']) ?>
                         </a>
                     </td>
-                    <td><?= e($wo['customer_name']) ?></td>
+                    <td><?= e($wo['cust_name']) ?></td>
                     <td><?= e($wo['service_address'] ?? '—') ?></td>
                     <td><?= e($wo['size'] ?? '—') ?></td>
                     <td>
