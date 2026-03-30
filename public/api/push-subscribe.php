@@ -49,6 +49,13 @@ $action       = trim($data['action'] ?? '');
 $subscription = $data['subscription'] ?? null;
 $identifier   = trim($data['identifier'] ?? '');
 
+// ── Get VAPID public key ───────────────────────────────────────────────────
+if ($action === 'getVapidKey') {
+    $pub = push_vapid_public_key();
+    echo json_encode(['success' => true, 'vapidPublicKey' => $pub]);
+    exit;
+}
+
 // ── Unsubscribe ────────────────────────────────────────────────────────────
 if ($action === 'unsubscribe') {
     $endpoint = trim($subscription['endpoint'] ?? '');
@@ -62,7 +69,7 @@ if ($action === 'unsubscribe') {
 
 // ── Subscribe ──────────────────────────────────────────────────────────────
 if ($action !== 'subscribe') {
-    push_api_error('Invalid action. Use subscribe or unsubscribe.');
+    push_api_error('Invalid action. Use getVapidKey, subscribe, or unsubscribe.');
 }
 
 if (!is_array($subscription) || empty($subscription['endpoint'])) {
