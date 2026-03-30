@@ -43,6 +43,18 @@ $dumpsters_available = (int)(db_fetch(
     "SELECT COUNT(*) AS cnt FROM dumpsters WHERE status = 'available'"
 )['cnt'] ?? 0);
 
+// ── Booking KPIs (wrapped in try/catch in case bookings table not yet installed) ──
+$bookings_total    = 0;
+$bookings_upcoming = 0;
+$bookings_unpaid   = 0;
+try {
+    $bookings_total    = (int)(db_fetch("SELECT COUNT(*) AS cnt FROM bookings WHERE booking_status != 'canceled'")['cnt'] ?? 0);
+    $bookings_upcoming = (int)(db_fetch("SELECT COUNT(*) AS cnt FROM bookings WHERE rental_start >= CURDATE() AND booking_status NOT IN ('canceled','completed')")['cnt'] ?? 0);
+    $bookings_unpaid   = (int)(db_fetch("SELECT COUNT(*) AS cnt FROM bookings WHERE payment_status IN ('unpaid','pending','pending_cash','pending_check') AND booking_status != 'canceled'")['cnt'] ?? 0);
+} catch (\Throwable $e) {
+    // Bookings table not yet installed — silently skip.
+}
+
 // ── Recent Work Orders ───────────────────────────────────────────────────────
 $recent_wo = db_fetchall(
     "SELECT wo.id, wo.wo_number, wo.cust_name, wo.status, wo.delivery_date, wo.amount,
@@ -178,6 +190,38 @@ layout_start('Dashboard', 'dashboard');
     </div>
 
 </div><!-- /.row KPI cards -->
+
+<!-- ── Booking KPI Cards ──────────────────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+
+    <!-- Total Bookings -->
+    <div class="col-6 col-md-4 col-xl-4">
+        <a href="<?= e(APP_URL) ?>/modules/bookings/index.php" class="tp-kpi-card tp-kpi-blue text-decoration-none d-block">
+            <div class="kpi-icon"><i class="fa-solid fa-calendar-check"></i></div>
+            <div class="kpi-value"><?= $bookings_total ?></div>
+            <div class="kpi-label">Total Bookings</div>
+        </a>
+    </div>
+
+    <!-- Upcoming Bookings -->
+    <div class="col-6 col-md-4 col-xl-4">
+        <a href="<?= e(APP_URL) ?>/modules/bookings/index.php?filter=upcoming" class="tp-kpi-card tp-kpi-green text-decoration-none d-block">
+            <div class="kpi-icon"><i class="fa-solid fa-calendar-days"></i></div>
+            <div class="kpi-value"><?= $bookings_upcoming ?></div>
+            <div class="kpi-label">Upcoming Bookings</div>
+        </a>
+    </div>
+
+    <!-- Unpaid Bookings -->
+    <div class="col-6 col-md-4 col-xl-4">
+        <a href="<?= e(APP_URL) ?>/modules/bookings/index.php?filter=pending" class="tp-kpi-card tp-kpi-amber text-decoration-none d-block">
+            <div class="kpi-icon"><i class="fa-solid fa-clock"></i></div>
+            <div class="kpi-value"><?= $bookings_unpaid ?></div>
+            <div class="kpi-label">Awaiting Payment</div>
+        </a>
+    </div>
+
+</div><!-- /.row booking KPI cards -->
 
 <!-- ── Two-column grid: Recent WOs + Quick Stats ─────────────────────────── -->
 <div class="row g-4 mb-4">

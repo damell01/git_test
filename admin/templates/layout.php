@@ -73,6 +73,14 @@ function layout_start(string $page_title, string $active_nav = ''): void
             'badge' => null,
         ],
         [
+            'key'   => 'bookings',
+            'label' => 'Bookings',
+            'icon'  => 'fa-calendar-check',
+            'href'  => APP_URL . '/modules/bookings/index.php',
+            'roles' => null,
+            'badge' => 'bookings',
+        ],
+        [
             'key'   => 'reports',
             'label' => 'Reports',
             'icon'  => 'fa-chart-bar',
@@ -121,6 +129,12 @@ function layout_start(string $page_title, string $active_nav = ''): void
             if ($type === 'work_orders') {
                 $row = db_fetch(
                     "SELECT COUNT(*) AS cnt FROM work_orders WHERE status IN ('scheduled','pickup_requested')"
+                );
+                return (int) ($row['cnt'] ?? 0);
+            }
+            if ($type === 'bookings') {
+                $row = db_fetch(
+                    "SELECT COUNT(*) AS cnt FROM bookings WHERE booking_status IN ('pending','confirmed') AND payment_status IN ('unpaid','pending','pending_cash','pending_check')"
                 );
                 return (int) ($row['cnt'] ?? 0);
             }
