@@ -5,6 +5,7 @@
  */
 
 require_once dirname(__DIR__, 2) . '/includes/bootstrap.php';
+require_once INC_PATH . '/mailer.php';
 require_login();
 require_role('admin', 'office');
 
@@ -21,7 +22,7 @@ if ($id <= 0) {
     redirect('index.php');
 }
 
-$booking = db_fetch('SELECT id, booking_number, booking_status FROM bookings WHERE id = ? LIMIT 1', [$id]);
+$booking = db_fetch('SELECT * FROM bookings WHERE id = ? LIMIT 1', [$id]);
 if (!$booking) {
     flash_error('Booking not found.');
     redirect('index.php');
@@ -36,6 +37,14 @@ db_update('bookings', [
     'booking_status' => 'canceled',
     'updated_at'     => date('Y-m-d H:i:s'),
 ], 'id', $id);
+
+// Release dumpster if no other active bookings/work-orders hold it
+if (!empty($booking['dumpster_id'])) {
+    release_dumpster_if_free((int)$booking['dumpster_id'], $id);
+}
+
+// Notify customer
+notify_booking_cancelled($booking);
 
 log_activity('cancel', "Canceled booking {$booking['booking_number']}", 'booking', $id);
 flash_success("Booking {$booking['booking_number']} has been canceled.");

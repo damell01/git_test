@@ -162,6 +162,13 @@ if (!$new_id) {
     api_error('Failed to create booking. Please try again.', 500);
 }
 
+// Mark dumpster as reserved immediately for ALL payment methods
+// (prevents double-booking regardless of payment state)
+db_update('dumpsters', [
+    'status'     => 'reserved',
+    'updated_at' => date('Y-m-d H:i:s'),
+], 'id', $unit_id);
+
 // Token for success page (prevents enumeration)
 $token = hash_hmac('sha256', (string)$new_id, get_setting('stripe_secret_key', 'booking-token-secret'));
 
@@ -212,7 +219,7 @@ if ($payment_method === 'stripe') {
     }
 }
 
-// Cash / check
+// Cash / check — dumpster already marked reserved above
 http_response_code(200);
 echo json_encode([
     'success'  => true,

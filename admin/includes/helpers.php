@@ -445,3 +445,48 @@ function log_activity(string $action, string $desc, string $type = '', int $id =
         'created_at'  => date('Y-m-d H:i:s'),
     ]);
 }
+
+/**
+ * Release a dumpster back to 'available' if no other active bookings or
+ * active work orders still hold it.
+ *
+ * @param int $dumpster_id
+ * @param int $exclude_booking_id  Booking ID to exclude from the check (the one being cancelled/completed)
+ */
+function release_dumpster_if_free(int $dumpster_id, int $exclude_booking_id = 0): void
+{
+    if ($dumpster_id <= 0) {
+        return;
+    }
+
+    // Check for other active bookings that cover today or future dates
+    $other_bookings = db_fetch(
+        "SELECT COUNT(*) AS cnt FROM bookings
+         WHERE dumpster_id = ?
+           AND id != ?
+           AND booking_status NOT IN ('canceled','completed')
+           AND rental_end >= CURDATE()",
+        [$dumpster_id, $exclude_booking_id]
+    );
+
+    if ((int)($other_bookings['cnt'] ?? 0) > 0) {
+        return; // Still held by another booking
+    }
+
+    // Check for active work orders
+    $active_wo = db_fetch(
+        "SELECT COUNT(*) AS cnt FROM work_orders
+         WHERE dumpster_id = ?
+           AND status NOT IN ('completed','canceled','picked_up')",
+        [$dumpster_id]
+    );
+
+    if ((int)($active_wo['cnt'] ?? 0) > 0) {
+        return; // Still held by a work order
+    }
+
+    db_update('dumpsters', [
+        'status'     => 'available',
+        'updated_at' => date('Y-m-d H:i:s'),
+    ], 'id', $dumpster_id);
+}

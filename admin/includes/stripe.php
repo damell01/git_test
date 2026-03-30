@@ -52,8 +52,13 @@ function stripe_create_checkout(array $booking, string $success_url, string $can
         'success_url' => $success_url,
         'cancel_url'  => $cancel_url,
         'metadata'    => [
-            'booking_id'     => (string)$booking['id'],
-            'booking_number' => $booking['booking_number'],
+            'booking_id'      => (string)$booking['id'],
+            'booking_number'  => $booking['booking_number'],
+            'customer_name'   => $booking['customer_name'] ?? '',
+            'customer_phone'  => $booking['customer_phone'] ?? '',
+            'unit_code'       => $booking['unit_code'] ?? '',
+            'rental_start'    => $booking['rental_start'] ?? '',
+            'rental_end'      => $booking['rental_end'] ?? '',
         ],
         'customer_email' => $booking['customer_email'] ?? null,
     ];

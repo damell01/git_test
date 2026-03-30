@@ -252,7 +252,7 @@ layout_start('Reports', 'reports');
 </h6>
 <div class="tp-card mb-4">
     <?php if (empty($upcoming_deliveries)): ?>
-        <p class="text-muted mb-0">No deliveries in the next 7 days.</p>
+        <p style="color:#e5e7eb;" class="mb-0">No deliveries in the next 7 days.</p>
     <?php else: ?>
     <div class="table-responsive">
         <table class="table tp-table table-sm mb-0">
@@ -294,7 +294,7 @@ layout_start('Reports', 'reports');
 </h6>
 <div class="tp-card mb-4">
     <?php if (empty($upcoming_pickups)): ?>
-        <p class="text-muted mb-0">No pickups in the next 7 days.</p>
+        <p style="color:#e5e7eb;" class="mb-0">No pickups in the next 7 days.</p>
     <?php else: ?>
     <div class="table-responsive">
         <table class="table tp-table table-sm mb-0">
@@ -336,7 +336,7 @@ layout_start('Reports', 'reports');
 </h6>
 <div class="tp-card mb-4">
     <?php if (empty($overdue_pickups)): ?>
-        <p class="text-muted mb-0">No overdue pickups. </p>
+        <p style="color:#e5e7eb;" class="mb-0">No overdue pickups. </p>
     <?php else: ?>
     <div class="table-responsive">
         <table class="table tp-table table-sm mb-0">
@@ -384,7 +384,7 @@ layout_start('Reports', 'reports');
 </h6>
 <div class="tp-card mb-4">
     <?php if (empty($monthly_counts)): ?>
-        <p class="text-muted mb-0">No data available.</p>
+        <p style="color:#e5e7eb;" class="mb-0">No data available.</p>
     <?php else: ?>
     <div class="bar-chart">
         <?php foreach ($monthly_counts as $mc):

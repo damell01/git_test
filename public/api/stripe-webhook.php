@@ -61,6 +61,15 @@ if ($event->type === 'checkout.session.completed') {
                 'stripe_payment_id' => $payment_id ?: null,
                 'updated_at'        => date('Y-m-d H:i:s'),
             ], 'id', (int)$booking['id']);
+
+            // Mark dumpster as reserved now that payment is confirmed
+            $paid_booking = db_fetch('SELECT dumpster_id FROM bookings WHERE id = ? LIMIT 1', [(int)$booking['id']]);
+            if ($paid_booking && !empty($paid_booking['dumpster_id'])) {
+                db_update('dumpsters', [
+                    'status'     => 'reserved',
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ], 'id', (int)$paid_booking['dumpster_id']);
+            }
         }
     }
 }

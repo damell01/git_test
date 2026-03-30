@@ -52,6 +52,17 @@ $month_wos = db_fetchall(
     [$month_start, $month_end, $month_start, $month_end]
 );
 
+// ── Fetch all confirmed bookings for the month ─────────────────────────────────
+$month_bookings = db_fetchall(
+    "SELECT b.id, b.booking_number, b.customer_name, b.unit_code,
+            b.rental_start, b.rental_end, b.booking_status, b.payment_method
+     FROM bookings b
+     WHERE b.booking_status NOT IN ('canceled')
+       AND b.rental_start <= ? AND b.rental_end >= ?
+     ORDER BY b.rental_start ASC",
+    [$month_end, $month_start]
+);
+
 // ── Index WOs by date for fast lookup ─────────────────────────────────────────
 $deliveries_by_date = [];
 $pickups_by_date    = [];
@@ -61,6 +72,19 @@ foreach ($month_wos as $wo) {
     }
     if (!empty($wo['pickup_date'])) {
         $pickups_by_date[$wo['pickup_date']][] = $wo;
+    }
+}
+
+// ── Index bookings by every active date in month ──────────────────────────────
+$bookings_by_date = [];
+foreach ($month_bookings as $bk) {
+    $start = max($bk['rental_start'], $month_start);
+    $end   = min($bk['rental_end'],   $month_end);
+    $cur   = new \DateTime($start);
+    $eDate = new \DateTime($end);
+    while ($cur <= $eDate) {
+        $bookings_by_date[$cur->format('Y-m-d')][] = $bk;
+        $cur->modify('+1 day');
     }
 }
 
@@ -160,10 +184,10 @@ layout_start('Scheduling', 'scheduling');
     color: #15803d;
     border-left: 3px solid #16a34a;
 }
-.cal-ev.pck {
-    background: #ede9fe;
-    color: #6d28d9;
-    border-left: 3px solid #7c3aed;
+.cal-ev.bk {
+    background: #fef3c7;
+    color: #92400e;
+    border-left: 3px solid #d97706;
 }
 </style>
 
@@ -186,6 +210,7 @@ layout_start('Scheduling', 'scheduling');
 <div class="d-flex gap-3 mb-2" style="font-size:.75rem;">
     <span><span class="cal-ev del d-inline-block" style="width:60px;">Delivery</span></span>
     <span><span class="cal-ev pck d-inline-block" style="width:60px;">Pickup</span></span>
+    <span><span class="cal-ev bk d-inline-block" style="width:80px;">Booking</span></span>
 </div>
 
 <!-- Monthly Calendar -->
@@ -208,6 +233,7 @@ layout_start('Scheduling', 'scheduling');
         $is_today  = ($date_str === $today);
         $day_dels  = $deliveries_by_date[$date_str] ?? [];
         $day_pkups = $pickups_by_date[$date_str] ?? [];
+        $day_bks   = $bookings_by_date[$date_str] ?? [];
     ?>
     <div class="cal-day <?= $is_today ? 'today' : '' ?>">
         <div class="cal-day-num">
@@ -227,6 +253,14 @@ layout_start('Scheduling', 'scheduling');
            title="Pickup: <?= e($wo['wo_number']) ?> — <?= e($wo['cust_name']) ?>">
             <i class="fa-solid fa-dumpster fa-xs"></i>
             <?= e($wo['wo_number']) ?> <?= e(mb_strimwidth($wo['cust_name'], 0, 12, '…')) ?>
+        </a>
+        <?php endforeach; ?>
+        <?php foreach ($day_bks as $bk): ?>
+        <a href="<?= e(APP_URL) ?>/modules/bookings/view.php?id=<?= (int)$bk['id'] ?>"
+           class="cal-ev bk"
+           title="Booking: <?= e($bk['booking_number']) ?> — <?= e($bk['customer_name']) ?> | <?= e($bk['unit_code']) ?>">
+            <i class="fa-solid fa-calendar-check fa-xs"></i>
+            <?= e($bk['booking_number']) ?> <?= e(mb_strimwidth($bk['customer_name'], 0, 10, '…')) ?>
         </a>
         <?php endforeach; ?>
     </div>
@@ -253,7 +287,7 @@ layout_start('Scheduling', 'scheduling');
                 Upcoming Deliveries <small class="text-muted">(next 14 days)</small>
             </h6>
             <?php if (empty($upcoming_deliveries)): ?>
-                <p class="text-muted mb-0">No deliveries scheduled.</p>
+                <p style="color:#e5e7eb;" class="mb-0">No deliveries scheduled.</p>
             <?php else: ?>
             <div class="table-responsive">
                 <table class="table tp-table table-sm mb-0">
@@ -304,7 +338,7 @@ layout_start('Scheduling', 'scheduling');
                 <span class="ms-1">Upcoming Pickups</span> <small class="text-muted">(next 14 days)</small>
             </h6>
             <?php if (empty($upcoming_pickups)): ?>
-                <p class="text-muted mb-0">No pickups scheduled.</p>
+                <p style="color:#e5e7eb;" class="mb-0">No pickups scheduled.</p>
             <?php else: ?>
             <div class="table-responsive">
                 <table class="table tp-table table-sm mb-0">
