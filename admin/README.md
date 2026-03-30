@@ -140,3 +140,84 @@ Update or delete these through the **Inventory** module after logging in.
 1. Log in as **admin**
 2. Go to **Settings → Users → Add User**
 3. Fill in name, email, role, and password
+
+---
+
+## Stripe Setup
+
+1. Create a Stripe account at [stripe.com](https://stripe.com)
+2. Get your API keys from Dashboard → Developers → API Keys
+3. Add to `config/config.php`:
+   - `STRIPE_SECRET_KEY` (sk_live_...)
+   - `STRIPE_PUBLISHABLE_KEY` (pk_live_...)
+4. In Stripe Dashboard, create a webhook pointing to:
+   `https://yourdomain.com/admin/modules/payments/webhook.php`
+5. Add the webhook signing secret to `config/config.php`:
+   - `STRIPE_WEBHOOK_SECRET` (whsec_...)
+6. Register these webhook events:
+   - `payment_intent.succeeded`
+   - `payment_intent.payment_failed`
+   - `charge.refunded`
+
+You can also manage Stripe keys via **Settings → Stripe Configuration** in the admin panel.
+
+---
+
+## Two-Factor Authentication
+
+1. Log in and go to **Settings → Two-Factor Authentication**
+2. Scan the QR code with Google Authenticator, Authy, or any TOTP app
+3. Enter the 6-digit code to confirm setup
+4. Save your 8 backup codes in a secure location (shown only once)
+5. Admins can disable 2FA for any user via **Settings → Users**
+
+---
+
+## Customer Portal
+
+1. Customers visit: `https://yourdomain.com/admin/modules/portal/`
+2. They enter their email address to receive a magic login link
+3. The link expires in 24 hours
+4. Customers can view their work orders and pay invoices
+5. Portal sessions expire after 2 hours of inactivity
+
+---
+
+## Cron Job Setup (cPanel)
+
+In cPanel → Cron Jobs, add the following entry to run daily at 8 AM:
+
+```
+0 8 * * * php /home/youraccount/public_html/admin/cron/daily.php >> /dev/null 2>&1
+```
+
+Or call via web (with the secure key from `config.php`):
+```
+https://yourdomain.com/admin/cron/daily.php?key=YOUR_CRON_KEY
+```
+
+The cron job:
+- Sends delivery reminder emails (for tomorrow's deliveries)
+- Sends overdue pickup alerts to the company email
+- Auto-activates work orders whose delivery date has passed
+
+---
+
+## Email
+
+The system uses PHP `mail()` for sending emails. For reliable delivery:
+
+- Use your hosting's built-in SMTP relay
+- Or configure SendGrid/Mailgun as an SMTP relay via cPanel
+- Email settings can be configured in **Settings → Email Configuration**
+
+---
+
+## Security Notes
+
+- Change `CRON_KEY` in `config.php` to a random string before going live
+- Keep `STRIPE_SECRET_KEY` private — never commit it to version control
+- Delete or restrict access to `/install/` after installation
+- Enable HTTPS and uncomment the redirect in `.htaccess`
+- 2FA is optional per-user but strongly recommended for admin accounts
+- Login rate limiting is enabled: 10 failed attempts locks an IP for 15 minutes

@@ -36,6 +36,21 @@ $revenue_row = db_fetch(
 );
 $revenue_month = (float)($revenue_row['total'] ?? 0);
 
+// Revenue from actual paid payments this month
+$payments_revenue_row = db_fetch(
+    "SELECT COALESCE(SUM(amount), 0) AS total FROM payments
+     WHERE status = 'paid'
+       AND MONTH(paid_at) = MONTH(NOW())
+       AND YEAR(paid_at)  = YEAR(NOW())"
+);
+$revenue_payments_month = (float)($payments_revenue_row['total'] ?? 0);
+
+// Outstanding invoices
+$outstanding_row = db_fetch(
+    "SELECT COALESCE(SUM(amount - amount_paid), 0) AS total FROM invoices WHERE status IN ('unpaid','partial')"
+);
+$outstanding_invoices = (float)($outstanding_row['total'] ?? 0);
+
 $dumpsters_available = (int)(db_fetch(
     "SELECT COUNT(*) AS cnt FROM dumpsters WHERE status = 'available'"
 )['cnt'] ?? 0);
@@ -139,13 +154,22 @@ layout_start('Dashboard', 'dashboard');
         </a>
     </div>
 
-    <!-- Month Revenue -->
+    <!-- Month Revenue (from payments) -->
     <div class="col-6 col-md-4 col-xl-2">
-        <div class="tp-kpi-card tp-kpi-green">
+        <a href="<?= e(APP_URL) ?>/modules/payments/index.php" class="tp-kpi-card tp-kpi-green text-decoration-none d-block">
             <div class="kpi-icon"><i class="fa-solid fa-dollar-sign"></i></div>
-            <div class="kpi-value"><?= fmt_money($revenue_month) ?></div>
-            <div class="kpi-label">Month Revenue</div>
-        </div>
+            <div class="kpi-value" style="font-size:1.1rem;"><?= fmt_money($revenue_payments_month) ?></div>
+            <div class="kpi-label">Revenue This Month</div>
+        </a>
+    </div>
+
+    <!-- Outstanding Invoices -->
+    <div class="col-6 col-md-4 col-xl-2">
+        <a href="<?= e(APP_URL) ?>/modules/payments/index.php" class="tp-kpi-card tp-kpi-amber text-decoration-none d-block">
+            <div class="kpi-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+            <div class="kpi-value" style="font-size:1.1rem;"><?= fmt_money($outstanding_invoices) ?></div>
+            <div class="kpi-label">Outstanding Invoices</div>
+        </a>
     </div>
 
     <!-- Available Dumpsters -->
@@ -154,6 +178,23 @@ layout_start('Dashboard', 'dashboard');
             <div class="kpi-icon"><i class="fa-solid fa-dumpster"></i></div>
             <div class="kpi-value"><?= $dumpsters_available ?></div>
             <div class="kpi-label">Available Dumpsters</div>
+        </a>
+    </div>
+
+    <!-- Overdue Pickups -->
+    <?php
+    $overdue_count_kpi = db_fetch(
+        "SELECT COUNT(*) AS cnt FROM work_orders
+         WHERE pickup_date < CURDATE() AND status NOT IN ('picked_up','completed','canceled')"
+    );
+    $overdue_count_num = (int)($overdue_count_kpi['cnt'] ?? 0);
+    ?>
+    <div class="col-6 col-md-4 col-xl-2">
+        <a href="<?= e(APP_URL) ?>/modules/work_orders/index.php?status=overdue" class="tp-kpi-card text-decoration-none d-block"
+           style="background:<?= $overdue_count_num > 0 ? 'rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);' : '' ?>">
+            <div class="kpi-icon"><i class="fa-solid fa-circle-exclamation" style="<?= $overdue_count_num > 0 ? 'color:#ef4444;' : '' ?>"></i></div>
+            <div class="kpi-value" style="<?= $overdue_count_num > 0 ? 'color:#ef4444;' : '' ?>"><?= $overdue_count_num ?></div>
+            <div class="kpi-label">Overdue Pickups</div>
         </a>
     </div>
 

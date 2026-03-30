@@ -230,4 +230,120 @@ CREATE TABLE IF NOT EXISTS `settings` (
   PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- -----------------------------------------------------------------------------
+-- invoices
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `invoices` (
+  `id`                     int(11)       NOT NULL AUTO_INCREMENT,
+  `invoice_number`         varchar(20)   NOT NULL,
+  `work_order_id`          int(11)                DEFAULT NULL,
+  `customer_id`            int(11)                DEFAULT NULL,
+  `amount`                 decimal(10,2) NOT NULL DEFAULT 0.00,
+  `amount_paid`            decimal(10,2) NOT NULL DEFAULT 0.00,
+  `status`                 ENUM('unpaid','partial','paid','void') NOT NULL DEFAULT 'unpaid',
+  `due_date`               date                   DEFAULT NULL,
+  `sent_at`                datetime               DEFAULT NULL,
+  `stripe_payment_link`    text                   DEFAULT NULL,
+  `created_at`             datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`             datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_invoice_number` (`invoice_number`),
+  CONSTRAINT `fk_inv_work_order_id` FOREIGN KEY (`work_order_id`) REFERENCES `work_orders` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_inv_customer_id`   FOREIGN KEY (`customer_id`)   REFERENCES `customers`   (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- payments
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `payments` (
+  `id`                       int(11)       NOT NULL AUTO_INCREMENT,
+  `work_order_id`            int(11)                DEFAULT NULL,
+  `customer_id`              int(11)                DEFAULT NULL,
+  `invoice_id`               int(11)                DEFAULT NULL,
+  `amount`                   decimal(10,2) NOT NULL DEFAULT 0.00,
+  `method`                   ENUM('cash','check','card','other') NOT NULL DEFAULT 'cash',
+  `stripe_payment_intent_id` varchar(255)           DEFAULT NULL,
+  `stripe_charge_id`         varchar(255)           DEFAULT NULL,
+  `status`                   ENUM('pending','paid','failed','refunded') NOT NULL DEFAULT 'pending',
+  `notes`                    text                   DEFAULT NULL,
+  `receipt_sent`             tinyint(1)    NOT NULL DEFAULT 0,
+  `paid_at`                  datetime               DEFAULT NULL,
+  `created_by`               int(11)                DEFAULT NULL,
+  `created_at`               datetime      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_pay_work_order_id` FOREIGN KEY (`work_order_id`) REFERENCES `work_orders` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_pay_customer_id`   FOREIGN KEY (`customer_id`)   REFERENCES `customers`   (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_pay_invoice_id`    FOREIGN KEY (`invoice_id`)    REFERENCES `invoices`    (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_pay_created_by`    FOREIGN KEY (`created_by`)    REFERENCES `users`       (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- notifications
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `notifications` (
+  `id`           int(11)      NOT NULL AUTO_INCREMENT,
+  `type`         ENUM('email','sms') NOT NULL DEFAULT 'email',
+  `recipient`    varchar(180)          DEFAULT NULL,
+  `subject`      varchar(255)          DEFAULT NULL,
+  `body`         text                  DEFAULT NULL,
+  `status`       ENUM('queued','sent','failed') NOT NULL DEFAULT 'queued',
+  `related_type` varchar(50)           DEFAULT NULL,
+  `related_id`   int(11)               DEFAULT NULL,
+  `sent_at`      datetime              DEFAULT NULL,
+  `created_at`   datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- two_factor_secrets
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `two_factor_secrets` (
+  `user_id`      int(11)     NOT NULL,
+  `secret`       varchar(64) NOT NULL,
+  `enabled`      tinyint(1)  NOT NULL DEFAULT 0,
+  `backup_codes` text                  DEFAULT NULL,
+  `created_at`   datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`   datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`user_id`),
+  CONSTRAINT `fk_tfs_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- login_attempts
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `login_attempts` (
+  `id`           int(11)      NOT NULL AUTO_INCREMENT,
+  `ip_address`   varchar(45)  NOT NULL,
+  `email`        varchar(180)          DEFAULT NULL,
+  `attempted_at` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_ip`   (`ip_address`),
+  KEY `idx_time` (`attempted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- customer_portal_tokens
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `customer_portal_tokens` (
+  `id`          int(11)      NOT NULL AUTO_INCREMENT,
+  `customer_id` int(11)      NOT NULL,
+  `token`       varchar(128) NOT NULL,
+  `expires_at`  datetime     NOT NULL,
+  `created_at`  datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_portal_token` (`token`),
+  CONSTRAINT `fk_cpt_customer_id` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- rate_limit_locks
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `rate_limit_locks` (
+  `ip_address`   varchar(45) NOT NULL,
+  `attempts`     int(11)     NOT NULL DEFAULT 0,
+  `locked_until` datetime             DEFAULT NULL,
+  `updated_at`   datetime    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`ip_address`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
