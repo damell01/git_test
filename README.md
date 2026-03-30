@@ -18,12 +18,18 @@ A root-level `.htaccess` file ensures that visiting the bare domain URL (e.g. `h
 
 ### Public Website (`/public/`)
 - Full branded multi-page site: Home, Sizes, Services, FAQ, Contact, Service Areas
+- **Online Booking Flow** — customers pick a unit, select dates, and pay (Stripe Checkout, cash, or check)
+- **Real-time availability** — units show as unavailable once booked; date-based double-booking prevention
 - Contact / quote-request form that saves directly to the admin Leads module and triggers email notifications
 - Interactive Leaflet.js service-area map (no API key required)
 - Fully responsive — built with Bootstrap 5.3 and vanilla JavaScript
 - Shared navigation and footer injected via `shared-components.js`
 
 ### Admin Panel (`/admin/`)
+- **Bookings Management** — full booking list, detail view, payment status updates, cancellation
+- **Stripe Checkout Integration** — server-side checkout session creation + webhook handler
+- **Cash / Check payments** — manual payment recording with pending/paid statuses
+- **Inventory Blocks** — admin can block any unit from being booked for specific date ranges
 - **Leads Management** — contact form submissions land here automatically
 - **Customer Database**
 - **Quote Builder** with print layout
@@ -45,6 +51,7 @@ A root-level `.htaccess` file ensures that visiting the bare domain URL (e.g. `h
 | Backend | PHP 8.1+, PDO |
 | Database | MySQL 5.7+ / MariaDB 10.3+ |
 | Email | PHPMailer 6 (optional SMTP) or PHP `mail()` fallback |
+| Payments | Stripe Checkout (server-side via stripe/stripe-php SDK) |
 | Maps | Leaflet.js (no API key needed) |
 
 ---
@@ -154,7 +161,78 @@ define('APP_INSTALLED', true);
 
 ---
 
-## ⑤ PHPMailer (Recommended for Reliable Email)
+## ⑤ Set Up the Booking & Payment System
+
+### Run the Booking Schema Migration
+
+After the main installer completes, run the booking schema SQL to add the bookings tables and enhance the inventory:
+
+```bash
+mysql -u your_user -p your_db < admin/install/booking_schema.sql
+```
+
+Or paste the contents of `admin/install/booking_schema.sql` into cPanel's phpMyAdmin query box.
+
+This adds:
+- **`bookings`** table (full rental bookings with payment tracking)
+- **`inventory_blocks`** table (admin-created unavailability periods)
+- `type`, `daily_rate`, and `active` columns to `dumpsters`
+- Default Stripe settings rows in `settings`
+
+### Configure Stripe for Online Payments
+
+1. Log in to the admin panel → **Settings** → scroll to **Stripe & Booking Configuration**
+2. Set **Stripe Mode** to `test` for playground/testing or `live` for production
+3. Enter your **Publishable Key** (starts with `pk_test_` or `pk_live_`)
+4. Enter your **Secret Key** (starts with `sk_test_` or `sk_live_`) — this is stored server-side only and never exposed to the browser
+5. Set a **Webhook Secret** (`whsec_…`) after creating the webhook in Stripe Dashboard
+
+### Install Stripe SDK via Composer
+
+```bash
+cd /path/to/public_html/admin
+composer install
+```
+
+Without Composer, Stripe Checkout is disabled and customers are shown a cash/check confirmation instead.
+
+### Register the Stripe Webhook
+
+In the [Stripe Dashboard → Developers → Webhooks](https://dashboard.stripe.com/webhooks):
+
+1. Add endpoint: `https://yourdomain.com/public/api/stripe-webhook.php`
+2. Select event: `checkout.session.completed`
+3. Copy the **Signing Secret** and paste it into Admin → Settings → Stripe Webhook Secret
+
+### Test the Booking Flow (Playground Mode)
+
+With `stripe_mode = test`:
+1. Visit `https://yourdomain.com/book.php`
+2. Choose a unit, select dates, fill in customer info
+3. Select **Pay Online with Stripe** → you'll be redirected to Stripe's test checkout
+4. Use test card `4242 4242 4242 4242`, any future expiry, any CVC
+5. On success, you'll land on the confirmation page
+6. The booking appears in Admin → Bookings with payment status **Paid**
+
+### Configure Inventory Pricing
+
+1. Admin → Inventory → click **Edit** on any dumpster
+2. Set **Type** (Dumpster or Trailer)
+3. Set **Daily Rate** (e.g. `$85.00`)
+4. Ensure **Active** is checked to make it bookable online
+
+### Admin Booking Management
+
+| Page | Purpose |
+|------|---------|
+| Admin → Bookings | Full bookings list with filters |
+| Admin → Bookings → New Booking | Manually create a booking (admin/office roles) |
+| Admin → Bookings → View | Full booking detail, payment update, cancel |
+| Admin → Bookings → Block Dates | Block a unit from online booking for a date range |
+
+---
+
+## ⑥ PHPMailer (Recommended for Reliable Email)
 
 PHPMailer is **not required** — the system falls back to PHP's built-in `mail()` — but SMTP via PHPMailer is strongly recommended for reliable delivery (Gmail, Mailgun, SendGrid, etc.).
 
@@ -187,7 +265,7 @@ Many cPanel/shared hosts also offer Composer under **cPanel → Software → PHP
 
 ---
 
-## ⑥ Set Folder Permissions
+## ⑦ Set Folder Permissions
 
 ```bash
 chmod 755 admin/assets/img/
@@ -201,7 +279,7 @@ chmod 775 admin/assets/img/
 
 ---
 
-## ⑦ Set Up the Daily Cron Job (cPanel)
+## ⑧ Set Up the Daily Cron Job (cPanel)
 
 Go to **cPanel → Cron Jobs** and add:
 
@@ -224,7 +302,7 @@ The cron job:
 
 ---
 
-## ⑧ Enable HTTPS
+## ⑨ Enable HTTPS
 
 In `admin/.htaccess`, uncomment the HTTPS redirect block:
 

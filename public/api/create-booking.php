@@ -169,7 +169,8 @@ $token = hash_hmac('sha256', (string)$new_id, get_setting('stripe_secret_key', '
 if ($payment_method === 'stripe') {
     $autoload = $_admin_root . '/vendor/autoload.php';
     if (!file_exists($autoload)) {
-        // Stripe not installed — fall back to cash-style confirmation
+        // Stripe SDK not installed — fall back to cash confirmation and log for admin awareness
+        error_log('[Booking #' . $booking_number . '] Stripe SDK not found at ' . $autoload . '. Falling back to cash payment. Run `composer install` in the admin directory.');
         db_update('bookings', ['payment_method' => 'cash', 'payment_status' => 'pending_cash', 'booking_status' => 'confirmed', 'updated_at' => date('Y-m-d H:i:s')], 'id', (int)$new_id);
         $token = hash_hmac('sha256', (string)$new_id, get_setting('stripe_secret_key', 'booking-token-secret'));
         http_response_code(200);
@@ -200,7 +201,8 @@ if ($payment_method === 'stripe') {
         exit;
 
     } catch (\Throwable $e) {
-        // Stripe error — still created booking, return generic confirmation
+        // Stripe error — booking was saved; redirect to confirmation (admin should check the booking)
+        error_log('[Booking #' . $booking_number . '] Stripe Checkout error: ' . $e->getMessage());
         http_response_code(200);
         echo json_encode([
             'success'  => true,
