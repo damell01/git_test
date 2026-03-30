@@ -43,11 +43,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (empty($errors)) {
+        $old_status = $booking['booking_status'];
+
         db_update('bookings', [
             'payment_status' => $payment_status,
             'booking_status' => $booking_status,
             'updated_at'     => date('Y-m-d H:i:s'),
         ], 'id', $id);
+
+        // If booking is now canceled or completed, release the dumpster
+        if (in_array($booking_status, ['canceled', 'completed'], true)
+            && !in_array($old_status, ['canceled', 'completed'], true)
+            && !empty($booking['dumpster_id'])
+        ) {
+            release_dumpster_if_free((int)$booking['dumpster_id'], $id);
+        }
+
+        // If booking was previously canceled/completed and is being re-activated, re-reserve
+        if (in_array($old_status, ['canceled', 'completed'], true)
+            && !in_array($booking_status, ['canceled', 'completed'], true)
+            && !empty($booking['dumpster_id'])
+        ) {
+            db_update('dumpsters', [
+                'status'     => 'reserved',
+                'updated_at' => date('Y-m-d H:i:s'),
+            ], 'id', (int)$booking['dumpster_id']);
+        }
 
         log_activity(
             'update',

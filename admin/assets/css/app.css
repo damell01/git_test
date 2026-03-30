@@ -1403,3 +1403,63 @@ hr {
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--or); border-radius: 3px; }
+
+/* ==========================================================================
+   Dark-theme readability fixes
+   ========================================================================== */
+
+/* Make .text-muted readable on dark background */
+.text-muted {
+    color: var(--gl) !important; /* #9CA3AF — lighter than Bootstrap default */
+}
+
+/* Section heading titles */
+.section-heading {
+    color: var(--wh);
+    font-family: var(--font-cond);
+    font-size: .95rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+/* KPI cards — dark theme version (reports page inline styles use white; these override) */
+.kpi-card {
+    background-color: var(--dk2) !important;
+    border-color: var(--st) !important;
+    color: var(--wh) !important;
+}
+.kpi-card .kpi-value {
+    color: var(--wh) !important;
+}
+.kpi-card .kpi-label {
+    color: var(--gl) !important;
+}
+/* Revenue KPI cards keep accent borders */
+.kpi-card[style*="border-left:4px solid #16a34a"] {
+    border-left: 4px solid var(--gr) !important;
+}
+.kpi-card[style*="border-left:4px solid #2563eb"] {
+    border-left: 4px solid var(--bl) !important;
+}
+
+/* Bar chart labels on dark bg */
+.bar-count { color: var(--wh) !important; }
+.bar-label  { color: var(--gl) !important; }
+.bar-fill   { background: var(--or) !important; }
+
+/* Bootstrap pagination — dark theme */
+.page-link {
+    background-color: var(--dk2) !important;
+    border-color: var(--st2) !important;
+    color: var(--or) !important;
+}
+.page-item.active .page-link {
+    background-color: var(--or) !important;
+    border-color: var(--or) !important;
+    color: var(--bg) !important;
+}
+.page-item.disabled .page-link {
+    background-color: var(--dk3) !important;
+    color: var(--gy) !important;
+}

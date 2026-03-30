@@ -327,3 +327,117 @@ function notify_pickup_overdue(): void
     $html = email_template('Overdue Pickup Alert', $body);
     send_email($company_email, 'Overdue Pickup Alert — ' . count($wos) . ' Work Orders', $html);
 }
+
+/**
+ * ── Booking-specific Notification Helpers ────────────────────────────────────
+ */
+
+/**
+ * Send a booking confirmation email to the customer.
+ */
+function notify_booking_confirmed(array $booking): void
+{
+    $email = trim($booking['customer_email'] ?? '');
+    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return;
+    }
+
+    $name      = htmlspecialchars($booking['customer_name'] ?? 'Customer',  ENT_QUOTES, 'UTF-8');
+    $bk_num    = htmlspecialchars($booking['booking_number'] ?? '',          ENT_QUOTES, 'UTF-8');
+    $unit      = htmlspecialchars(($booking['unit_code'] ?? '') . ' — ' . ($booking['unit_size'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $start     = !empty($booking['rental_start']) ? date('l, F j, Y', strtotime($booking['rental_start'])) : '—';
+    $end       = !empty($booking['rental_end'])   ? date('l, F j, Y', strtotime($booking['rental_end']))   : '—';
+    $days      = (int)($booking['rental_days'] ?? 0);
+    $total     = fmt_money($booking['total_amount'] ?? 0);
+    $method    = htmlspecialchars(ucfirst($booking['payment_method'] ?? ''), ENT_QUOTES, 'UTF-8');
+
+    $body = '<p>Hello ' . $name . ',</p>
+<p>Your dumpster rental booking has been <strong>confirmed</strong>. Here are your details:</p>
+<table width="100%" style="border-collapse:collapse;font-size:.95rem;margin:16px 0;">
+  <tr style="background:#f9fafb;">
+    <td style="padding:10px 14px;border:1px solid #e5e7eb;font-weight:600;width:40%;">Booking #</td>
+    <td style="padding:10px 14px;border:1px solid #e5e7eb;color:#f97316;font-weight:700;">' . $bk_num . '</td>
+  </tr>
+  <tr>
+    <td style="padding:10px 14px;border:1px solid #e5e7eb;font-weight:600;">Unit</td>
+    <td style="padding:10px 14px;border:1px solid #e5e7eb;">' . $unit . '</td>
+  </tr>
+  <tr style="background:#f9fafb;">
+    <td style="padding:10px 14px;border:1px solid #e5e7eb;font-weight:600;">Rental Period</td>
+    <td style="padding:10px 14px;border:1px solid #e5e7eb;">' . $start . ' → ' . $end . ' (' . $days . ' day' . ($days !== 1 ? 's' : '') . ')</td>
+  </tr>
+  <tr>
+    <td style="padding:10px 14px;border:1px solid #e5e7eb;font-weight:600;">Total</td>
+    <td style="padding:10px 14px;border:1px solid #e5e7eb;color:#f97316;font-weight:700;">' . $total . '</td>
+  </tr>
+  <tr style="background:#f9fafb;">
+    <td style="padding:10px 14px;border:1px solid #e5e7eb;font-weight:600;">Payment Method</td>
+    <td style="padding:10px 14px;border:1px solid #e5e7eb;">' . $method . '</td>
+  </tr>
+</table>
+<p>If you have any questions or need to make changes, please contact us.</p>
+<p>Thank you for choosing us!</p>';
+
+    $html = email_template('Booking Confirmation — ' . $bk_num, $body);
+    send_email($email, 'Booking Confirmed — ' . $bk_num, $html);
+
+    // Also notify the company
+    notify_admins(
+        'New Booking — ' . $bk_num . ' (' . ($booking['customer_name'] ?? '') . ')',
+        $body
+    );
+}
+
+/**
+ * Send a rental expiry reminder to the customer (typically 3 days before end).
+ */
+function notify_booking_expiry_reminder(array $booking): void
+{
+    $email = trim($booking['customer_email'] ?? '');
+    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return;
+    }
+
+    $name   = htmlspecialchars($booking['customer_name'] ?? 'Customer', ENT_QUOTES, 'UTF-8');
+    $bk_num = htmlspecialchars($booking['booking_number'] ?? '',         ENT_QUOTES, 'UTF-8');
+    $unit   = htmlspecialchars(($booking['unit_code'] ?? '') . ' — ' . ($booking['unit_size'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $end    = !empty($booking['rental_end']) ? date('l, F j, Y', strtotime($booking['rental_end'])) : '—';
+
+    $company_phone = get_setting('company_phone', '');
+    $phone_note = $company_phone
+        ? '<p>To schedule a pickup or extend your rental, please call us at <strong>'
+            . htmlspecialchars($company_phone, ENT_QUOTES, 'UTF-8') . '</strong>.</p>'
+        : '<p>Please contact us to schedule a pickup or extend your rental.</p>';
+
+    $body = '<p>Hello ' . $name . ',</p>
+<p>This is a friendly reminder that your dumpster rental (<strong>' . $bk_num . '</strong>) is scheduled to end on <strong>' . $end . '</strong>.</p>
+<p><strong>Unit:</strong> ' . $unit . '</p>
+' . $phone_note . '
+<p>If you do not need to extend, please ensure the dumpster is ready for pickup by the end date.</p>
+<p>Thank you!</p>';
+
+    $html = email_template('Rental Ending Soon — ' . $bk_num, $body);
+    send_email($email, 'Your Dumpster Rental Ends on ' . $end . ' — ' . $bk_num, $html);
+}
+
+/**
+ * Send a booking cancellation notice to the customer.
+ */
+function notify_booking_cancelled(array $booking): void
+{
+    $email = trim($booking['customer_email'] ?? '');
+    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return;
+    }
+
+    $name   = htmlspecialchars($booking['customer_name'] ?? 'Customer', ENT_QUOTES, 'UTF-8');
+    $bk_num = htmlspecialchars($booking['booking_number'] ?? '',         ENT_QUOTES, 'UTF-8');
+
+    $body = '<p>Hello ' . $name . ',</p>
+<p>Your booking <strong>' . $bk_num . '</strong> has been <strong>cancelled</strong>.</p>
+<p>If you believe this was done in error or have questions, please contact us.</p>
+<p>Thank you for your business.</p>';
+
+    $html = email_template('Booking Cancelled — ' . $bk_num, $body);
+    send_email($email, 'Booking Cancelled — ' . $bk_num, $html);
+}

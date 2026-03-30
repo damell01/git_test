@@ -28,18 +28,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $customer_email   = trim($_POST['customer_email']   ?? '');
     $customer_address = trim($_POST['customer_address'] ?? '');
     $customer_city    = trim($_POST['customer_city']    ?? '');
-    $dumpster_id      = (int)($_POST['dumpster_id']     ?? 0);
     $rental_start     = trim($_POST['rental_start']     ?? '');
     $rental_end       = trim($_POST['rental_end']       ?? '');
     $payment_method   = trim($_POST['payment_method']   ?? 'stripe');
     $notes            = trim($_POST['notes']            ?? '');
 
+    // Support both single dumpster_id and multi dumpster_ids[]
+    $selected_ids = [];
+    if (!empty($_POST['dumpster_ids']) && is_array($_POST['dumpster_ids'])) {
+        $selected_ids = array_map('intval', $_POST['dumpster_ids']);
+        $selected_ids = array_filter($selected_ids, fn($v) => $v > 0);
+        $selected_ids = array_values($selected_ids);
+    } elseif (!empty($_POST['dumpster_id'])) {
+        $single_id = (int)$_POST['dumpster_id'];
+        if ($single_id > 0) {
+            $selected_ids = [$single_id];
+        }
+    }
+
     // Required validation
     if ($customer_name === '') {
         $errors[] = 'Customer Name is required.';
     }
-    if ($dumpster_id <= 0) {
-        $errors[] = 'Please select a unit.';
+    if (empty($selected_ids)) {
+        $errors[] = 'Please select at least one unit.';
     }
     if ($rental_start === '') {
         $errors[] = 'Start Date is required.';
@@ -55,58 +67,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'End Date must be on or after Start Date.';
     }
 
-    // Fetch unit
-    $unit = null;
-    if (empty($errors) && $dumpster_id > 0) {
-        $unit = db_fetch(
-            "SELECT id, unit_code, type, size, daily_rate, active, status
-             FROM dumpsters WHERE id = ? LIMIT 1",
-            [$dumpster_id]
-        );
-        if (!$unit) {
-            $errors[] = 'Selected unit not found.';
-        } elseif (!$unit['active'] || $unit['status'] === 'maintenance') {
-            $errors[] = 'Selected unit is not available.';
-        }
-    }
-
-    // Availability check
-    if (empty($errors) && $unit) {
-        $overlap = db_fetch(
-            "SELECT COUNT(*) AS cnt FROM bookings
-             WHERE dumpster_id = ?
-               AND booking_status != 'canceled'
-               AND rental_start <= ? AND rental_end >= ?",
-            [$dumpster_id, $rental_end, $rental_start]
-        );
-        if ((int)($overlap['cnt'] ?? 0) > 0) {
-            $errors[] = 'That unit is already booked during the selected dates.';
-        }
-
-        if (empty($errors)) {
+    // Validate each selected unit
+    $validated_units = [];
+    if (empty($errors)) {
+        foreach ($selected_ids as $did) {
+            $unit = db_fetch(
+                "SELECT id, unit_code, type, size, daily_rate, active, status
+                 FROM dumpsters WHERE id = ? LIMIT 1",
+                [$did]
+            );
+            if (!$unit) {
+                $errors[] = "Unit ID $did not found.";
+                break;
+            }
+            if (!$unit['active'] || $unit['status'] === 'maintenance') {
+                $errors[] = "Unit {$unit['unit_code']} is not available.";
+                break;
+            }
+            // Overlap check
+            $overlap = db_fetch(
+                "SELECT COUNT(*) AS cnt FROM bookings
+                 WHERE dumpster_id = ?
+                   AND booking_status != 'canceled'
+                   AND rental_start <= ? AND rental_end >= ?",
+                [$did, $rental_end, $rental_start]
+            );
+            if ((int)($overlap['cnt'] ?? 0) > 0) {
+                $errors[] = "Unit {$unit['unit_code']} is already booked during the selected dates.";
+                break;
+            }
             $block = db_fetch(
                 "SELECT COUNT(*) AS cnt FROM inventory_blocks
                  WHERE dumpster_id = ?
                    AND block_start <= ? AND block_end >= ?",
-                [$dumpster_id, $rental_end, $rental_start]
+                [$did, $rental_end, $rental_start]
             );
             if ((int)($block['cnt'] ?? 0) > 0) {
-                $errors[] = 'That unit has a scheduled block during the selected dates.';
+                $errors[] = "Unit {$unit['unit_code']} has a scheduled block during the selected dates.";
+                break;
             }
+            $validated_units[] = $unit;
         }
     }
 
-    if (empty($errors) && $unit) {
-        $d1         = new \DateTime($rental_start);
-        $d2         = new \DateTime($rental_end);
-        $days       = max(1, (int)$d1->diff($d2)->days);
-        $daily_rate = (float)$unit['daily_rate'];
-        $total      = round($daily_rate * $days, 2);
+    if (empty($errors) && !empty($validated_units)) {
+        $d1   = new \DateTime($rental_start);
+        $d2   = new \DateTime($rental_end);
+        $days = max(1, (int)$d1->diff($d2)->days);
 
-        // Generate booking number
-        $booking_number = next_number('BK', 'bookings', 'booking_number');
-
-        // Payment status based on method
         $pay_status_map = [
             'stripe' => 'pending',
             'cash'   => 'pending_cash',
@@ -114,34 +122,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
         $payment_status = $pay_status_map[$payment_method] ?? 'pending';
 
-        $new_id = db_insert('bookings', [
-            'booking_number'   => $booking_number,
-            'customer_name'    => $customer_name,
-            'customer_phone'   => $customer_phone ?: null,
-            'customer_email'   => $customer_email ?: null,
-            'customer_address' => $customer_address ?: null,
-            'customer_city'    => $customer_city ?: null,
-            'dumpster_id'      => $dumpster_id,
-            'unit_code'        => $unit['unit_code'],
-            'unit_type'        => $unit['type'],
-            'unit_size'        => $unit['size'],
-            'rental_start'     => $rental_start,
-            'rental_end'       => $rental_end,
-            'rental_days'      => $days,
-            'daily_rate'       => $daily_rate,
-            'total_amount'     => $total,
-            'payment_method'   => $payment_method,
-            'payment_status'   => $payment_status,
-            'booking_status'   => 'confirmed',
-            'notes'            => $notes ?: null,
-            'created_by'       => (int)($_SESSION['user_id'] ?? 0),
-            'created_at'       => date('Y-m-d H:i:s'),
-            'updated_at'       => date('Y-m-d H:i:s'),
-        ]);
+        $created_ids     = [];
+        $created_numbers = [];
 
-        log_activity('create', "Created booking $booking_number for $customer_name", 'booking', (int)$new_id);
-        flash_success("Booking $booking_number created successfully.");
-        redirect('view.php?id=' . (int)$new_id);
+        foreach ($validated_units as $unit) {
+            $daily_rate     = (float)$unit['daily_rate'];
+            $total          = round($daily_rate * $days, 2);
+            $booking_number = next_number('BK', 'bookings', 'booking_number');
+
+            $new_id = db_insert('bookings', [
+                'booking_number'   => $booking_number,
+                'customer_name'    => $customer_name,
+                'customer_phone'   => $customer_phone ?: null,
+                'customer_email'   => $customer_email ?: null,
+                'customer_address' => $customer_address ?: null,
+                'customer_city'    => $customer_city ?: null,
+                'dumpster_id'      => (int)$unit['id'],
+                'unit_code'        => $unit['unit_code'],
+                'unit_type'        => $unit['type'],
+                'unit_size'        => $unit['size'],
+                'rental_start'     => $rental_start,
+                'rental_end'       => $rental_end,
+                'rental_days'      => $days,
+                'daily_rate'       => $daily_rate,
+                'total_amount'     => $total,
+                'payment_method'   => $payment_method,
+                'payment_status'   => $payment_status,
+                'booking_status'   => 'confirmed',
+                'notes'            => $notes ?: null,
+                'created_by'       => (int)($_SESSION['user_id'] ?? 0),
+                'created_at'       => date('Y-m-d H:i:s'),
+                'updated_at'       => date('Y-m-d H:i:s'),
+            ]);
+
+            log_activity('create', "Created booking $booking_number for $customer_name", 'booking', (int)$new_id);
+
+            // Mark dumpster as reserved
+            db_update('dumpsters', [
+                'status'     => 'reserved',
+                'updated_at' => date('Y-m-d H:i:s'),
+            ], 'id', (int)$unit['id']);
+
+            $created_ids[]     = (int)$new_id;
+            $created_numbers[] = $booking_number;
+        }
+
+        $count = count($created_ids);
+        if ($count === 1) {
+            flash_success("Booking {$created_numbers[0]} created successfully.");
+            redirect('view.php?id=' . $created_ids[0]);
+        } else {
+            flash_success("$count bookings created: " . implode(', ', $created_numbers));
+            redirect('index.php');
+        }
     }
 }
 
@@ -152,7 +185,7 @@ $f = [
     'customer_email'   => $_POST['customer_email']   ?? '',
     'customer_address' => $_POST['customer_address'] ?? '',
     'customer_city'    => $_POST['customer_city']    ?? '',
-    'dumpster_id'      => (int)($_POST['dumpster_id'] ?? 0),
+    'selected_ids'     => array_map('intval', (array)($_POST['dumpster_ids'] ?? [])),
     'rental_start'     => $_POST['rental_start']     ?? '',
     'rental_end'       => $_POST['rental_end']       ?? '',
     'payment_method'   => $_POST['payment_method']   ?? 'stripe',
@@ -179,7 +212,7 @@ layout_start('New Booking', 'bookings');
 </div>
 <?php endif; ?>
 
-<div class="tp-card" style="max-width:760px;">
+<div class="tp-card" style="max-width:880px;">
     <form method="POST" action="create.php" id="bookingForm">
         <?= csrf_field() ?>
 
@@ -218,27 +251,46 @@ layout_start('New Booking', 'bookings');
         </div>
 
         <h6 class="mb-3" style="font-weight:600;border-bottom:1px solid var(--st);padding-bottom:.5rem;">
-            Unit &amp; Dates
+            Units &amp; Dates
+            <small style="font-size:.75rem;color:var(--gl);font-weight:400;text-transform:none;letter-spacing:0;">
+                (select one or more)
+            </small>
         </h6>
 
         <div class="row g-3 mb-4">
+            <!-- Unit selection checkboxes -->
             <div class="col-12">
-                <label class="form-label" for="dumpster_id">
-                    Unit <span class="text-danger">*</span>
+                <label class="form-label">
+                    Unit(s) <span class="text-danger">*</span>
                 </label>
-                <select id="dumpster_id" name="dumpster_id" class="form-select" required
-                        onchange="updateTotal()">
-                    <option value="">— Select unit —</option>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;">
                     <?php foreach ($units as $u): ?>
-                    <option value="<?= (int)$u['id'] ?>"
-                            data-rate="<?= e($u['daily_rate']) ?>"
-                            <?= $f['dumpster_id'] === (int)$u['id'] ? 'selected' : '' ?>>
-                        <?= e($u['unit_code']) ?> — <?= e($u['size']) ?>
-                        (<?= e(ucfirst($u['type'])) ?>) — <?= e(fmt_money($u['daily_rate'])) ?>/day
-                    </option>
+                    <?php $checked = in_array((int)$u['id'], $f['selected_ids'], true); ?>
+                    <label class="unit-checkbox-card<?= $checked ? ' selected' : '' ?>"
+                           data-id="<?= (int)$u['id'] ?>"
+                           data-rate="<?= e($u['daily_rate']) ?>">
+                        <input type="checkbox" name="dumpster_ids[]"
+                               value="<?= (int)$u['id'] ?>"
+                               <?= $checked ? 'checked' : '' ?>
+                               onchange="updateTotal(); toggleCardStyle(this);"
+                               style="margin-right:6px;">
+                        <strong><?= e($u['unit_code']) ?></strong>
+                        — <?= e($u['size']) ?>
+                        <span style="font-size:.78rem;color:var(--gl);display:block;margin-left:20px;">
+                            <?= e(fmt_money($u['daily_rate'])) ?>/day
+                            <?php if ($u['status'] !== 'available'): ?>
+                                · <span style="color:var(--am);"><?= e(ucfirst($u['status'])) ?></span>
+                            <?php endif; ?>
+                        </span>
+                    </label>
                     <?php endforeach; ?>
-                </select>
+                </div>
+                <div class="mt-2">
+                    <button type="button" class="btn-tp-ghost btn-tp-xs" onclick="selectAllUnits(true)">Select All</button>
+                    <button type="button" class="btn-tp-ghost btn-tp-xs ms-1" onclick="selectAllUnits(false)">Clear All</button>
+                </div>
             </div>
+
             <div class="col-md-4">
                 <label class="form-label" for="rental_start">
                     Start Date <span class="text-danger">*</span>
@@ -294,30 +346,67 @@ layout_start('New Booking', 'bookings');
     </form>
 </div>
 
+<style>
+.unit-checkbox-card {
+    display: block;
+    padding: 10px 12px;
+    background: var(--dk2);
+    border: 1px solid var(--st2);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+    font-size: .88rem;
+    color: var(--wh);
+}
+.unit-checkbox-card:hover {
+    border-color: var(--or);
+}
+.unit-checkbox-card.selected {
+    border-color: var(--or);
+    background: rgba(249,115,22,.1);
+}
+</style>
+
 <script>
-function updateTotal() {
-    var sel   = document.getElementById('dumpster_id');
+function calcDays() {
     var start = document.getElementById('rental_start').value;
     var end   = document.getElementById('rental_end').value;
+    if (!start || !end) return 0;
+    var s = Date.UTC.apply(null, start.split('-').map(function(v,i){ return i===1?parseInt(v,10)-1:parseInt(v,10); }));
+    var e2 = Date.UTC.apply(null, end.split('-').map(function(v,i){ return i===1?parseInt(v,10)-1:parseInt(v,10); }));
+    return Math.max(0, Math.round((e2 - s) / 86400000));
+}
+
+function updateTotal() {
     var disp  = document.getElementById('totalDisplay');
+    var days  = calcDays();
+    if (days <= 0) { disp.textContent = 'Invalid dates'; return; }
 
-    if (!sel.value || !start || !end) {
-        disp.textContent = '—';
-        return;
-    }
+    var boxes = document.querySelectorAll('input[name="dumpster_ids[]"]:checked');
+    if (boxes.length === 0) { disp.textContent = '—'; return; }
 
-    var rate     = parseFloat(sel.options[sel.selectedIndex].dataset.rate) || 0;
-    var startUTC = Date.UTC.apply(null, start.split('-').map(function(v,i){ return i===1?parseInt(v,10)-1:parseInt(v,10); }));
-    var endUTC   = Date.UTC.apply(null, end.split('-').map(function(v,i){ return i===1?parseInt(v,10)-1:parseInt(v,10); }));
-    var days     = Math.round((endUTC - startUTC) / 86400000);
+    var totalAmt = 0;
+    boxes.forEach(function(cb) {
+        var card = cb.closest('.unit-checkbox-card');
+        var rate = parseFloat(card ? card.dataset.rate : 0) || 0;
+        totalAmt += rate * days;
+    });
 
-    if (days <= 0) {
-        disp.textContent = 'Invalid dates';
-        return;
-    }
+    var unitWord = boxes.length > 1 ? ' (' + boxes.length + ' units)' : '';
+    disp.textContent = days + ' day' + (days !== 1 ? 's' : '') + unitWord + ' — $' + totalAmt.toFixed(2);
+}
 
-    var total = rate * days;
-    disp.textContent = days + ' day' + (days !== 1 ? 's' : '') + ' — $' + total.toFixed(2);
+function toggleCardStyle(cb) {
+    var card = cb.closest('.unit-checkbox-card');
+    if (card) card.classList.toggle('selected', cb.checked);
+}
+
+function selectAllUnits(selectAll) {
+    document.querySelectorAll('input[name="dumpster_ids[]"]').forEach(function(cb) {
+        cb.checked = selectAll;
+        toggleCardStyle(cb);
+    });
+    updateTotal();
 }
 </script>
 
