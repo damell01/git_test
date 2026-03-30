@@ -349,12 +349,192 @@ No additional configuration is needed beyond setting the notification email(s) i
 
 ---
 
+## Work Order Module — Step-by-Step Guide
+
+The Work Order module is the day-to-day operational hub. It tracks every rental from scheduling through completion and generates a printable work order document / invoice for each job.
+
+### Accessing Work Orders
+
+Log in to the admin panel → click **Work Orders** in the left sidebar.
+
+- The list view shows all work orders with status tabs, search, and date-range filters.
+- Tabs: **All · Scheduled · Delivered · Active · Pickup Requested · Picked Up · Completed · Canceled**
+- Search by WO number, customer name, or service address.
+
+---
+
+### Creating a Work Order
+
+**Admin → Work Orders → New Work Order** (or click the **+ New Work Order** button on the list page).
+
+Roles that can create work orders: `admin`, `office`, `dispatcher`.
+
+| Field | Required | Notes |
+|-------|----------|-------|
+| Customer Name | ✅ | |
+| Phone / Email | optional | Contact details for the customer |
+| Service Address | ✅ | Street address where the dumpster is dropped |
+| City / State / ZIP | optional | Used on the printed work order |
+| Dumpster Size | optional | e.g. 10 yard, 20 yard |
+| Project Type | optional | e.g. Residential Clean-Out, Construction |
+| Assign Dumpster | optional | Picks a specific unit from inventory; sets that unit to **Reserved** |
+| Delivery Date | ✅ | Scheduled drop-off date |
+| Pickup Date | optional | Expected pickup; can be left blank and updated later |
+| Assigned Driver | optional | Driver/dispatcher user who handles delivery |
+| Amount | optional | Total charge for the job (displayed on the invoice) |
+| Priority | optional | Normal / High / Urgent — shown as a badge on the list |
+| Internal Notes | optional | Staff-only — not shown on printed documents |
+| Footer / WO Notes | optional | Printed at the bottom of the work order document |
+
+> **Tip:** You can pre-fill a work order directly from a Quote. Open the quote and click **Convert to Work Order** — customer info, size, and amount are carried over automatically.
+
+> **Default Footer:** Set a company-wide default footer text in **Admin → Settings → Work Order Footer**. It auto-fills every new work order.
+
+---
+
+### Work Order Status Lifecycle
+
+Each work order moves through the following statuses. Dispatchers can advance any status; the system automatically updates the assigned dumpster's inventory state.
+
+```
+Scheduled → Delivered → Active → Pickup Requested → Picked Up → Completed
+                                                                      ↑
+                                                             (or Canceled at any point)
+```
+
+| Status | Meaning | Dumpster Inventory Effect |
+|--------|---------|--------------------------|
+| **Scheduled** | Job is booked, delivery not yet done | Dumpster marked **Reserved** |
+| **Delivered** | Dumpster has been dropped at the site | Dumpster marked **In Use** |
+| **Active** | Rental is in progress on-site | Dumpster marked **In Use** |
+| **Pickup Requested** | Customer has requested pickup | Dumpster stays **In Use** |
+| **Picked Up** | Dumpster has been retrieved | Dumpster returned to **Available**; actual pickup date stamped automatically |
+| **Completed** | Job is fully done and closed | Dumpster returned to **Available** |
+| **Canceled** | Job was canceled | Dumpster returned to **Available** |
+
+**To change a status:** Open the work order → use the **Update Status** dropdown on the detail page and click **Update**. Every status change is automatically logged in the activity timeline.
+
+---
+
+### Viewing a Work Order
+
+**Admin → Work Orders → click any WO number (or the eye icon).**
+
+The detail page shows:
+
+- **Header:** WO number, status badge, priority badge, creation date.
+- **Job & Schedule panel:** Dumpster size, project type, assigned unit, delivery/pickup dates, assigned driver.
+- **Customer panel:** Name, phone, email, service address.
+- **Financial panel:** Amount charged.
+- **Notes / Timeline:** A chronological log of every status change and manually added staff note.
+- **Action buttons:** Edit · Update Status · Add Note · Print Work Order · Generate Invoice · Delete (admin only).
+
+---
+
+### Adding Notes to a Work Order
+
+On the work order detail page, scroll to the **Notes** panel and type in the **Add Note** box, then click **Add Note**. Notes are visible to all staff and are stamped with the author and timestamp.
+
+---
+
+### Printing the Work Order
+
+Click **Print Work Order** on the detail page to open a print-formatted view of the job. This includes:
+- Company letterhead (name, phone, email, address)
+- WO number, delivery/pickup dates, status
+- Customer info and service address
+- Job details (size, project type, assigned dumpster, driver)
+- Footer notes (from the work order or company default)
+
+Click the **Print** button in your browser or on the page to send to a printer.
+
+---
+
+### Generating an Invoice
+
+Click **Invoice** on the detail page to view a customer-ready invoice document. The invoice includes:
+- Company header with contact info
+- Bill-to section with customer details
+- Line item: dumpster rental amount
+- Subtotal, optional tax (configured in Settings → Tax Rate), and total
+- Payment instructions
+- Footer notes
+
+Click **Print** on the invoice page to print or save as PDF.
+
+---
+
+### Editing a Work Order
+
+Click the **Edit** button (pencil icon) on the list or the **Edit** button on the detail page. All fields are editable. If you change the **assigned dumpster**, the system automatically releases the old unit back to **Available** and marks the new unit as **Reserved**.
+
+---
+
+### Deleting a Work Order
+
+Only users with the `admin` role can delete work orders. Deletion is permanent and cannot be undone. The assigned dumpster (if any) is automatically returned to **Available** on delete.
+
+---
+
+### Work Order Settings (Admin → Settings)
+
+| Setting | Where | Purpose |
+|---------|-------|---------|
+| Work Order Footer | Settings → Work Order Footer | Default footer text pre-filled on every new work order |
+| Tax Rate | Settings → Tax Rate | Applied to invoice totals (e.g. enter `8.25` for 8.25%) |
+| Company Name / Phone / Email / Address | Settings → Company Info | Printed on work orders and invoices |
+
+---
+
+## Production Readiness Checklist
+
+Complete all items below before going live with real customers.
+
+### Configuration
+- [ ] Edit `admin/config/config.php`: set `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`
+- [ ] Change `CRON_KEY` to a long random string (e.g. `openssl rand -hex 32`)
+- [ ] Set `APP_INSTALLED = true` in `config.php` after running the installer
+- [ ] Run the main installer: `https://yourdomain.com/admin/install/install.php`
+- [ ] Run the booking schema migration (`admin/install/booking_schema.sql`)
+
+### Security
+- [ ] Enable HTTPS — uncomment the redirect block in `admin/.htaccess`
+- [ ] Change the default admin password immediately after first login (forced on first login)
+- [ ] Enable 2FA for all admin-level accounts
+- [ ] Verify that `/admin/install/` returns a 403 or redirect (controlled by `APP_INSTALLED` flag)
+- [ ] Login rate limiting is built-in (10 failed attempts → 15-minute IP lock) — no extra config needed
+
+### Email
+- [ ] Set **Company Email** and **Notification Email(s)** in Admin → Settings
+- [ ] (Recommended) Configure SMTP via Admin → Settings → Email Configuration and click **Send Test Email**
+
+### Payments (if using Stripe)
+- [ ] Set Stripe Mode to `live` in Admin → Settings → Stripe & Booking Configuration
+- [ ] Enter live Publishable Key and Secret Key
+- [ ] Register the webhook endpoint in Stripe Dashboard and paste the Signing Secret
+- [ ] Test end-to-end with a live card before announcing to customers
+
+### Inventory & Pricing
+- [ ] Review default dumpster units in Admin → Inventory; update unit codes, sizes, daily rates
+- [ ] Set each unit **Active** to make it bookable online
+- [ ] Set a default Work Order footer in Admin → Settings → Work Order Footer
+
+### Cron Job
+- [ ] Add the daily cron job in cPanel → Cron Jobs (see **⑧ Set Up the Daily Cron Job** section above)
+
+### Final Checks
+- [ ] Visit the public website and confirm all pages load correctly
+- [ ] Submit a test contact/quote form and verify the lead appears in Admin → Leads
+- [ ] Create a test work order end-to-end: create → deliver → complete → print invoice
+- [ ] Remove or restrict access to any test data created during setup
+
+---
+
 ## Security Checklist
 
 - [ ] Change `CRON_KEY` in `config.php` before going live
 - [ ] Set `APP_INSTALLED = true` after installation
 - [ ] Enable HTTPS (uncomment block in `admin/.htaccess`)
-- [ ] Set `APP_URL` to your real domain
 - [ ] Enable 2FA for admin accounts
 - [ ] Login rate limiting is active — 10 failed attempts locks the IP for 15 minutes
 - [ ] `/admin/install/` is blocked from repeat runs by the `APP_INSTALLED` flag
