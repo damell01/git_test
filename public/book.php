@@ -9,11 +9,23 @@ require_once INC_PATH . '/db.php';
 require_once INC_PATH . '/helpers.php';
 
 $units = db_fetchall(
-    "SELECT id, unit_code, type, size, daily_rate
+    "SELECT id, unit_code, type, size, daily_rate, image
      FROM dumpsters
      WHERE active = 1 AND status = 'available'
      ORDER BY daily_rate ASC, size ASC, unit_code ASC"
 );
+
+// Pre-select a unit from URL param (?unit_id=5 or ?size=20)
+$preselect_unit_id = (int)($_GET['unit_id'] ?? 0);
+$preselect_size    = trim($_GET['size'] ?? '');
+if ($preselect_unit_id <= 0 && $preselect_size !== '') {
+    foreach ($units as $u) {
+        if ((string)$u['size'] === $preselect_size) {
+            $preselect_unit_id = (int)$u['id'];
+            break;
+        }
+    }
+}
 
 $company_name = get_setting('company_name', 'Trash Panda Roll-Offs');
 $booking_terms = get_setting('booking_terms', 'By completing this booking, you agree to our rental terms and conditions.');
@@ -279,15 +291,21 @@ $stripe_pub_key = get_setting('stripe_publishable_key', '');
             <?php else: ?>
             <div class="unit-grid">
                 <?php foreach ($units as $u): ?>
-                <label class="unit-card" for="unit_<?= (int)$u['id'] ?>">
+                <label class="unit-card<?= ((int)$u['id'] === $preselect_unit_id) ? ' selected' : '' ?>"
+                       for="unit_<?= (int)$u['id'] ?>">
                     <input type="radio" name="unit_id" id="unit_<?= (int)$u['id'] ?>"
                            value="<?= (int)$u['id'] ?>"
                            data-rate="<?= htmlspecialchars($u['daily_rate'], ENT_QUOTES, 'UTF-8') ?>"
                            data-code="<?= htmlspecialchars($u['unit_code'], ENT_QUOTES, 'UTF-8') ?>"
                            data-size="<?= htmlspecialchars($u['size'], ENT_QUOTES, 'UTF-8') ?>"
-                           data-type="<?= htmlspecialchars($u['type'], ENT_QUOTES, 'UTF-8') ?>">
-                    <div class="unit-size-label"><?= htmlspecialchars($u['size'], ENT_QUOTES, 'UTF-8') ?></div>
-                    <div class="unit-code"><?= htmlspecialchars($u['unit_code'], ENT_QUOTES, 'UTF-8') ?></div>
+                           data-type="<?= htmlspecialchars($u['type'], ENT_QUOTES, 'UTF-8') ?>"
+                           <?= ((int)$u['id'] === $preselect_unit_id) ? 'checked' : '' ?>>
+                    <?php if (!empty($u['image'])): ?>
+                    <img src="<?= htmlspecialchars($u['image'], ENT_QUOTES, 'UTF-8') ?>"
+                         alt="<?= htmlspecialchars($u['unit_code'], ENT_QUOTES, 'UTF-8') ?>"
+                         style="width:100%;border-radius:4px;margin-bottom:.5rem;object-fit:cover;max-height:80px;">
+                    <?php endif; ?>
+                    <div class="unit-size-label"><?= htmlspecialchars($u['size'], ENT_QUOTES, 'UTF-8') ?></div>                    <div class="unit-code"><?= htmlspecialchars($u['unit_code'], ENT_QUOTES, 'UTF-8') ?></div>
                     <div class="unit-rate">$<?= number_format((float)$u['daily_rate'], 2) ?>/day</div>
                     <div class="unit-type-badge"><?= htmlspecialchars(ucfirst($u['type']), ENT_QUOTES, 'UTF-8') ?></div>
                 </label>
@@ -460,6 +478,16 @@ document.querySelectorAll('.unit-card input[type="radio"]').forEach(function(rad
         computeTotal();
         triggerAvailCheck();
     });
+    // Auto-initialise selectedUnit for any pre-checked radio (URL pre-select)
+    if (radio.checked) {
+        selectedUnit = {
+            id:    radio.value,
+            rate:  parseFloat(radio.dataset.rate) || 0,
+            code:  radio.dataset.code,
+            size:  radio.dataset.size,
+            type:  radio.dataset.type
+        };
+    }
 });
 
 // ─── Payment method card selection ───────────────────────────────────────────
@@ -589,6 +617,15 @@ function submitBooking() {
     var errEl  = document.getElementById('step2-error');
     var btnEl  = document.getElementById('btnSubmit');
     errEl.style.display = 'none';
+
+    // Safety guard: if unit was lost (e.g. page reload), send user back to step 1
+    if (!selectedUnit) {
+        goStep1();
+        var e1 = document.getElementById('step1-error');
+        e1.textContent = 'Please select a unit to continue.';
+        e1.style.display = 'block';
+        return;
+    }
 
     var name   = document.getElementById('f_name').value.trim();
     var phone  = document.getElementById('f_phone').value.trim();

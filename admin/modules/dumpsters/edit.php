@@ -36,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $status     = trim($_POST['status']     ?? 'available');
     $condition  = trim($_POST['condition']  ?? 'good');
     $notes      = trim($_POST['notes']      ?? '');
+    $image      = $dumpster['image'] ?? null; // keep existing by default
 
     // Required field validation
     if ($unit_code === '') {
@@ -51,6 +52,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Validate size is in allowed list
     if ($size !== '' && !in_array($size, dumpster_sizes(), true)) {
         $errors[] = 'Invalid size selected.';
+    }
+
+    // Remove existing image if requested
+    if (!empty($_POST['remove_image']) && $image) {
+        $old_path = dirname(__DIR__, 3) . '/public' . $image;
+        if (file_exists($old_path)) {
+            @unlink($old_path);
+        }
+        $image = null;
+    }
+
+    // Handle new image upload
+    if (!empty($_FILES['image']['name'])) {
+        $allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $max_size      = 5 * 1024 * 1024; // 5 MB
+        $upload_dir    = dirname(__DIR__, 3) . '/public/uploads/dumpsters/';
+
+        $file_type = mime_content_type($_FILES['image']['tmp_name']);
+        if (!in_array($file_type, $allowed_types, true)) {
+            $errors[] = 'Invalid image type. Allowed: JPG, PNG, GIF, WebP.';
+        } elseif ($_FILES['image']['size'] > $max_size) {
+            $errors[] = 'Image must be under 5 MB.';
+        } elseif ($_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+            $errors[] = 'Image upload failed. Please try again.';
+        } else {
+            // Remove old image if it exists
+            if ($image) {
+                $old_path = dirname(__DIR__, 3) . '/public' . $image;
+                if (file_exists($old_path)) {
+                    @unlink($old_path);
+                }
+            }
+            $ext      = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+            $filename = 'dumpster_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+            if (!move_uploaded_file($_FILES['image']['tmp_name'], $upload_dir . $filename)) {
+                $errors[] = 'Failed to save image. Check directory permissions.';
+            } else {
+                $image = '/uploads/dumpsters/' . $filename;
+            }
+        }
     }
 
     // If unit_code changed, check uniqueness
@@ -74,6 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'status'     => $status,
             'condition'  => $condition,
             'notes'      => $notes,
+            'image'      => $image,
             'updated_at' => date('Y-m-d H:i:s'),
         ], 'id', $id);
 
@@ -92,6 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'status'     => $status,
         'condition'  => $condition,
         'notes'      => $notes,
+        'image'      => $image,
     ]);
 }
 
@@ -116,7 +162,7 @@ layout_start('Edit Dumpster', 'inventory');
 <?php endif; ?>
 
 <div class="tp-card" style="max-width:640px;">
-    <form method="POST" action="edit.php">
+    <form method="POST" action="edit.php" enctype="multipart/form-data">
         <?= csrf_field() ?>
         <input type="hidden" name="id" value="<?= $id ?>">
 
@@ -215,6 +261,27 @@ layout_start('Edit Dumpster', 'inventory');
                           name="notes"
                           class="form-control"
                           rows="3"><?= e($dumpster['notes'] ?? '') ?></textarea>
+            </div>
+
+            <!-- Image -->
+            <div class="col-12">
+                <label class="form-label">Dumpster Photo</label>
+                <?php if (!empty($dumpster['image'])): ?>
+                <div class="mb-2">
+                    <img src="<?= e($dumpster['image']) ?>" alt="Dumpster photo"
+                         style="max-width:200px;border-radius:6px;border:1px solid var(--st);">
+                    <div class="form-check mt-1">
+                        <input class="form-check-input" type="checkbox" id="remove_image"
+                               name="remove_image" value="1">
+                        <label class="form-check-label text-danger" for="remove_image">
+                            Remove current photo
+                        </label>
+                    </div>
+                </div>
+                <?php endif; ?>
+                <input type="file" id="image" name="image" class="form-control"
+                       accept="image/jpeg,image/png,image/gif,image/webp">
+                <small class="text-muted">Max 5 MB — JPG, PNG, GIF, or WebP. Upload a new photo to replace the current one.</small>
             </div>
 
             <!-- Submit -->

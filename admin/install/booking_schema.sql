@@ -5,7 +5,8 @@
 ALTER TABLE `dumpsters`
   ADD COLUMN IF NOT EXISTS `type`        ENUM('dumpster','trailer') NOT NULL DEFAULT 'dumpster' AFTER `unit_code`,
   ADD COLUMN IF NOT EXISTS `daily_rate`  DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER `size`,
-  ADD COLUMN IF NOT EXISTS `active`      TINYINT(1) NOT NULL DEFAULT 1 AFTER `daily_rate`;
+  ADD COLUMN IF NOT EXISTS `active`      TINYINT(1) NOT NULL DEFAULT 1 AFTER `daily_rate`,
+  ADD COLUMN IF NOT EXISTS `image`       VARCHAR(255) DEFAULT NULL AFTER `active`;
 
 -- bookings
 CREATE TABLE IF NOT EXISTS `bookings` (
