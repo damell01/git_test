@@ -126,17 +126,20 @@ CREATE TABLE IF NOT EXISTS `quotes` (
 -- dumpsters
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `dumpsters` (
-  `id`         int(11)      NOT NULL AUTO_INCREMENT,
-  `unit_code`  varchar(50)  NOT NULL,
-  `size`       varchar(50)  NOT NULL,
-  `daily_rate`   decimal(10,2)         DEFAULT 0.00,
-  `weekly_rate`  decimal(10,2)         DEFAULT 0.00,
-  `monthly_rate` decimal(10,2)         DEFAULT 0.00,
-  `status`     ENUM('available','reserved','in_use','maintenance') NOT NULL DEFAULT 'available',
-  `condition`  ENUM('excellent','good','fair','poor')              NOT NULL DEFAULT 'good',
-  `notes`      text                  DEFAULT NULL,
-  `created_at` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `id`           int(11)      NOT NULL AUTO_INCREMENT,
+  `unit_code`    varchar(50)  NOT NULL,
+  `type`         ENUM('dumpster','trailer') NOT NULL DEFAULT 'dumpster',
+  `size`         varchar(50)  NOT NULL,
+  `daily_rate`   decimal(10,2)         NOT NULL DEFAULT 0.00,
+  `weekly_rate`  decimal(10,2)         NOT NULL DEFAULT 0.00,
+  `monthly_rate` decimal(10,2)         NOT NULL DEFAULT 0.00,
+  `active`       tinyint(1)   NOT NULL DEFAULT 1,
+  `image`        varchar(255)          DEFAULT NULL,
+  `status`       ENUM('available','reserved','in_use','maintenance') NOT NULL DEFAULT 'available',
+  `condition`    ENUM('excellent','good','fair','poor')              NOT NULL DEFAULT 'good',
+  `notes`        text                  DEFAULT NULL,
+  `created_at`   datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`   datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_dumpsters_unit_code` (`unit_code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -253,6 +256,121 @@ CREATE TABLE IF NOT EXISTS `notifications` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------------------------------
+-- bookings  (online/admin-created rental bookings)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `bookings` (
+  `id`                INT(11)       NOT NULL AUTO_INCREMENT,
+  `booking_number`    VARCHAR(20)   NOT NULL,
+  `customer_name`     VARCHAR(100)  NOT NULL,
+  `customer_phone`    VARCHAR(25)            DEFAULT NULL,
+  `customer_email`    VARCHAR(150)           DEFAULT NULL,
+  `customer_address`  VARCHAR(200)           DEFAULT NULL,
+  `customer_city`     VARCHAR(100)           DEFAULT NULL,
+  `dumpster_id`       INT(11)                DEFAULT NULL,
+  `unit_code`         VARCHAR(50)            DEFAULT NULL,
+  `unit_type`         VARCHAR(50)            DEFAULT NULL,
+  `unit_size`         VARCHAR(50)            DEFAULT NULL,
+  `rental_start`      DATE          NOT NULL,
+  `rental_end`        DATE          NOT NULL,
+  `rental_days`       INT(11)       NOT NULL DEFAULT 1,
+  `daily_rate`        DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `total_amount`      DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `payment_method`    ENUM('stripe','cash','check') NOT NULL DEFAULT 'stripe',
+  `payment_status`    ENUM('unpaid','pending','paid','refunded','pending_cash','paid_cash','pending_check','paid_check') NOT NULL DEFAULT 'unpaid',
+  `stripe_session_id` VARCHAR(255)           DEFAULT NULL,
+  `stripe_payment_id` VARCHAR(255)           DEFAULT NULL,
+  `booking_status`    ENUM('pending','confirmed','paid','canceled','completed') NOT NULL DEFAULT 'pending',
+  `booking_group_id`  VARCHAR(32)            DEFAULT NULL COMMENT 'Shared key linking multiple units booked together in one session',
+  `notes`             TEXT                   DEFAULT NULL,
+  `created_by`        INT(11)                DEFAULT NULL,
+  `created_at`        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_bookings_number` (`booking_number`),
+  KEY `idx_bookings_group` (`booking_group_id`),
+  CONSTRAINT `fk_bookings_dumpster_id` FOREIGN KEY (`dumpster_id`) REFERENCES `dumpsters` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_bookings_created_by`  FOREIGN KEY (`created_by`)  REFERENCES `users`     (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- inventory_blocks  (admin-managed unavailability periods)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `inventory_blocks` (
+  `id`          INT(11)      NOT NULL AUTO_INCREMENT,
+  `dumpster_id` INT(11)      NOT NULL,
+  `block_start` DATE         NOT NULL,
+  `block_end`   DATE         NOT NULL,
+  `reason`      VARCHAR(200)          DEFAULT NULL,
+  `created_by`  INT(11)               DEFAULT NULL,
+  `created_at`  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_ib_dumpster_id` FOREIGN KEY (`dumpster_id`) REFERENCES `dumpsters` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_ib_created_by`  FOREIGN KEY (`created_by`)  REFERENCES `users`     (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- invoices  (custom invoices with optional Stripe payment links)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `invoices` (
+  `id`                  INT(11)       NOT NULL AUTO_INCREMENT,
+  `invoice_number`      VARCHAR(20)   NOT NULL,
+  `customer_id`         INT(11)                DEFAULT NULL,
+  `cust_name`           VARCHAR(100)  NOT NULL,
+  `cust_email`          VARCHAR(150)           DEFAULT NULL,
+  `cust_phone`          VARCHAR(20)            DEFAULT NULL,
+  `cust_address`        VARCHAR(200)           DEFAULT NULL,
+  `subtotal`            DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `tax_rate`            DECIMAL(5,2)  NOT NULL DEFAULT 0.00,
+  `tax_amount`          DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `total`               DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `notes`               TEXT                   DEFAULT NULL,
+  `terms`               TEXT                   DEFAULT NULL,
+  `status`              ENUM('draft','sent','paid','void') NOT NULL DEFAULT 'draft',
+  `due_date`            DATE                   DEFAULT NULL,
+  `stripe_payment_link` VARCHAR(500)           DEFAULT NULL,
+  `created_by`          INT(11)                DEFAULT NULL,
+  `created_at`          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_invoices_number` (`invoice_number`),
+  CONSTRAINT `fk_inv_customer_id` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_inv_created_by`  FOREIGN KEY (`created_by`)  REFERENCES `users`     (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- invoice_items
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `invoice_items` (
+  `id`          INT(11)       NOT NULL AUTO_INCREMENT,
+  `invoice_id`  INT(11)       NOT NULL,
+  `description` VARCHAR(255)  NOT NULL,
+  `quantity`    DECIMAL(10,2) NOT NULL DEFAULT 1.00,
+  `unit_price`  DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `amount`      DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `rate_type`   ENUM('fixed','daily','weekly','monthly') NOT NULL DEFAULT 'fixed',
+  PRIMARY KEY (`id`),
+  CONSTRAINT `fk_ii_invoice_id` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- push_subscriptions  (Web Push API subscriptions)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `push_subscriptions` (
+  `id`              INT(11)       NOT NULL AUTO_INCREMENT,
+  `subscriber_type` ENUM('admin','customer') NOT NULL DEFAULT 'customer',
+  `subscriber_id`   VARCHAR(200)  NOT NULL COMMENT 'admin user_id (int as string) or customer email/phone',
+  `endpoint`        TEXT          NOT NULL,
+  `p256dh`          VARCHAR(255)  NOT NULL,
+  `auth`            VARCHAR(64)   NOT NULL,
+  `user_agent`      VARCHAR(255)           DEFAULT NULL,
+  `created_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_push_endpoint` (endpoint(200)),
+  KEY `idx_push_subscriber` (`subscriber_type`, `subscriber_id`(100))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
 -- two_factor_secrets
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `two_factor_secrets` (
@@ -291,3 +409,18 @@ CREATE TABLE IF NOT EXISTS `rate_limit_locks` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+-- -----------------------------------------------------------------------------
+-- default settings
+-- -----------------------------------------------------------------------------
+INSERT IGNORE INTO `settings` (`key`, `value`) VALUES
+  ('stripe_publishable_key', ''),
+  ('stripe_secret_key',      ''),
+  ('stripe_webhook_secret',  ''),
+  ('stripe_mode',            'test'),
+  ('booking_terms',          'By completing this booking, you agree to our rental terms and conditions.'),
+  ('currency',               'usd'),
+  ('invoice_terms',          'Payment is due within 30 days of invoice date. Thank you for your business!'),
+  ('vapid_public_key',       ''),
+  ('vapid_private_key',      ''),
+  ('vapid_subject',          '');
