@@ -57,6 +57,14 @@ function layout_start(string $page_title, string $active_nav = ''): void
             'badge' => 'work_orders',
         ],
         [
+            'key'   => 'invoices',
+            'label' => 'Invoices',
+            'icon'  => 'fa-file-invoice-dollar',
+            'href'  => APP_URL . '/modules/invoices/index.php',
+            'roles' => null,
+            'badge' => null,
+        ],
+        [
             'key'   => 'scheduling',
             'label' => 'Scheduling',
             'icon'  => 'fa-calendar-days',

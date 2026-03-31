@@ -192,7 +192,7 @@ layout_start('Customer: ' . $cust['name'], 'customers');
                             <td class="text-end">
                                 <a href="<?= APP_URL ?>/modules/work_orders/view.php?id=<?= (int)$wo['id'] ?>"
                                    class="btn-tp-ghost btn-tp-sm">
-                                    <i class="fa-solid fa-eye"></i>
+                                    <i class="fa-solid fa-eye"></i> View
                                 </a>
                             </td>
                         </tr>
@@ -246,7 +246,7 @@ layout_start('Customer: ' . $cust['name'], 'customers');
                             <td class="text-end">
                                 <a href="<?= APP_URL ?>/modules/quotes/view.php?id=<?= (int)$quote['id'] ?>"
                                    class="btn-tp-ghost btn-tp-sm">
-                                    <i class="fa-solid fa-eye"></i>
+                                    <i class="fa-solid fa-eye"></i> View
                                 </a>
                             </td>
                         </tr>

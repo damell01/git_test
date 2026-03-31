@@ -1,7 +1,13 @@
--- Run after schema.sql
--- Adds: dumpsters enhancements, bookings table, inventory_blocks table, default Stripe settings
+-- =============================================================================
+-- Upgrade Migration — run this on existing databases to add new features
+-- Safe to run multiple times (uses IF NOT EXISTS / ADD COLUMN IF NOT EXISTS)
+-- =============================================================================
 
--- Enhance dumpsters table
+-- 1. Fix missing `subtotal` column in quotes table (should come before tax_rate logically)
+ALTER TABLE `quotes`
+  ADD COLUMN IF NOT EXISTS `subtotal` DECIMAL(10,2) DEFAULT 0.00 AFTER `extra_fee_desc`;
+
+-- 2. Add weekly and monthly rates to dumpsters
 ALTER TABLE `dumpsters`
   ADD COLUMN IF NOT EXISTS `type`         ENUM('dumpster','trailer') NOT NULL DEFAULT 'dumpster' AFTER `unit_code`,
   ADD COLUMN IF NOT EXISTS `daily_rate`   DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER `size`,
@@ -10,11 +16,7 @@ ALTER TABLE `dumpsters`
   ADD COLUMN IF NOT EXISTS `active`       TINYINT(1) NOT NULL DEFAULT 1 AFTER `monthly_rate`,
   ADD COLUMN IF NOT EXISTS `image`        VARCHAR(255) DEFAULT NULL AFTER `active`;
 
--- Add subtotal column to quotes (was missing)
-ALTER TABLE `quotes`
-  ADD COLUMN IF NOT EXISTS `subtotal` DECIMAL(10,2) DEFAULT 0.00 AFTER `tax_amount`;
-
--- bookings
+-- 3. Bookings table (if not already present)
 CREATE TABLE IF NOT EXISTS `bookings` (
   `id`                 INT(11)       NOT NULL AUTO_INCREMENT,
   `booking_number`     VARCHAR(20)   NOT NULL,
@@ -37,19 +39,17 @@ CREATE TABLE IF NOT EXISTS `bookings` (
   `stripe_session_id`  VARCHAR(255)           DEFAULT NULL,
   `stripe_payment_id`  VARCHAR(255)           DEFAULT NULL,
   `booking_status`     ENUM('pending','confirmed','paid','canceled','completed') NOT NULL DEFAULT 'pending',
-  `booking_group_id`   VARCHAR(32)            DEFAULT NULL COMMENT 'Shared key linking multiple units booked together in one session',
+  `booking_group_id`   VARCHAR(32)            DEFAULT NULL,
   `notes`              TEXT                   DEFAULT NULL,
   `created_by`         INT(11)                DEFAULT NULL,
   `created_at`         DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`         DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_bookings_number` (`booking_number`),
-  KEY `idx_bookings_group` (`booking_group_id`),
-  CONSTRAINT `fk_bookings_dumpster_id` FOREIGN KEY (`dumpster_id`) REFERENCES `dumpsters` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_bookings_created_by`  FOREIGN KEY (`created_by`)  REFERENCES `users` (`id`) ON DELETE SET NULL
+  KEY `idx_bookings_group` (`booking_group_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- inventory_blocks (admin-managed unavailability periods)
+-- 4. Inventory blocks table (if not already present)
 CREATE TABLE IF NOT EXISTS `inventory_blocks` (
   `id`           INT(11)      NOT NULL AUTO_INCREMENT,
   `dumpster_id`  INT(11)      NOT NULL,
@@ -58,21 +58,10 @@ CREATE TABLE IF NOT EXISTS `inventory_blocks` (
   `reason`       VARCHAR(200)          DEFAULT NULL,
   `created_by`   INT(11)               DEFAULT NULL,
   `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  CONSTRAINT `fk_ib_dumpster_id`  FOREIGN KEY (`dumpster_id`) REFERENCES `dumpsters` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_ib_created_by`   FOREIGN KEY (`created_by`)  REFERENCES `users`     (`id`) ON DELETE SET NULL
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Default Stripe / booking settings
-INSERT IGNORE INTO `settings` (`key`, `value`) VALUES
-  ('stripe_publishable_key', ''),
-  ('stripe_secret_key',      ''),
-  ('stripe_webhook_secret',  ''),
-  ('stripe_mode',            'test'),
-  ('booking_terms',          'By completing this booking, you agree to our rental terms and conditions.'),
-  ('currency',               'usd');
-
--- invoices
+-- 5. Invoices table (custom invoices with Stripe payment links)
 CREATE TABLE IF NOT EXISTS `invoices` (
   `id`                  INT(11)       NOT NULL AUTO_INCREMENT,
   `invoice_number`      VARCHAR(20)   NOT NULL,
@@ -94,12 +83,10 @@ CREATE TABLE IF NOT EXISTS `invoices` (
   `created_at`          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uq_invoices_number` (`invoice_number`),
-  CONSTRAINT `fk_inv_customer_id`  FOREIGN KEY (`customer_id`)  REFERENCES `customers` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_inv_created_by`   FOREIGN KEY (`created_by`)   REFERENCES `users`     (`id`) ON DELETE SET NULL
+  UNIQUE KEY `uq_invoices_number` (`invoice_number`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- invoice_items
+-- 6. Invoice items table
 CREATE TABLE IF NOT EXISTS `invoice_items` (
   `id`          INT(11)       NOT NULL AUTO_INCREMENT,
   `invoice_id`  INT(11)       NOT NULL,
@@ -108,10 +95,15 @@ CREATE TABLE IF NOT EXISTS `invoice_items` (
   `unit_price`  DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `amount`      DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   `rate_type`   ENUM('fixed','daily','weekly','monthly') NOT NULL DEFAULT 'fixed',
-  PRIMARY KEY (`id`),
-  CONSTRAINT `fk_ii_invoice_id` FOREIGN KEY (`invoice_id`) REFERENCES `invoices` (`id`) ON DELETE CASCADE
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Default invoice terms setting
+-- 7. Default settings
 INSERT IGNORE INTO `settings` (`key`, `value`) VALUES
-  ('invoice_terms', 'Payment is due within 30 days of invoice date. Thank you for your business!');
+  ('stripe_publishable_key', ''),
+  ('stripe_secret_key',      ''),
+  ('stripe_webhook_secret',  ''),
+  ('stripe_mode',            'test'),
+  ('booking_terms',          'By completing this booking, you agree to our rental terms and conditions.'),
+  ('currency',               'usd'),
+  ('invoice_terms',          'Payment is due within 30 days of invoice date. Thank you for your business!');

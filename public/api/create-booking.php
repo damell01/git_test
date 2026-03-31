@@ -9,7 +9,25 @@
 header('Content-Type: application/json');
 header('X-Content-Type-Options: nosniff');
 
+// Prevent PHP notices/warnings from corrupting the JSON response while still logging them
+@ini_set('display_errors', '0');
+@ini_set('log_errors',     '1');
+error_reporting(E_ALL);
+
 $_admin_root = dirname(__DIR__, 2) . '/admin';
+
+// Top-level catch: any uncaught exception returns a clean JSON error
+// instead of an HTML error page (which causes "Network error" on the client).
+set_exception_handler(function (\Throwable $e) {
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: application/json');
+    }
+    echo json_encode(['success' => false, 'error' => 'Server error. Please try again.']);
+    error_log('[create-booking.php] Uncaught: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    exit;
+});
+
 require_once $_admin_root . '/config/config.php';
 require_once INC_PATH . '/db.php';
 require_once INC_PATH . '/helpers.php';

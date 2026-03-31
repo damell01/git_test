@@ -216,17 +216,17 @@ layout_start('Leads', 'leads');
                         <div class="d-flex gap-1 justify-content-end">
                             <a href="<?= APP_URL ?>/modules/leads/view.php?id=<?= (int)$lead['id'] ?>"
                                class="btn-tp-ghost btn-tp-sm" title="View">
-                                <i class="fa-solid fa-eye"></i>
+                                <i class="fa-solid fa-eye"></i> View
                             </a>
                             <?php if (has_role('admin', 'office')): ?>
                             <a href="<?= APP_URL ?>/modules/leads/edit.php?id=<?= (int)$lead['id'] ?>"
                                class="btn-tp-ghost btn-tp-sm" title="Edit">
-                                <i class="fa-solid fa-pencil"></i>
+                                <i class="fa-solid fa-pencil"></i> Edit
                             </a>
                             <a href="<?= APP_URL ?>/modules/leads/delete.php?id=<?= (int)$lead['id'] ?>"
                                class="btn-tp-ghost btn-tp-sm text-danger" title="Archive"
                                onclick="return confirm('Archive this lead?')">
-                                <i class="fa-solid fa-box-archive"></i>
+                                <i class="fa-solid fa-box-archive"></i> Archive
                             </a>
                             <?php endif; ?>
                         </div>
