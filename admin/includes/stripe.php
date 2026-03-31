@@ -72,8 +72,75 @@ function stripe_create_checkout(array $booking, string $success_url, string $can
 }
 
 /**
- * Verify a Stripe webhook signature and return the decoded Event.
+ * Create a Stripe Checkout Session for multiple bookings in a single payment.
+ *
+ * @param array  $bookings     Array of booking rows from the database
+ * @param string $success_url
+ * @param string $cancel_url
  */
+function stripe_create_multi_checkout(array $bookings, string $success_url, string $cancel_url): \Stripe\Checkout\Session
+{
+    $currency = get_setting('currency', 'usd');
+    $company  = get_setting('company_name', 'Trash Panda Roll-Offs');
+
+    $line_items    = [];
+    $total_cents   = 0;
+    $booking_ids   = [];
+    $booking_nums  = [];
+
+    foreach ($bookings as $booking) {
+        $amount_cents = (int)round((float)$booking['total_amount'] * 100);
+        $total_cents += $amount_cents;
+
+        $description = sprintf(
+            '%s %s — %s to %s',
+            $booking['unit_size'] ?? '',
+            ucfirst($booking['unit_type'] ?? 'Dumpster'),
+            fmt_date($booking['rental_start']),
+            fmt_date($booking['rental_end'])
+        );
+
+        $line_items[] = [
+            'price_data' => [
+                'currency'     => strtolower($currency),
+                'product_data' => [
+                    'name'        => $company . ' — ' . ($booking['unit_code'] ?? 'Dumpster Rental'),
+                    'description' => $description,
+                ],
+                'unit_amount'  => $amount_cents,
+            ],
+            'quantity' => 1,
+        ];
+
+        $booking_ids[]  = (string)$booking['id'];
+        $booking_nums[] = $booking['booking_number'];
+    }
+
+    $session_params = [
+        'payment_method_types' => ['card'],
+        'line_items'           => $line_items,
+        'mode'                 => 'payment',
+        'success_url'          => $success_url,
+        'cancel_url'           => $cancel_url,
+        'metadata'             => [
+            'booking_ids'     => implode(',', $booking_ids),
+            'booking_numbers' => implode(',', $booking_nums),
+            'customer_name'   => $bookings[0]['customer_name'] ?? '',
+            'customer_phone'  => $bookings[0]['customer_phone'] ?? '',
+            'rental_start'    => $bookings[0]['rental_start'] ?? '',
+            'rental_end'      => $bookings[0]['rental_end'] ?? '',
+        ],
+        'customer_email' => $bookings[0]['customer_email'] ?? null,
+    ];
+
+    if ($total_cents === 0) {
+        $session_params['payment_method_collection'] = 'if_required';
+    }
+
+    return stripe_client()->checkout->sessions->create($session_params);
+}
+
+
 function stripe_verify_webhook(string $payload, string $sig_header): \Stripe\Event
 {
     $secret = get_setting('stripe_webhook_secret', '');

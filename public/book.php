@@ -127,7 +127,7 @@ $stripe_pub_key = get_setting('stripe_publishable_key', '');
         }
         .unit-card:hover { border-color: var(--orange); }
         .unit-card.selected { border-color: var(--orange); background: rgba(249,115,22,.1); }
-        .unit-card input[type="radio"] { display: none; }
+        .unit-card input[type="checkbox"].unit-checkbox { display: none; }
         .unit-size-label {
             font-family: var(--font-display);
             font-size: 1.5rem;
@@ -313,7 +313,7 @@ $stripe_pub_key = get_setting('stripe_publishable_key', '');
 
         <!-- Unit selection -->
         <div class="book-card">
-            <h2><i class="fas fa-dumpster"></i> Select a Unit</h2>
+            <h2><i class="fas fa-dumpster"></i> Select Unit(s) <small style="font-size:.8rem;font-weight:400;color:var(--gray);font-family:var(--font-body);">— select one or more</small></h2>
             <?php if (empty($units)): ?>
                 <p style="color:var(--gray);">No units are currently available for online booking. Please call us to check availability!</p>
             <?php else: ?>
@@ -328,7 +328,8 @@ $stripe_pub_key = get_setting('stripe_publishable_key', '');
                 <label class="unit-card<?= ((int)$u['id'] === $preselect_unit_id) ? ' selected' : '' ?><?= $isUnavailable ? ' unavailable' : '' ?>"
                        for="unit_<?= (int)$u['id'] ?>"
                        data-unit-id="<?= (int)$u['id'] ?>">
-                    <input type="radio" name="unit_id" id="unit_<?= (int)$u['id'] ?>"
+                    <input type="checkbox" name="unit_id[]" id="unit_<?= (int)$u['id'] ?>"
+                           class="unit-checkbox"
                            value="<?= (int)$u['id'] ?>"
                            data-rate="<?= htmlspecialchars($u['daily_rate'], ENT_QUOTES, 'UTF-8') ?>"
                            data-code="<?= htmlspecialchars($u['unit_code'], ENT_QUOTES, 'UTF-8') ?>"
@@ -394,21 +395,14 @@ $stripe_pub_key = get_setting('stripe_publishable_key', '');
         <!-- Summary -->
         <div class="book-card" id="step2-summary" style="background:rgba(249,115,22,.07);border-color:rgba(249,115,22,.3);">
             <h2 style="border-bottom-color:rgba(249,115,22,.3);"><i class="fas fa-receipt"></i> Booking Summary</h2>
+            <div id="sum-units-list" style="margin-bottom:.75rem;font-size:.9rem;"></div>
             <div class="row g-2" style="font-size:.9rem;">
-                <div class="col-6 col-md-3">
-                    <div style="color:var(--gray);font-size:.8rem;">Unit</div>
-                    <div id="sum-unit" class="fw-semibold"></div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div style="color:var(--gray);font-size:.8rem;">Size</div>
-                    <div id="sum-size"></div>
-                </div>
-                <div class="col-6 col-md-3">
+                <div class="col-6 col-md-4">
                     <div style="color:var(--gray);font-size:.8rem;">Dates</div>
                     <div id="sum-dates"></div>
                 </div>
-                <div class="col-6 col-md-3">
-                    <div style="color:var(--gray);font-size:.8rem;">Total</div>
+                <div class="col-6 col-md-4">
+                    <div style="color:var(--gray);font-size:.8rem;">Grand Total</div>
                     <div id="sum-total" style="color:var(--orange);font-weight:700;font-size:1.1rem;"></div>
                 </div>
             </div>
@@ -499,33 +493,45 @@ $stripe_pub_key = get_setting('stripe_publishable_key', '');
 
 <script>
 // ─── State ───────────────────────────────────────────────────────────────────
-var selectedUnit   = null;
+var selectedUnits  = [];   // array of { id, rate, code, size, type }
 var availCheckTimer = null;
 
-// ─── Unit card selection ─────────────────────────────────────────────────────
-document.querySelectorAll('input[name="unit_id"]').forEach(function(radio) {
-    radio.addEventListener('change', function() {
-        document.querySelectorAll('.unit-grid .unit-card').forEach(function(c) { c.classList.remove('selected'); });
-        this.closest('.unit-card').classList.add('selected');
-        selectedUnit = {
-            id:    this.value,
-            rate:  parseFloat(this.dataset.rate) || 0,
-            code:  this.dataset.code,
-            size:  this.dataset.size,
-            type:  this.dataset.type
+// ─── Unit card selection (multi-select checkboxes) ────────────────────────────
+document.querySelectorAll('input.unit-checkbox').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+        var card = this.closest('.unit-card');
+        var unit = {
+            id:   this.value,
+            rate: parseFloat(this.dataset.rate) || 0,
+            code: this.dataset.code,
+            size: this.dataset.size,
+            type: this.dataset.type
         };
+        if (this.checked) {
+            card.classList.add('selected');
+            // Add to selectedUnits if not already present
+            var found = false;
+            for (var i = 0; i < selectedUnits.length; i++) {
+                if (selectedUnits[i].id === unit.id) { found = true; break; }
+            }
+            if (!found) selectedUnits.push(unit);
+        } else {
+            card.classList.remove('selected');
+            selectedUnits = selectedUnits.filter(function(u) { return u.id !== unit.id; });
+        }
         computeTotal();
         triggerAvailCheck();
     });
-    // Auto-initialise selectedUnit for any pre-checked radio (URL pre-select)
-    if (radio.checked) {
-        selectedUnit = {
-            id:    radio.value,
-            rate:  parseFloat(radio.dataset.rate) || 0,
-            code:  radio.dataset.code,
-            size:  radio.dataset.size,
-            type:  radio.dataset.type
-        };
+    // Auto-initialise for any pre-checked box (URL pre-select)
+    if (cb.checked) {
+        cb.closest('.unit-card').classList.add('selected');
+        selectedUnits.push({
+            id:   cb.value,
+            rate: parseFloat(cb.dataset.rate) || 0,
+            code: cb.dataset.code,
+            size: cb.dataset.size,
+            type: cb.dataset.type
+        });
     }
 });
 
@@ -555,7 +561,7 @@ function computeTotal() {
     var amtEl = document.getElementById('totalAmount');
     var brkEl = document.getElementById('totalBreakdown');
 
-    if (!selectedUnit || !start || !end) {
+    if (selectedUnits.length === 0 || !start || !end) {
         disp.style.display = 'none';
         return;
     }
@@ -565,9 +571,14 @@ function computeTotal() {
     var days = Math.round((endUTC - startUTC) / 86400000);
     if (days <= 0) { disp.style.display = 'none'; return; }
 
-    var total = selectedUnit.rate * days;
+    var total = 0;
+    selectedUnits.forEach(function(u) { total += u.rate * days; });
     amtEl.textContent = '$' + total.toFixed(2);
-    brkEl.textContent = selectedUnit.size + ' · ' + days + ' day' + (days !== 1 ? 's' : '') + ' @ $' + selectedUnit.rate.toFixed(2) + '/day';
+    if (selectedUnits.length === 1) {
+        brkEl.textContent = selectedUnits[0].size + ' · ' + days + ' day' + (days !== 1 ? 's' : '') + ' @ $' + selectedUnits[0].rate.toFixed(2) + '/day';
+    } else {
+        brkEl.textContent = selectedUnits.length + ' units · ' + days + ' day' + (days !== 1 ? 's' : '');
+    }
     disp.style.display = 'block';
 }
 
@@ -587,11 +598,11 @@ function checkAvailability() {
         // Reset all date-based unavailability when dates are cleared/invalid
         document.querySelectorAll('.unit-card.date-unavailable').forEach(function(c) {
             c.classList.remove('date-unavailable');
-            var radio = c.querySelector('input[type="radio"]');
-            if (radio && radio.dataset.status === 'available') {
-                radio.disabled = false;
+            var cb = c.querySelector('input.unit-checkbox');
+            if (cb && cb.dataset.status === 'available') {
+                cb.disabled = false;
                 c.style.pointerEvents = '';
-                var badge = document.querySelector('[data-status-badge="' + radio.value + '"]');
+                var badge = document.querySelector('[data-status-badge="' + cb.value + '"]');
                 if (badge) { badge.textContent = 'Available'; badge.className = 'unit-status-badge unit-status-available'; }
             }
         });
@@ -600,9 +611,9 @@ function checkAvailability() {
     }
 
     // Show "checking" badge on all available-status units
-    document.querySelectorAll('input[name="unit_id"]').forEach(function(radio) {
-        if (radio.dataset.status === 'available') {
-            var badge = document.querySelector('[data-status-badge="' + radio.value + '"]');
+    document.querySelectorAll('input.unit-checkbox').forEach(function(cb) {
+        if (cb.dataset.status === 'available') {
+            var badge = document.querySelector('[data-status-badge="' + cb.value + '"]');
             if (badge) { badge.textContent = 'Checking…'; badge.className = 'unit-status-badge unit-status-checking'; }
         }
     });
@@ -612,50 +623,48 @@ function checkAvailability() {
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (!data.available) return;
-            document.querySelectorAll('input[name="unit_id"]').forEach(function(radio) {
-                if (radio.dataset.status !== 'available') return; // don't touch already-marked units
-                var uid  = radio.value;
-                var card = radio.closest('.unit-card');
+            document.querySelectorAll('input.unit-checkbox').forEach(function(cb) {
+                if (cb.dataset.status !== 'available') return; // don't touch already-marked units
+                var uid   = cb.value;
+                var card  = cb.closest('.unit-card');
                 var badge = document.querySelector('[data-status-badge="' + uid + '"]');
                 var isAvail = data.available[uid] === true;
                 if (isAvail) {
                     card.classList.remove('date-unavailable');
-                    radio.disabled = false;
+                    cb.disabled = false;
                     if (badge) { badge.textContent = 'Available'; badge.className = 'unit-status-badge unit-status-available'; }
                 } else {
                     card.classList.add('date-unavailable');
                     card.classList.remove('selected');
-                    radio.disabled = true;
+                    cb.disabled = true;
+                    cb.checked  = false;
+                    selectedUnits = selectedUnits.filter(function(u) { return u.id !== uid; });
                     if (badge) { badge.textContent = 'Booked'; badge.className = 'unit-status-badge unit-status-reserved'; }
-                    // Deselect if this unit was selected
-    if (selectedUnit && selectedUnit.id === uid) {
-                        radio.checked = false;
-                        selectedUnit = null;
-                        document.getElementById('totalDisplay').style.display = 'none';
-                    }
                 }
             });
+            computeTotal();
         })
-        .catch(function() { /* silently fail — single-unit check below still runs */ });
+        .catch(function() { /* silently fail */ });
 
-    // Also update the selected-unit availability alert as before
-    if (!selectedUnit) { statusEl.style.display = 'none'; return; }
+    // Show a status message if any units are selected
+    if (selectedUnits.length === 0) { statusEl.style.display = 'none'; return; }
 
     statusEl.style.display = 'block';
     statusEl.textContent   = 'Checking availability…';
     statusEl.className     = 'book-alert book-alert-info';
 
-    fetch('/api/availability.php?unit_id=' + encodeURIComponent(selectedUnit.id) +
+    // Check first selected unit as a quick confirmation
+    fetch('/api/availability.php?unit_id=' + encodeURIComponent(selectedUnits[0].id) +
           '&start=' + encodeURIComponent(start) +
           '&end='   + encodeURIComponent(end))
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.available) {
-                statusEl.className   = 'book-alert book-alert-info';
-                statusEl.innerHTML   = '<i class="fas fa-check-circle" style="color:#22c55e;"></i> Unit is available for those dates!';
+                statusEl.className = 'book-alert book-alert-info';
+                statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:#22c55e;"></i> Selected unit(s) available for those dates!';
             } else {
-                statusEl.className   = 'book-alert book-alert-error';
-                statusEl.innerHTML   = '<i class="fas fa-times-circle"></i> ' + (data.message || 'Not available for selected dates.');
+                statusEl.className = 'book-alert book-alert-error';
+                statusEl.innerHTML = '<i class="fas fa-times-circle"></i> ' + (data.message || 'Not available for selected dates.');
             }
         })
         .catch(function() {
@@ -668,8 +677,8 @@ function goStep2() {
     var errEl = document.getElementById('step1-error');
     errEl.style.display = 'none';
 
-    if (!selectedUnit) {
-        errEl.textContent = 'Please select a unit.';
+    if (selectedUnits.length === 0) {
+        errEl.textContent = 'Please select at least one unit.';
         errEl.style.display = 'block';
         return;
     }
@@ -684,13 +693,23 @@ function goStep2() {
     }
 
     // Populate summary
-    var startUTC = Date.UTC.apply(null, document.getElementById('rental_start').value.split('-').map(function(v,i){ return i===1?parseInt(v,10)-1:parseInt(v,10); }));
-    var endUTC   = Date.UTC.apply(null, document.getElementById('rental_end').value.split('-').map(function(v,i){ return i===1?parseInt(v,10)-1:parseInt(v,10); }));
+    var startUTC = Date.UTC.apply(null, start.split('-').map(function(v,i){ return i===1?parseInt(v,10)-1:parseInt(v,10); }));
+    var endUTC   = Date.UTC.apply(null, end.split('-').map(function(v,i){ return i===1?parseInt(v,10)-1:parseInt(v,10); }));
     var days = Math.round((endUTC - startUTC) / 86400000);
-    document.getElementById('sum-unit').textContent  = selectedUnit.code;
-    document.getElementById('sum-size').textContent  = selectedUnit.size;
+
+    var listHtml = '';
+    var grandTotal = 0;
+    selectedUnits.forEach(function(u) {
+        var sub = u.rate * days;
+        grandTotal += sub;
+        listHtml += '<div style="display:flex;justify-content:space-between;padding:.25rem 0;border-bottom:1px solid rgba(255,255,255,.06);">'
+            + '<span><strong>' + escHtml(u.code) + '</strong> <span style="color:var(--gray);font-size:.85rem;">' + escHtml(u.size) + '</span></span>'
+            + '<span style="color:var(--orange);">$' + sub.toFixed(2) + '</span>'
+            + '</div>';
+    });
+    document.getElementById('sum-units-list').innerHTML = listHtml;
     document.getElementById('sum-dates').textContent = start + ' – ' + end;
-    document.getElementById('sum-total').textContent = '$' + (selectedUnit.rate * days).toFixed(2);
+    document.getElementById('sum-total').textContent = '$' + grandTotal.toFixed(2);
 
     setStep(2);
 }
@@ -708,17 +727,21 @@ function setStep(n) {
     window.scrollTo(0, 0);
 }
 
+function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 // ─── Submit ───────────────────────────────────────────────────────────────────
 function submitBooking() {
     var errEl  = document.getElementById('step2-error');
     var btnEl  = document.getElementById('btnSubmit');
     errEl.style.display = 'none';
 
-    // Safety guard: if unit was lost (e.g. page reload), send user back to step 1
-    if (!selectedUnit) {
+    // Safety guard: if units were lost (e.g. page reload), send user back to step 1
+    if (selectedUnits.length === 0) {
         goStep1();
         var e1 = document.getElementById('step1-error');
-        e1.textContent = 'Please select a unit to continue.';
+        e1.textContent = 'Please select at least one unit to continue.';
         e1.style.display = 'block';
         return;
     }
@@ -736,7 +759,7 @@ function submitBooking() {
     if (!terms) { errEl.textContent = 'Please agree to the terms and conditions.'; errEl.style.display = 'block'; return; }
 
     var payload = {
-        unit_id:          selectedUnit.id,
+        unit_ids:         selectedUnits.map(function(u) { return u.id; }),
         rental_start:     document.getElementById('rental_start').value,
         rental_end:       document.getElementById('rental_end').value,
         customer_name:    name,
