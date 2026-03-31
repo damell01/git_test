@@ -271,6 +271,18 @@ function notify_delivery_tomorrow(): void
 
         $html = email_template('Delivery Reminder', $body);
         send_email($email, 'Your Dumpster Delivery Is Tomorrow!', $html);
+
+        // Push notification to customer
+        if (function_exists('push_notify_customer')) {
+            $wo_num = $wo['wo_number'] ?? '';
+            foreach (array_filter([$email, !empty($wo['cust_phone']) ? preg_replace('/\D/', '', $wo['cust_phone']) : '']) as $push_id) {
+                push_notify_customer(
+                    $push_id,
+                    '🚚 Delivery Tomorrow' . ($wo_num ? ' — ' . $wo_num : ''),
+                    'Your dumpster delivery is scheduled for tomorrow at ' . htmlspecialchars($address, ENT_QUOTES, 'UTF-8') . '.'
+                );
+            }
+        }
     }
 }
 

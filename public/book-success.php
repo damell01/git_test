@@ -1,6 +1,7 @@
 <?php
 /**
  * Booking Success Page — Trash Panda Roll-Offs
+ * Supports single booking (?id=N&token=X) and multi-booking (?ids=1,2,3&token=X)
  */
 
 $_admin_root = dirname(__DIR__) . '/admin';
@@ -8,29 +9,58 @@ require_once $_admin_root . '/config/config.php';
 require_once INC_PATH . '/db.php';
 require_once INC_PATH . '/helpers.php';
 
-$id    = (int)($_GET['id']    ?? 0);
-$token = trim($_GET['token']  ?? '');
+$token = trim($_GET['token'] ?? '');
 
-if ($id <= 0 || $token === '') {
+// Support both ?ids=1,2,3 (new multi-booking) and ?id=N (legacy single)
+$ids_str = '';
+if (!empty($_GET['ids'])) {
+    $ids_str = trim($_GET['ids']);
+} elseif (!empty($_GET['id'])) {
+    $ids_str = trim((string)(int)$_GET['id']);
+}
+
+if ($ids_str === '' || $token === '') {
     header('Location: /');
     exit;
 }
 
-// Verify token
-$expected = hash_hmac('sha256', (string)$id, get_setting('stripe_secret_key', 'booking-token-secret'));
+// Verify token (HMAC of the IDs string)
+$expected = hash_hmac('sha256', $ids_str, get_setting('stripe_secret_key', 'booking-token-secret'));
 if (!hash_equals($expected, $token)) {
+    // Legacy fallback: old single-booking token was HMAC of just the integer ID
+    $single_id = (int)$ids_str;
+    $legacy_expected = hash_hmac('sha256', (string)$single_id, get_setting('stripe_secret_key', 'booking-token-secret'));
+    if ($single_id <= 0 || !hash_equals($legacy_expected, $token)) {
+        header('Location: /');
+        exit;
+    }
+}
+
+// Parse IDs and fetch bookings
+$id_parts = array_filter(array_map('intval', explode(',', $ids_str)), fn($v) => $v > 0);
+if (empty($id_parts)) {
     header('Location: /');
     exit;
 }
 
-$booking = db_fetch('SELECT * FROM bookings WHERE id = ? LIMIT 1', [$id]);
-if (!$booking) {
+$bookings = [];
+foreach ($id_parts as $bid) {
+    $row = db_fetch('SELECT * FROM bookings WHERE id = ? LIMIT 1', [$bid]);
+    if ($row) $bookings[] = $row;
+}
+
+if (empty($bookings)) {
     header('Location: /');
     exit;
 }
 
-$company_name = get_setting('company_name', 'Trash Panda Roll-Offs');
+// Use first booking for customer name / contact info
+$first_booking = $bookings[0];
+$grand_total   = array_sum(array_column($bookings, 'total_amount'));
+
+$company_name  = get_setting('company_name', 'Trash Panda Roll-Offs');
 $company_phone = get_setting('company_phone', '');
+$multi         = count($bookings) > 1;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -63,7 +93,7 @@ $company_phone = get_setting('company_phone', '');
         }
         .book-nav-brand { font-family: var(--font-display); font-size: 1.1rem; color: var(--white); text-decoration: none; }
         .book-nav-brand span { color: var(--orange); }
-        .success-container { max-width: 620px; margin: 4rem auto; padding: 0 1rem; text-align: center; }
+        .success-container { max-width: 660px; margin: 4rem auto; padding: 0 1rem; text-align: center; }
         .success-icon {
             width: 90px; height: 90px;
             background: rgba(34,197,94,.15);
@@ -86,7 +116,7 @@ $company_phone = get_setting('company_phone', '');
             border: 1px solid var(--steel);
             border-radius: 10px;
             padding: 1.5rem;
-            margin-top: 2rem;
+            margin-top: 1.5rem;
             text-align: left;
         }
         .booking-card h3 {
@@ -114,8 +144,16 @@ $company_phone = get_setting('company_phone', '');
             font-weight: 700;
             color: var(--orange);
             letter-spacing: .05em;
-            margin-bottom: 1rem;
+            margin: .25rem;
         }
+        .unit-row {
+            background: var(--dark3);
+            border: 1px solid var(--steel2);
+            border-radius: 8px;
+            padding: .9rem 1.1rem;
+            margin-bottom: .75rem;
+        }
+        .unit-row:last-child { margin-bottom: 0; }
     </style>
 </head>
 <body>
@@ -129,67 +167,100 @@ $company_phone = get_setting('company_phone', '');
         <i class="fas fa-check"></i>
     </div>
 
-    <div class="success-title">BOOKING <span>CONFIRMED!</span></div>
+    <div class="success-title">BOOKING<?= $multi ? 'S' : '' ?> <span>CONFIRMED!</span></div>
     <p style="color:var(--gray-light);margin-bottom:1rem;">
-        Thank you, <?= htmlspecialchars($booking['customer_name'], ENT_QUOTES, 'UTF-8') ?>!
-        Your dumpster rental has been booked.
+        Thank you, <?= htmlspecialchars($first_booking['customer_name'], ENT_QUOTES, 'UTF-8') ?>!
+        <?= $multi ? count($bookings) . ' dumpster rentals have' : 'Your dumpster rental has' ?> been booked.
     </p>
 
-    <div class="booking-number-display">
-        <?= htmlspecialchars($booking['booking_number'], ENT_QUOTES, 'UTF-8') ?>
+    <!-- Booking number(s) -->
+    <div>
+        <?php foreach ($bookings as $bk): ?>
+        <span class="booking-number-display"><?= htmlspecialchars($bk['booking_number'], ENT_QUOTES, 'UTF-8') ?></span>
+        <?php endforeach; ?>
     </div>
 
+    <?php if ($multi): ?>
+    <!-- Multi-unit summary -->
     <div class="booking-card">
-        <h3><i class="fas fa-receipt" style="color:var(--orange);margin-right:.4rem;"></i> Booking Details</h3>
-
-        <div class="detail-row">
-            <span class="detail-label">Booking #</span>
-            <span class="detail-value"><?= htmlspecialchars($booking['booking_number'], ENT_QUOTES, 'UTF-8') ?></span>
+        <h3><i class="fas fa-dumpster" style="color:var(--orange);margin-right:.4rem;"></i> Booked Units</h3>
+        <?php foreach ($bookings as $bk): ?>
+        <div class="unit-row">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <span style="font-family:var(--font-cond);font-weight:700;font-size:1rem;color:var(--white);">
+                        <?= htmlspecialchars($bk['unit_code'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
+                    </span>
+                    <?php if ($bk['unit_size']): ?>
+                    <span style="color:var(--gray);font-size:.85rem;margin-left:.4rem;">
+                        <?= htmlspecialchars($bk['unit_size'], ENT_QUOTES, 'UTF-8') ?>
+                    </span>
+                    <?php endif; ?>
+                    <div style="color:var(--gray);font-size:.8rem;margin-top:.15rem;">
+                        <?= htmlspecialchars($bk['booking_number'], ENT_QUOTES, 'UTF-8') ?>
+                    </div>
+                </div>
+                <span style="color:var(--orange);font-weight:700;">
+                    <?= htmlspecialchars(fmt_money($bk['total_amount']), ENT_QUOTES, 'UTF-8') ?>
+                </span>
+            </div>
         </div>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+
+    <!-- Common booking details -->
+    <div class="booking-card">
+        <h3><i class="fas fa-receipt" style="color:var(--orange);margin-right:.4rem;"></i>
+            <?= $multi ? 'Booking Details' : 'Booking Details' ?></h3>
+
+        <?php if (!$multi): ?>
         <div class="detail-row">
             <span class="detail-label">Unit</span>
             <span class="detail-value">
-                <?= htmlspecialchars($booking['unit_code'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
-                <?php if ($booking['unit_size']): ?>
-                — <?= htmlspecialchars($booking['unit_size'], ENT_QUOTES, 'UTF-8') ?>
+                <?= htmlspecialchars($first_booking['unit_code'] ?? '—', ENT_QUOTES, 'UTF-8') ?>
+                <?php if ($first_booking['unit_size']): ?>
+                — <?= htmlspecialchars($first_booking['unit_size'], ENT_QUOTES, 'UTF-8') ?>
                 <?php endif; ?>
             </span>
         </div>
+        <?php endif; ?>
+
         <div class="detail-row">
             <span class="detail-label">Start Date</span>
-            <span class="detail-value"><?= htmlspecialchars(fmt_date($booking['rental_start']), ENT_QUOTES, 'UTF-8') ?></span>
+            <span class="detail-value"><?= htmlspecialchars(fmt_date($first_booking['rental_start']), ENT_QUOTES, 'UTF-8') ?></span>
         </div>
         <div class="detail-row">
             <span class="detail-label">End Date</span>
-            <span class="detail-value"><?= htmlspecialchars(fmt_date($booking['rental_end']), ENT_QUOTES, 'UTF-8') ?></span>
+            <span class="detail-value"><?= htmlspecialchars(fmt_date($first_booking['rental_end']), ENT_QUOTES, 'UTF-8') ?></span>
         </div>
         <div class="detail-row">
             <span class="detail-label">Duration</span>
-            <span class="detail-value"><?= (int)$booking['rental_days'] ?> day<?= (int)$booking['rental_days'] !== 1 ? 's' : '' ?></span>
+            <span class="detail-value"><?= (int)$first_booking['rental_days'] ?> day<?= (int)$first_booking['rental_days'] !== 1 ? 's' : '' ?></span>
         </div>
         <div class="detail-row">
             <span class="detail-label">Payment Method</span>
-            <span class="detail-value"><?= htmlspecialchars(ucfirst($booking['payment_method']), ENT_QUOTES, 'UTF-8') ?></span>
+            <span class="detail-value"><?= htmlspecialchars(ucfirst($first_booking['payment_method']), ENT_QUOTES, 'UTF-8') ?></span>
         </div>
-        <?php if ($booking['customer_address'] || $booking['customer_city']): ?>
+        <?php if ($first_booking['customer_address'] || $first_booking['customer_city']): ?>
         <div class="detail-row">
             <span class="detail-label">Drop-off Address</span>
             <span class="detail-value">
-                <?= htmlspecialchars(trim(($booking['customer_address'] ?? '') . ', ' . ($booking['customer_city'] ?? ''), ', '), ENT_QUOTES, 'UTF-8') ?>
+                <?= htmlspecialchars(trim(($first_booking['customer_address'] ?? '') . ', ' . ($first_booking['customer_city'] ?? ''), ', '), ENT_QUOTES, 'UTF-8') ?>
             </span>
         </div>
         <?php endif; ?>
         <div class="detail-row total-row">
-            <span class="detail-label" style="font-weight:600;">Total</span>
-            <span class="detail-value"><?= htmlspecialchars(fmt_money($booking['total_amount']), ENT_QUOTES, 'UTF-8') ?></span>
+            <span class="detail-label" style="font-weight:600;">Total<?= $multi ? ' (All Units)' : '' ?></span>
+            <span class="detail-value"><?= htmlspecialchars(fmt_money($grand_total), ENT_QUOTES, 'UTF-8') ?></span>
         </div>
     </div>
 
-    <?php if ($booking['payment_method'] !== 'stripe'): ?>
+    <?php if ($first_booking['payment_method'] !== 'stripe'): ?>
     <div style="background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.3);border-radius:8px;padding:1rem;margin-top:1.25rem;font-size:.9rem;color:var(--gray-light);text-align:left;">
         <i class="fas fa-info-circle" style="color:var(--orange);"></i>
         <strong style="color:var(--white);">Payment Note:</strong>
-        <?php if ($booking['payment_method'] === 'cash'): ?>
+        <?php if ($first_booking['payment_method'] === 'cash'): ?>
             Please have cash payment ready at time of delivery.
         <?php else: ?>
             Please have your check made out to
