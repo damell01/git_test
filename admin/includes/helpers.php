@@ -135,6 +135,41 @@ function payment_badge(string $status): string
 }
 
 /**
+ * Determine whether Stripe is configured in test mode.
+ */
+function stripe_is_test_mode(): bool
+{
+    $secret = trim(get_setting('stripe_secret_key', ''));
+    if ($secret === '') {
+        return false;
+    }
+
+    return str_starts_with($secret, 'sk_test_') || str_starts_with($secret, 'rk_test_');
+}
+
+/**
+ * Build a Stripe Dashboard URL for common object IDs (pi_, ch_, cs_).
+ */
+function stripe_dashboard_url(?string $object_id): ?string
+{
+    $id = trim((string)$object_id);
+    if ($id === '') {
+        return null;
+    }
+
+    $base = 'https://dashboard.stripe.com' . (stripe_is_test_mode() ? '/test' : '');
+
+    if (str_starts_with($id, 'pi_') || str_starts_with($id, 'ch_')) {
+        return $base . '/payments/' . rawurlencode($id);
+    }
+    if (str_starts_with($id, 'cs_')) {
+        return $base . '/payments/checkout/sessions/' . rawurlencode($id);
+    }
+
+    return null;
+}
+
+/**
  * Generate the next sequential number for a given prefix / table / column.
  * Example output: "Q-0001", "WO-0042"
  *

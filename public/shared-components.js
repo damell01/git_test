@@ -42,7 +42,7 @@ const navHTML = `
 const tickerHTML = `
 <div class="ticker-wrap">
   <div class="ticker-track">
-    ${Array(3).fill(`
+    ${Array(2).fill(`
       <div class="ticker-item">
         Same-Day Delivery Available <span class="ticker-sep"></span>
         Baldwin County & Mobile Area <span class="ticker-sep"></span>
@@ -159,5 +159,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const t = document.querySelector(a.getAttribute('href'));
       if (t) { e.preventDefault(); t.scrollIntoView({ behavior:'smooth', block:'start' }); }
     });
+  });
+
+  // Mark below-the-fold images as lazy to reduce initial payload.
+  document.querySelectorAll('img').forEach((img) => {
+    if (img.loading) return;
+    const top = img.getBoundingClientRect().top;
+    if (top > window.innerHeight * 1.2) {
+      img.loading = 'lazy';
+      img.decoding = 'async';
+    } else {
+      img.decoding = 'async';
+    }
   });
 });

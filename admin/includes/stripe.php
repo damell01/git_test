@@ -60,6 +60,14 @@ function stripe_create_checkout(array $booking, string $success_url, string $can
             'rental_start'    => $booking['rental_start'] ?? '',
             'rental_end'      => $booking['rental_end'] ?? '',
         ],
+        'payment_intent_data' => [
+            'metadata' => [
+                'booking_id'     => (string)$booking['id'],
+                'booking_number' => $booking['booking_number'] ?? '',
+                'customer_name'  => $booking['customer_name'] ?? '',
+                'unit_code'      => $booking['unit_code'] ?? '',
+            ],
+        ],
         'customer_email' => $booking['customer_email'] ?? null,
     ];
 
@@ -129,6 +137,13 @@ function stripe_create_multi_checkout(array $bookings, string $success_url, stri
             'customer_phone'  => $bookings[0]['customer_phone'] ?? '',
             'rental_start'    => $bookings[0]['rental_start'] ?? '',
             'rental_end'      => $bookings[0]['rental_end'] ?? '',
+        ],
+        'payment_intent_data'  => [
+            'metadata' => [
+                'booking_ids'     => implode(',', $booking_ids),
+                'booking_numbers' => implode(',', $booking_nums),
+                'customer_name'   => $bookings[0]['customer_name'] ?? '',
+            ],
         ],
         'customer_email' => $bookings[0]['customer_email'] ?? null,
     ];

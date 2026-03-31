@@ -57,6 +57,7 @@ $bookings = db_fetchall(
             b.unit_code, b.unit_type, b.unit_size,
             b.rental_start, b.rental_end, b.rental_days,
             b.total_amount, b.payment_method, b.payment_status, b.booking_status,
+            b.stripe_payment_id, b.stripe_session_id,
             b.created_at
      FROM bookings b
      WHERE $where
@@ -115,6 +116,12 @@ layout_start('Bookings', 'bookings');
             </thead>
             <tbody>
             <?php foreach ($bookings as $b): ?>
+            <?php
+                $stripeLink = stripe_dashboard_url($b['stripe_payment_id'] ?? '');
+                if ($stripeLink === null) {
+                    $stripeLink = stripe_dashboard_url($b['stripe_session_id'] ?? '');
+                }
+            ?>
             <tr>
                 <td>
                     <a href="view.php?id=<?= (int)$b['id'] ?>" class="fw-semibold text-decoration-none">
@@ -145,7 +152,17 @@ layout_start('Bookings', 'bookings');
                 <td class="text-center"><?= (int)$b['rental_days'] ?></td>
                 <td class="text-end fw-semibold"><?= e(fmt_money($b['total_amount'])) ?></td>
                 <td><?= e(ucfirst($b['payment_method'])) ?></td>
-                <td><?= payment_badge($b['payment_status']) ?></td>
+                <td>
+                    <?= payment_badge($b['payment_status']) ?>
+                    <?php if (($b['payment_method'] ?? '') === 'stripe' && !empty($stripeLink)): ?>
+                    <div style="margin-top:.35rem;">
+                        <a href="<?= e($stripeLink) ?>" target="_blank" rel="noopener noreferrer"
+                           class="btn-tp-ghost btn-tp-xs" title="Open this payment in Stripe Dashboard">
+                            <i class="fa-brands fa-stripe"></i> Stripe
+                        </a>
+                    </div>
+                    <?php endif; ?>
+                </td>
                 <td><?= status_badge($b['booking_status']) ?></td>
                 <td class="text-end">
                     <a href="view.php?id=<?= (int)$b['id'] ?>" class="btn-tp-ghost btn-tp-xs">View</a>

@@ -756,10 +756,12 @@ layout_start('Dashboard', 'dashboard');
                                 <th>Description</th>
                                 <th class="text-end">Amount</th>
                                 <th>Date</th>
+                                <th class="text-end">Stripe</th>
                             </tr>
                         </thead>
                         <tbody>
                         <?php foreach ($stripe_recent_charges as $ch): ?>
+                            <?php $stripe_charge_url = stripe_dashboard_url($ch['id'] ?? ''); ?>
                             <tr>
                                 <td><?= e($ch['customer'] ?? '—') ?></td>
                                 <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
@@ -769,6 +771,16 @@ layout_start('Dashboard', 'dashboard');
                                     <?= fmt_money($ch['amount']) ?>
                                 </td>
                                 <td style="white-space:nowrap;"><?= e(fmt_datetime($ch['created'])) ?></td>
+                                <td class="text-end">
+                                    <?php if ($stripe_charge_url): ?>
+                                    <a href="<?= e($stripe_charge_url) ?>" target="_blank" rel="noopener noreferrer"
+                                       class="btn-tp-ghost btn-tp-xs" title="Open payment in Stripe Dashboard">
+                                        <i class="fa-brands fa-stripe"></i>
+                                    </a>
+                                    <?php else: ?>
+                                    <span class="text-muted">—</span>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>

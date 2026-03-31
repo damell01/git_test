@@ -20,6 +20,9 @@ if (!$booking) {
     redirect('index.php');
 }
 
+$stripe_payment_url = stripe_dashboard_url($booking['stripe_payment_id'] ?? '');
+$stripe_session_url = stripe_dashboard_url($booking['stripe_session_id'] ?? '');
+
 layout_start('Booking Detail', 'bookings');
 ?>
 
@@ -222,12 +225,24 @@ layout_start('Booking Detail', 'bookings');
                 <div class="mb-2">
                     <div class="text-muted" style="font-size:.8rem;">Session ID</div>
                     <div style="font-size:.8rem;word-break:break-all;"><?= e($booking['stripe_session_id']) ?></div>
+                    <?php if ($stripe_session_url): ?>
+                    <a href="<?= e($stripe_session_url) ?>" target="_blank" rel="noopener noreferrer"
+                       class="btn-tp-ghost btn-tp-xs mt-2">
+                        <i class="fa-brands fa-stripe"></i> Open Session in Stripe
+                    </a>
+                    <?php endif; ?>
                 </div>
                 <?php endif; ?>
                 <?php if ($booking['stripe_payment_id']): ?>
                 <div>
                     <div class="text-muted" style="font-size:.8rem;">Payment ID</div>
                     <div style="font-size:.8rem;word-break:break-all;"><?= e($booking['stripe_payment_id']) ?></div>
+                    <?php if ($stripe_payment_url): ?>
+                    <a href="<?= e($stripe_payment_url) ?>" target="_blank" rel="noopener noreferrer"
+                       class="btn-tp-ghost btn-tp-xs mt-2">
+                        <i class="fa-brands fa-stripe"></i> Open Payment in Stripe
+                    </a>
+                    <?php endif; ?>
                 </div>
                 <?php endif; ?>
             </div>
