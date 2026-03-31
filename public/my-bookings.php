@@ -358,11 +358,20 @@ function renderBookings(bookings) {
         var addr   = b.address ? '<i class="fas fa-map-marker-alt" style="color:var(--orange);width:12px;"></i> ' + escHtml(b.address) + ' &nbsp;·&nbsp; ' : '';
         var days   = parseInt(b.rental_days, 10) > 1 ? parseInt(b.rental_days, 10) + ' days' : '1 day';
 
+        // Build unit line — show sibling units if this is part of a group
+        var unitHtml = '<div class="bk-unit">' + escHtml(b.unit) + '</div>';
+        if (b.group_units && b.group_units.length > 0) {
+            unitHtml += '<div style="font-size:.78rem;color:var(--gray);margin-top:.15rem;">'
+                + '<i class="fas fa-layer-group" style="color:var(--orange);font-size:.7rem;margin-right:.3rem;"></i>'
+                + 'Also in group: ' + b.group_units.map(escHtml).join(', ')
+                + '</div>';
+        }
+
         var html = '<div class="bk-card">'
             + '<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">'
             +   '<div>'
             +     '<div class="bk-number">' + escHtml(b.booking_number) + '</div>'
-            +     '<div class="bk-unit">' + escHtml(b.unit) + '</div>'
+            +     unitHtml
             +   '</div>'
             +   '<div class="d-flex gap-2 flex-wrap">'
             +     '<span class="status-badge status-' + escHtml(b.booking_status) + '">' + bkStatus + '</span>'

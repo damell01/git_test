@@ -150,6 +150,10 @@ layout_start('Bookings', 'bookings');
                 <td class="text-end">
                     <a href="view.php?id=<?= (int)$b['id'] ?>" class="btn-tp-ghost btn-tp-xs">View</a>
                     <a href="edit.php?id=<?= (int)$b['id'] ?>" class="btn-tp-ghost btn-tp-xs">Edit</a>
+                    <?php if (has_role('admin')): ?>
+                    <a href="delete.php?id=<?= (int)$b['id'] ?>" class="btn-tp-ghost btn-tp-xs text-danger"
+                       onclick="return confirm('Permanently delete booking <?= e($b['booking_number']) ?>? This cannot be undone.')">Delete</a>
+                    <?php endif; ?>
                 </td>
             </tr>
             <?php endforeach; ?>

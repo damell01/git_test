@@ -166,6 +166,9 @@ if ($push_loaded) {
 }
 unset($_push_autoload);
 
+// Generate a booking_group_id when multiple units are booked together
+$booking_group_id = count($unit_ids) > 1 ? bin2hex(random_bytes(8)) : null;
+
 // Create one booking record per unit
 $new_ids        = [];
 $booking_numbers = [];
@@ -174,7 +177,7 @@ foreach ($units_data as $ud) {
     $unit           = $ud['unit'];
     $booking_number = next_number('BK', 'bookings', 'booking_number');
 
-    $new_id = db_insert('bookings', [
+    $row_data = [
         'booking_number'   => $booking_number,
         'customer_name'    => $customer_name,
         'customer_phone'   => $customer_phone ?: null,
@@ -196,7 +199,12 @@ foreach ($units_data as $ud) {
         'notes'            => $notes ?: null,
         'created_at'       => date('Y-m-d H:i:s'),
         'updated_at'       => date('Y-m-d H:i:s'),
-    ]);
+    ];
+    if ($booking_group_id !== null) {
+        $row_data['booking_group_id'] = $booking_group_id;
+    }
+
+    $new_id = db_insert('bookings', $row_data);
 
     if (!$new_id) {
         api_error('Failed to create booking for unit ' . $unit['unit_code'] . '. Please try again.', 500);
@@ -224,6 +232,24 @@ if ($push_loaded) {
         $customer_name . ' · $' . number_format($grand_total, 2) . ' (' . $pm_label . ')',
         $view_url
     );
+
+    // Notify customer immediately for cash/check bookings (Stripe bookings get notified via webhook)
+    if ($payment_method !== 'stripe') {
+        $cust_push_ids = array_unique(array_filter([
+            !empty($customer_email) ? strtolower(trim($customer_email)) : '',
+            !empty($customer_phone) ? preg_replace('/\D/', '', $customer_phone) : '',
+        ]));
+        $bk_label_short = count($booking_numbers) === 1
+            ? $booking_numbers[0]
+            : count($booking_numbers) . ' units';
+        foreach ($cust_push_ids as $cid) {
+            push_notify_customer(
+                $cid,
+                '📦 Booking Confirmed — ' . $bk_label_short,
+                'Your ' . $pm_label . ' booking for $' . number_format($grand_total, 2) . ' is confirmed.'
+            );
+        }
+    }
 }
 
 // Build token and success URL
