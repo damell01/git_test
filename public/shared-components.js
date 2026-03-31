@@ -1,6 +1,15 @@
 /* shared-components.js — injects nav + footer + ticker into every page */
 
 const LOGO_SRC = 'assets/logo.jpeg';
+const FONT_CSS_HREF = 'https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,800;0,900;1,700&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap';
+
+// Ensure brand fonts load without blocking first paint.
+if (!document.querySelector('link[href*="fonts.googleapis.com/css2?family=Black+Han+Sans"]')) {
+  const fontLink = document.createElement('link');
+  fontLink.rel = 'stylesheet';
+  fontLink.href = FONT_CSS_HREF;
+  document.head.appendChild(fontLink);
+}
 
 const navHTML = `
 <nav class="site-nav" id="siteNav">
