@@ -252,7 +252,7 @@ layout_start('Lead: ' . $lead['name'], 'leads');
                             <td class="text-end">
                                 <a href="<?= APP_URL ?>/modules/quotes/view.php?id=<?= (int)$quote['id'] ?>"
                                    class="btn-tp-ghost btn-tp-sm">
-                                    <i class="fa-solid fa-eye"></i>
+                                    <i class="fa-solid fa-eye"></i> View
                                 </a>
                             </td>
                         </tr>

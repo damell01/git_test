@@ -18,7 +18,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $unit_code = trim($_POST['unit_code'] ?? '');
     $type      = trim($_POST['type']      ?? 'dumpster');
     $size      = trim($_POST['size']      ?? '');
-    $daily_rate = (float)($_POST['daily_rate'] ?? 0.00);
+    $daily_rate   = (float)($_POST['daily_rate']   ?? 0.00);
+    $weekly_rate  = (float)($_POST['weekly_rate']  ?? 0.00);
+    $monthly_rate = (float)($_POST['monthly_rate'] ?? 0.00);
     $active    = isset($_POST['active']) ? 1 : 0;
     $status    = trim($_POST['status']    ?? 'available');
     $condition = trim($_POST['condition'] ?? 'good');
@@ -79,16 +81,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         $insert_data = [
-            'unit_code'  => $unit_code,
-            'type'       => $type,
-            'size'       => $size,
-            'daily_rate' => $daily_rate,
-            'active'     => $active,
-            'status'     => $status,
-            'condition'  => $condition,
-            'notes'      => $notes,
-            'created_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s'),
+            'unit_code'    => $unit_code,
+            'type'         => $type,
+            'size'         => $size,
+            'daily_rate'   => $daily_rate,
+            'weekly_rate'  => $weekly_rate,
+            'monthly_rate' => $monthly_rate,
+            'active'       => $active,
+            'status'       => $status,
+            'condition'    => $condition,
+            'notes'        => $notes,
+            'created_at'   => date('Y-m-d H:i:s'),
+            'updated_at'   => date('Y-m-d H:i:s'),
         ];
         if ($image !== null) {
             $insert_data['image'] = $image;
@@ -106,7 +110,9 @@ $f = [
     'unit_code'  => $_POST['unit_code']  ?? '',
     'type'       => $_POST['type']       ?? 'dumpster',
     'size'       => $_POST['size']       ?? '',
-    'daily_rate' => $_POST['daily_rate'] ?? '0.00',
+    'daily_rate'   => $_POST['daily_rate']   ?? '0.00',
+    'weekly_rate'  => $_POST['weekly_rate']  ?? '0.00',
+    'monthly_rate' => $_POST['monthly_rate'] ?? '0.00',
     'active'     => isset($_POST['active']) ? 1 : (isset($_POST['unit_code']) ? 0 : 1),
     'status'     => $_POST['status']     ?? 'available',
     'condition'  => $_POST['condition']  ?? 'good',
@@ -187,6 +193,32 @@ layout_start('Add Dumpster', 'inventory');
                        step="0.01"
                        min="0"
                        value="<?= e(number_format((float)$f['daily_rate'], 2, '.', '')) ?>"
+                       placeholder="0.00">
+            </div>
+
+            <!-- Weekly Rate -->
+            <div class="col-md-4">
+                <label class="form-label" for="weekly_rate">Weekly Rate ($) <small class="text-muted">optional</small></label>
+                <input type="number"
+                       id="weekly_rate"
+                       name="weekly_rate"
+                       class="form-control"
+                       step="0.01"
+                       min="0"
+                       value="<?= e(number_format((float)$f['weekly_rate'], 2, '.', '')) ?>"
+                       placeholder="0.00">
+            </div>
+
+            <!-- Monthly Rate -->
+            <div class="col-md-4">
+                <label class="form-label" for="monthly_rate">Monthly Rate ($) <small class="text-muted">optional</small></label>
+                <input type="number"
+                       id="monthly_rate"
+                       name="monthly_rate"
+                       class="form-control"
+                       step="0.01"
+                       min="0"
+                       value="<?= e(number_format((float)$f['monthly_rate'], 2, '.', '')) ?>"
                        placeholder="0.00">
             </div>
 

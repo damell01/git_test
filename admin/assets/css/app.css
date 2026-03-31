@@ -420,15 +420,37 @@ a:hover {
 .tp-table {
     width: 100%;
     border-collapse: collapse;
-    --bs-table-color: var(--wh);
-    --bs-table-bg: var(--dk1);
-    --bs-table-border-color: var(--st);
-    background-color: var(--dk1);
+    /* Override ALL Bootstrap 5.3 table CSS custom properties so the
+       variable-based colour cascade resolves to white-on-dark. */
+    --bs-table-color:          #F8F8F8;
+    --bs-table-bg:             #111111;
+    --bs-table-border-color:   #2A2A2A;
+    --bs-table-striped-color:  #F8F8F8;
+    --bs-table-striped-bg:     rgba(255,255,255,.04);
+    --bs-table-active-color:   #F8F8F8;
+    --bs-table-active-bg:      rgba(255,255,255,.08);
+    --bs-table-hover-color:    #F8F8F8;
+    --bs-table-hover-bg:       rgba(255,255,255,.04);
+    color:            #F8F8F8;
+    background-color: #111111;
+}
+
+/* Mirror Bootstrap 5.3's own cell-level selector so we win at equal specificity
+   (Bootstrap: .table > :not(caption) > * > *  —  ours: .tp-table > :not(caption) > * > *) */
+.tp-table > :not(caption) > * {
+    border-color: #2A2A2A;
+}
+.tp-table > :not(caption) > * > * {
+    color:            #F8F8F8 !important;
+    background-color: #111111 !important;
+    border-bottom-color: #363636 !important;
+    /* Neutralise Bootstrap's inset box-shadow highlight */
+    box-shadow: none !important;
 }
 
 .tp-table th {
-    background-color: var(--dk3) !important;
-    color: var(--wh) !important;
+    background-color: #202020 !important;
+    color: #F8F8F8 !important;
     font-family: var(--font-cond);
     font-size: .8rem;
     font-weight: 600;
@@ -437,28 +459,34 @@ a:hover {
     padding: .625rem 1rem;
     text-align: left;
     white-space: nowrap;
-    border-bottom: 1px solid var(--st);
+    border-bottom: 1px solid #2A2A2A;
 }
 
 .tp-table td {
     padding: .6rem 1rem;
-    border-bottom: 1px solid var(--st2);
-    color: var(--wh) !important;
-    background-color: var(--dk1) !important;
+    border-bottom: 1px solid #363636;
+    color: #F8F8F8 !important;
+    background-color: #111111 !important;
     font-size: .9rem;
     vertical-align: middle;
+}
+
+.tp-table td strong,
+.tp-table td a:not(.btn-tp-ghost):not(.btn-tp-primary) {
+    color: #F8F8F8 !important;
 }
 
 .tp-table tr:last-child td {
     border-bottom: none;
 }
 
-.tp-table tbody tr:hover td {
+.tp-table tbody tr:hover > * {
     background-color: rgba(255, 255, 255, .04) !important;
+    color: #F8F8F8 !important;
 }
 
 .tp-table .text-muted {
-    color: var(--gl) !important;
+    color: #9CA3AF !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -567,21 +595,50 @@ a:hover {
 .form-check-label { color: var(--gl); }
 .form-check-input { accent-color: var(--or); }
 
-.table thead.table-light th {
-    background-color: var(--dk3) !important;
-    color: var(--wh) !important;
-    border-color: var(--st) !important;
+.table thead.table-light th,
+.table .table-light > *,
+tr.table-light > * {
+    background-color: #202020 !important;
+    color: #F8F8F8 !important;
+    border-color: #2A2A2A !important;
+}
+
+/* Keep primary/accent rows slightly highlighted but still readable */
+tr.table-primary > *,
+tr.table-secondary > * {
+    background-color: rgba(249,115,22,.15) !important;
+    color: #F8F8F8 !important;
+}
+
+/* Bootstrap 5.3 table dark-mode override — forces white text regardless of
+   Bootstrap's internal --bs-table-color variable chain. */
+.table {
+    --bs-table-color:         #F8F8F8;
+    --bs-table-bg:            #111111;
+    --bs-table-border-color:  #2A2A2A;
+    --bs-table-striped-color: #F8F8F8;
+    --bs-table-hover-color:   #F8F8F8;
+    --bs-table-active-color:  #F8F8F8;
+    color:            #F8F8F8;
+    background-color: #111111;
+}
+
+.table > :not(caption) > * > * {
+    color:            #F8F8F8 !important;
+    background-color: #111111 !important;
+    border-color:     #363636 !important;
+    box-shadow: none !important;
 }
 
 .table td, .table th {
-    color: var(--wh) !important;
-    background-color: var(--dk1) !important;
-    border-color: var(--st2) !important;
+    color: #F8F8F8 !important;
+    background-color: #111111 !important;
+    border-color: #363636 !important;
 }
 
 .table-hover > tbody > tr:hover > * {
     background-color: rgba(255, 255, 255, .04) !important;
-    color: var(--wh) !important;
+    color: #F8F8F8 !important;
 }
 
 

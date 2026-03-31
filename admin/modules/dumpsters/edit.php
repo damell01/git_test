@@ -28,10 +28,12 @@ $errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
 
-    $unit_code  = trim($_POST['unit_code']  ?? '');
-    $type       = trim($_POST['type']       ?? 'dumpster');
-    $size       = trim($_POST['size']       ?? '');
-    $daily_rate = (float)($_POST['daily_rate'] ?? 0.00);
+    $unit_code    = trim($_POST['unit_code']    ?? '');
+    $type         = trim($_POST['type']         ?? 'dumpster');
+    $size         = trim($_POST['size']         ?? '');
+    $daily_rate   = (float)($_POST['daily_rate']   ?? 0.00);
+    $weekly_rate  = (float)($_POST['weekly_rate']  ?? 0.00);
+    $monthly_rate = (float)($_POST['monthly_rate'] ?? 0.00);
     $active     = isset($_POST['active']) ? 1 : 0;
     $status     = trim($_POST['status']     ?? 'available');
     $condition  = trim($_POST['condition']  ?? 'good');
@@ -110,16 +112,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         db_update('dumpsters', [
-            'unit_code'  => $unit_code,
-            'type'       => $type,
-            'size'       => $size,
-            'daily_rate' => $daily_rate,
-            'active'     => $active,
-            'status'     => $status,
-            'condition'  => $condition,
-            'notes'      => $notes,
-            'image'      => $image,
-            'updated_at' => date('Y-m-d H:i:s'),
+            'unit_code'    => $unit_code,
+            'type'         => $type,
+            'size'         => $size,
+            'daily_rate'   => $daily_rate,
+            'weekly_rate'  => $weekly_rate,
+            'monthly_rate' => $monthly_rate,
+            'active'       => $active,
+            'status'       => $status,
+            'condition'    => $condition,
+            'notes'        => $notes,
+            'image'        => $image,
+            'updated_at'   => date('Y-m-d H:i:s'),
         ], 'id', $id);
 
         log_activity('update', "Updated dumpster $unit_code ($size)", 'dumpster', $id);
@@ -129,15 +133,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Re-populate form values from POST on validation failure
     $dumpster = array_merge($dumpster, [
-        'unit_code'  => $unit_code,
-        'type'       => $type,
-        'size'       => $size,
-        'daily_rate' => $daily_rate,
-        'active'     => $active,
-        'status'     => $status,
-        'condition'  => $condition,
-        'notes'      => $notes,
-        'image'      => $image,
+        'unit_code'    => $unit_code,
+        'type'         => $type,
+        'size'         => $size,
+        'daily_rate'   => $daily_rate,
+        'weekly_rate'  => $weekly_rate,
+        'monthly_rate' => $monthly_rate,
+        'active'       => $active,
+        'status'       => $status,
+        'condition'    => $condition,
+        'notes'        => $notes,
+        'image'        => $image,
     ]);
 }
 
@@ -216,6 +222,32 @@ layout_start('Edit Dumpster', 'inventory');
                        step="0.01"
                        min="0"
                        value="<?= e(number_format((float)($dumpster['daily_rate'] ?? 0), 2, '.', '')) ?>"
+                       placeholder="0.00">
+            </div>
+
+            <!-- Weekly Rate -->
+            <div class="col-md-4">
+                <label class="form-label" for="weekly_rate">Weekly Rate ($) <small class="text-muted">optional</small></label>
+                <input type="number"
+                       id="weekly_rate"
+                       name="weekly_rate"
+                       class="form-control"
+                       step="0.01"
+                       min="0"
+                       value="<?= e(number_format((float)($dumpster['weekly_rate'] ?? 0), 2, '.', '')) ?>"
+                       placeholder="0.00">
+            </div>
+
+            <!-- Monthly Rate -->
+            <div class="col-md-4">
+                <label class="form-label" for="monthly_rate">Monthly Rate ($) <small class="text-muted">optional</small></label>
+                <input type="number"
+                       id="monthly_rate"
+                       name="monthly_rate"
+                       class="form-control"
+                       step="0.01"
+                       min="0"
+                       value="<?= e(number_format((float)($dumpster['monthly_rate'] ?? 0), 2, '.', '')) ?>"
                        placeholder="0.00">
             </div>
 
