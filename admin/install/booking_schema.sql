@@ -3,10 +3,16 @@
 
 -- Enhance dumpsters table
 ALTER TABLE `dumpsters`
-  ADD COLUMN IF NOT EXISTS `type`        ENUM('dumpster','trailer') NOT NULL DEFAULT 'dumpster' AFTER `unit_code`,
-  ADD COLUMN IF NOT EXISTS `daily_rate`  DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER `size`,
-  ADD COLUMN IF NOT EXISTS `active`      TINYINT(1) NOT NULL DEFAULT 1 AFTER `daily_rate`,
-  ADD COLUMN IF NOT EXISTS `image`       VARCHAR(255) DEFAULT NULL AFTER `active`;
+  ADD COLUMN IF NOT EXISTS `type`         ENUM('dumpster','trailer') NOT NULL DEFAULT 'dumpster' AFTER `unit_code`,
+  ADD COLUMN IF NOT EXISTS `daily_rate`   DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER `size`,
+  ADD COLUMN IF NOT EXISTS `weekly_rate`  DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER `daily_rate`,
+  ADD COLUMN IF NOT EXISTS `monthly_rate` DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER `weekly_rate`,
+  ADD COLUMN IF NOT EXISTS `active`       TINYINT(1) NOT NULL DEFAULT 1 AFTER `monthly_rate`,
+  ADD COLUMN IF NOT EXISTS `image`        VARCHAR(255) DEFAULT NULL AFTER `active`;
+
+-- Add subtotal column to quotes (was missing)
+ALTER TABLE `quotes`
+  ADD COLUMN IF NOT EXISTS `subtotal` DECIMAL(10,2) DEFAULT 0.00 AFTER `tax_amount`;
 
 -- bookings
 CREATE TABLE IF NOT EXISTS `bookings` (
