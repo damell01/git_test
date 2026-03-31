@@ -15,6 +15,11 @@ $_raw_host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
 $_app_host   = preg_replace('/[^a-zA-Z0-9\-\.:]/', '', $_raw_host);
 define('APP_URL', $_app_scheme . '://' . $_app_host . '/admin');  // no trailing slash
 unset($_app_scheme, $_raw_host, $_app_host);
+// ── Debug Mode ────────────────────────────────────────────────────────────────
+// Set to true to display detailed errors and exception traces in the browser.
+// NEVER leave true in production — it exposes sensitive information.
+define('APP_DEBUG', false);
+
 define('SESSION_NAME', 'tp_session');
 define('CSRF_TOKEN_NAME', 'tp_csrf');
 define('SESSION_LIFETIME', 7200);

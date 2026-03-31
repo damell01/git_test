@@ -50,6 +50,39 @@ $revenue_row = db_fetch(
     [$date_from . ' 00:00:00', $date_to . ' 23:59:59']
 );
 
+// Revenue from paid bookings in the selected date range
+$booking_revenue_row = ['total' => 0, 'count' => 0];
+try {
+    $booking_revenue_row = db_fetch(
+        "SELECT COUNT(*) AS count, COALESCE(SUM(total_amount), 0) AS total
+         FROM bookings
+         WHERE payment_status IN ('paid','paid_cash','paid_check')
+           AND booking_status != 'canceled'
+           AND updated_at BETWEEN ? AND ?",
+        [$date_from . ' 00:00:00', $date_to . ' 23:59:59']
+    ) ?: ['total' => 0, 'count' => 0];
+} catch (\Throwable $e) {
+    // bookings table not yet installed
+}
+
+// Revenue from paid invoices in the selected date range
+$invoice_revenue_row = ['total' => 0, 'count' => 0];
+try {
+    $invoice_revenue_row = db_fetch(
+        "SELECT COUNT(*) AS count, COALESCE(SUM(total), 0) AS total
+         FROM invoices
+         WHERE status = 'paid'
+           AND updated_at BETWEEN ? AND ?",
+        [$date_from . ' 00:00:00', $date_to . ' 23:59:59']
+    ) ?: ['total' => 0, 'count' => 0];
+} catch (\Throwable $e) {
+    // invoices table not yet installed
+}
+
+$total_revenue = (float)($revenue_row['total'] ?? 0)
+               + (float)($booking_revenue_row['total'] ?? 0)
+               + (float)($invoice_revenue_row['total'] ?? 0);
+
 // ── Section 4: Upcoming Deliveries (next 7 days) ──────────────────────────────
 $today         = date('Y-m-d');
 $in_7_days     = date('Y-m-d', strtotime('+7 days'));
@@ -236,12 +269,24 @@ layout_start('Reports', 'reports');
 </h6>
 <div class="kpi-row mb-4">
     <div class="kpi-card" style="border-left:4px solid #16a34a;">
-        <div class="kpi-value"><?= e(fmt_money($revenue_row['total'] ?? 0)) ?></div>
+        <div class="kpi-value"><?= e(fmt_money($total_revenue)) ?></div>
         <div class="kpi-label">Total Revenue</div>
     </div>
     <div class="kpi-card" style="border-left:4px solid #2563eb;">
         <div class="kpi-value"><?= (int)($revenue_row['wo_count'] ?? 0) ?></div>
         <div class="kpi-label">Completed Work Orders</div>
+    </div>
+    <div class="kpi-card" style="border-left:4px solid #7c3aed;">
+        <div class="kpi-value"><?= e(fmt_money($revenue_row['total'] ?? 0)) ?></div>
+        <div class="kpi-label">WO Revenue</div>
+    </div>
+    <div class="kpi-card" style="border-left:4px solid #f59e0b;">
+        <div class="kpi-value"><?= e(fmt_money($booking_revenue_row['total'] ?? 0)) ?></div>
+        <div class="kpi-label">Booking Revenue <small style="font-size:.65rem;opacity:.7;">(<?= (int)($booking_revenue_row['count'] ?? 0) ?> paid)</small></div>
+    </div>
+    <div class="kpi-card" style="border-left:4px solid #f97316;">
+        <div class="kpi-value"><?= e(fmt_money($invoice_revenue_row['total'] ?? 0)) ?></div>
+        <div class="kpi-label">Invoice Revenue <small style="font-size:.65rem;opacity:.7;">(<?= (int)($invoice_revenue_row['count'] ?? 0) ?> paid)</small></div>
     </div>
 </div>
 

@@ -36,8 +36,37 @@ $revenue_row = db_fetch(
 );
 $revenue_month = (float)($revenue_row['total'] ?? 0);
 
+// Revenue from paid bookings this month (cash, check, or Stripe paid)
+$booking_revenue_month = 0.0;
+try {
+    $br = db_fetch(
+        "SELECT COALESCE(SUM(total_amount), 0) AS total FROM bookings
+         WHERE payment_status IN ('paid','paid_cash','paid_check')
+           AND booking_status != 'canceled'
+           AND MONTH(updated_at) = MONTH(NOW())
+           AND YEAR(updated_at)  = YEAR(NOW())"
+    );
+    $booking_revenue_month = (float)($br['total'] ?? 0);
+} catch (\Throwable $e) {
+    // bookings table not yet installed
+}
+
+// Revenue from paid invoices this month
+$invoice_revenue_month = 0.0;
+try {
+    $ir = db_fetch(
+        "SELECT COALESCE(SUM(total), 0) AS total FROM invoices
+         WHERE status = 'paid'
+           AND MONTH(updated_at) = MONTH(NOW())
+           AND YEAR(updated_at)  = YEAR(NOW())"
+    );
+    $invoice_revenue_month = (float)($ir['total'] ?? 0);
+} catch (\Throwable $e) {
+    // invoices table not yet installed
+}
+
 // Revenue from work orders this month (amount field, not payments table)
-$revenue_payments_month = $revenue_month;
+$revenue_payments_month = $revenue_month + $booking_revenue_month + $invoice_revenue_month;
 
 $dumpsters_available = (int)(db_fetch(
     "SELECT COUNT(*) AS cnt FROM dumpsters WHERE status = 'available'"
