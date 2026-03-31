@@ -301,7 +301,9 @@ if ($payment_method === 'stripe') {
     try {
         $scheme      = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
         $host        = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        $success_url = $scheme . '://' . $host . '/book-success.php?ids=' . urlencode($ids_str) . '&token=' . urlencode($token);
+        $success_url = $scheme . '://' . $host . '/book-success.php?ids=' . urlencode($ids_str)
+            . '&token=' . urlencode($token)
+            . '&session_id={CHECKOUT_SESSION_ID}';
         $cancel_url  = $scheme . '://' . $host . '/book-cancel.php';
 
         // Fetch all booking rows for the Stripe session

@@ -9,6 +9,63 @@ require_once $_admin_root . '/config/config.php';
 require_once INC_PATH . '/db.php';
 require_once INC_PATH . '/helpers.php';
 
+/**
+ * Fallback payment finalization for Stripe returns.
+ * Webhook should normally do this, but this catches delayed/failed webhooks.
+ */
+function maybe_finalize_stripe_success(array $bookings, string $sessionId, string $adminRoot): void
+{
+    if ($sessionId === '') {
+        return;
+    }
+
+    $needsFinalizing = false;
+    foreach ($bookings as $bk) {
+        if (($bk['payment_method'] ?? '') === 'stripe' && ($bk['payment_status'] ?? '') !== 'paid') {
+            $needsFinalizing = true;
+            break;
+        }
+    }
+    if (!$needsFinalizing) {
+        return;
+    }
+
+    $autoload = $adminRoot . '/vendor/autoload.php';
+    if (!file_exists($autoload)) {
+        return;
+    }
+
+    require_once $autoload;
+    require_once INC_PATH . '/stripe.php';
+
+    try {
+        $session = stripe_client()->checkout->sessions->retrieve($sessionId);
+    } catch (\Throwable $e) {
+        return;
+    }
+
+    $isPaid = (($session->payment_status ?? '') === 'paid') || (($session->status ?? '') === 'complete');
+    if (!$isPaid) {
+        return;
+    }
+
+    $paymentId = $session->payment_intent ?? null;
+    $now = date('Y-m-d H:i:s');
+
+    foreach ($bookings as $bk) {
+        if (($bk['payment_method'] ?? '') !== 'stripe') {
+            continue;
+        }
+        db_update('bookings', [
+            'payment_status'    => 'paid',
+            'booking_status'    => 'confirmed',
+            'stripe_session_id' => $sessionId,
+            'stripe_payment_id' => $paymentId,
+            'updated_at'        => $now,
+        ], 'id', (int)$bk['id']);
+    }
+}
+
 $token = trim($_GET['token'] ?? '');
 
 // Support both ?ids=1,2,3 (new multi-booking) and ?id=N (legacy single)
@@ -43,6 +100,22 @@ if (empty($id_parts)) {
     exit;
 }
 
+$bookings = [];
+foreach ($id_parts as $bid) {
+    $row = db_fetch('SELECT * FROM bookings WHERE id = ? LIMIT 1', [$bid]);
+    if ($row) $bookings[] = $row;
+}
+
+if (empty($bookings)) {
+    header('Location: /');
+    exit;
+}
+
+// If Stripe sent us back with a session id, confirm payment now as a fallback.
+$returnedSessionId = trim($_GET['session_id'] ?? '');
+maybe_finalize_stripe_success($bookings, $returnedSessionId, $_admin_root);
+
+// Refresh rows so UI always reflects the latest paid/confirmed state.
 $bookings = [];
 foreach ($id_parts as $bid) {
     $row = db_fetch('SELECT * FROM bookings WHERE id = ? LIMIT 1', [$bid]);
