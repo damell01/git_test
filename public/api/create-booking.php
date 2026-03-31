@@ -9,6 +9,15 @@
 header('Content-Type: application/json');
 header('X-Content-Type-Options: nosniff');
 
+// Global safety net: any uncaught exception (e.g. missing DB column) returns valid JSON.
+set_exception_handler(function (\Throwable $e): void {
+    http_response_code(500);
+    header('Content-Type: application/json');
+    error_log('[create-booking] Uncaught exception: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    echo json_encode(['success' => false, 'error' => 'An unexpected error occurred. Please try again or call us to complete your booking.']);
+    exit;
+});
+
 $_admin_root = dirname(__DIR__, 2) . '/admin';
 require_once $_admin_root . '/config/config.php';
 require_once INC_PATH . '/db.php';
@@ -258,23 +267,42 @@ $ids_str = implode(',', $new_ids);
 $token   = hash_hmac('sha256', $ids_str, get_setting('stripe_secret_key', 'booking-token-secret'));
 $first_id = $new_ids[0];
 
+// ─── Helper: roll back newly created bookings and release dumpsters ───────────
+$rollback_bookings = function () use ($new_ids): void {
+    try {
+        get_db()->beginTransaction();
+        foreach ($new_ids as $bid) {
+            $bk = db_fetch('SELECT dumpster_id FROM bookings WHERE id = ? LIMIT 1', [$bid]);
+            db_execute('DELETE FROM bookings WHERE id = ?', [$bid]);
+            if ($bk && !empty($bk['dumpster_id'])) {
+                $still = db_fetch(
+                    "SELECT COUNT(*) AS cnt FROM bookings
+                      WHERE dumpster_id = ? AND booking_status NOT IN ('canceled', 'completed')",
+                    [(int)$bk['dumpster_id']]
+                );
+                if ((int)($still['cnt'] ?? 0) === 0) {
+                    db_update('dumpsters', [
+                        'status'     => 'available',
+                        'updated_at' => date('Y-m-d H:i:s'),
+                    ], 'id', (int)$bk['dumpster_id']);
+                }
+            }
+        }
+        get_db()->commit();
+    } catch (\Throwable $rbEx) {
+        try { get_db()->rollBack(); } catch (\Throwable $ignored) {}
+        error_log('[create-booking] Rollback failed: ' . $rbEx->getMessage());
+    }
+};
+
 // Stripe checkout
 if ($payment_method === 'stripe') {
     $autoload = $_admin_root . '/vendor/autoload.php';
     if (!file_exists($autoload)) {
-        // Stripe SDK not installed — fall back to cash confirmation
-        error_log('[Booking ' . $ids_str . '] Stripe SDK not found. Falling back to cash payment. Run `composer install` in the admin directory.');
-        foreach ($new_ids as $bid) {
-            db_update('bookings', [
-                'payment_method' => 'cash',
-                'payment_status' => 'pending_cash',
-                'booking_status' => 'confirmed',
-                'updated_at'     => date('Y-m-d H:i:s'),
-            ], 'id', $bid);
-        }
-        http_response_code(200);
-        echo json_encode(['success' => true, 'redirect' => '/book-success.php?ids=' . urlencode($ids_str) . '&token=' . urlencode($token)]);
-        exit;
+        // Stripe SDK not installed — roll back bookings and return an error.
+        error_log('[Booking ' . $ids_str . '] Stripe SDK not found. Run `composer install` in the admin directory.');
+        $rollback_bookings();
+        api_error('Online card payment is not available right now. Please choose Cash or Check, or call us to complete your booking.', 503);
     }
 
     require_once $autoload;
@@ -310,13 +338,10 @@ if ($payment_method === 'stripe') {
         exit;
 
     } catch (\Throwable $e) {
+        // Stripe session creation failed — roll back bookings and return an error.
         error_log('[Booking ' . $ids_str . '] Stripe Checkout error: ' . $e->getMessage());
-        http_response_code(200);
-        echo json_encode([
-            'success'  => true,
-            'redirect' => '/book-success.php?ids=' . urlencode($ids_str) . '&token=' . urlencode($token),
-        ]);
-        exit;
+        $rollback_bookings();
+        api_error('Unable to create a payment session. Please try again or choose a different payment method.', 503);
     }
 }
 
