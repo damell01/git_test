@@ -122,6 +122,19 @@ try {
                 $admin_url
             );
         }
+
+        // Push to the customer for this booking
+        foreach (array_unique(array_filter([
+            !empty($bk['customer_email']) ? strtolower(trim($bk['customer_email'])) : '',
+            !empty($bk['customer_phone']) ? preg_replace('/\D/', '', $bk['customer_phone']) : '',
+        ])) as $cid) {
+            push_notify_customer(
+                $cid,
+                '⏳ Rental Ending in 3 Days — ' . ($bk['booking_number'] ?? ''),
+                'Your ' . ($bk['unit_size'] ?? 'dumpster') . ' rental ends on ' . date('M j, Y', strtotime($remind_date)) . '.'
+            );
+        }
+
         $count++;
     }
     $log[] = '  → Sent reminders for ' . $count . ' booking(s)';

@@ -326,7 +326,6 @@ $stripe_pub_key = get_setting('stripe_publishable_key', '');
                     $statusClass   = 'unit-status-' . ($u['status'] === 'available' ? 'available' : $u['status']);
                 ?>
                 <label class="unit-card<?= ((int)$u['id'] === $preselect_unit_id) ? ' selected' : '' ?><?= $isUnavailable ? ' unavailable' : '' ?>"
-                       for="unit_<?= (int)$u['id'] ?>"
                        data-unit-id="<?= (int)$u['id'] ?>">
                     <input type="checkbox" name="unit_id[]" id="unit_<?= (int)$u['id'] ?>"
                            class="unit-checkbox"

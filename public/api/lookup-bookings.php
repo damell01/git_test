@@ -67,11 +67,12 @@ try {
             "SELECT b.id, b.booking_number, b.customer_name, b.customer_email, b.customer_phone,
                     b.unit_code, b.unit_size, b.rental_start, b.rental_end, b.rental_days,
                     b.total_amount, b.payment_method, b.payment_status, b.booking_status,
-                    b.customer_address, b.customer_city, b.notes, b.created_at
+                    b.customer_address, b.customer_city, b.notes, b.created_at,
+                    b.booking_group_id
                FROM bookings b
               WHERE LOWER(TRIM(b.customer_email)) = ?
               ORDER BY b.rental_start DESC
-              LIMIT 20",
+              LIMIT 50",
             [strtolower($identifier)]
         );
     } else {
@@ -80,11 +81,12 @@ try {
             "SELECT b.id, b.booking_number, b.customer_name, b.customer_email, b.customer_phone,
                     b.unit_code, b.unit_size, b.rental_start, b.rental_end, b.rental_days,
                     b.total_amount, b.payment_method, b.payment_status, b.booking_status,
-                    b.customer_address, b.customer_city, b.notes, b.created_at
+                    b.customer_address, b.customer_city, b.notes, b.created_at,
+                    b.booking_group_id
                FROM bookings b
               WHERE REGEXP_REPLACE(b.customer_phone, '[^0-9]', '') LIKE ?
               ORDER BY b.rental_start DESC
-              LIMIT 20",
+              LIMIT 50",
             ['%' . $digits . '%']
         );
     }
@@ -94,23 +96,60 @@ try {
     exit;
 }
 
-// Format for output
-$result = [];
+// Group bookings that share a booking_group_id so multi-unit sessions appear together
+$groups      = [];   // group_id => [bookings]
+$standalone  = [];   // bookings with no group
+
 foreach ($bookings as $b) {
-    $result[] = [
-        'booking_number' => $b['booking_number'],
-        'unit'           => trim(($b['unit_code'] ?? '') . ' — ' . ($b['unit_size'] ?? ''), ' —'),
-        'rental_start'   => $b['rental_start'],
-        'rental_end'     => $b['rental_end'],
-        'rental_days'    => (int)$b['rental_days'],
-        'total_amount'   => (float)$b['total_amount'],
-        'payment_method' => $b['payment_method'],
-        'payment_status' => $b['payment_status'],
-        'booking_status' => $b['booking_status'],
-        'address'        => trim(($b['customer_address'] ?? '') . ($b['customer_city'] ? ', ' . $b['customer_city'] : ''), ', '),
-        'customer_name'  => $b['customer_name'],
-        'created_at'     => $b['created_at'],
-    ];
+    if (!empty($b['booking_group_id'])) {
+        $groups[$b['booking_group_id']][] = $b;
+    } else {
+        $standalone[] = $b;
+    }
 }
+
+// Format for output — produce one entry per booking, adding group metadata
+$result = [];
+
+// Helper to format a single booking row for the API response
+$format_row = function(array $b, array $group_siblings = []): array {
+    $sibling_units = [];
+    foreach ($group_siblings as $s) {
+        if ($s['booking_number'] !== $b['booking_number']) {
+            $sibling_units[] = trim(($s['unit_code'] ?? '') . ' — ' . ($s['unit_size'] ?? ''), ' —');
+        }
+    }
+    return [
+        'booking_number'   => $b['booking_number'],
+        'unit'             => trim(($b['unit_code'] ?? '') . ' — ' . ($b['unit_size'] ?? ''), ' —'),
+        'rental_start'     => $b['rental_start'],
+        'rental_end'       => $b['rental_end'],
+        'rental_days'      => (int)$b['rental_days'],
+        'total_amount'     => (float)$b['total_amount'],
+        'payment_method'   => $b['payment_method'],
+        'payment_status'   => $b['payment_status'],
+        'booking_status'   => $b['booking_status'],
+        'address'          => trim(($b['customer_address'] ?? '') . ($b['customer_city'] ? ', ' . $b['customer_city'] : ''), ', '),
+        'customer_name'    => $b['customer_name'],
+        'created_at'       => $b['created_at'],
+        'booking_group_id' => $b['booking_group_id'] ?? null,
+        'group_units'      => $sibling_units,
+    ];
+};
+
+// Add grouped bookings as separate entries but carry group context
+foreach ($groups as $gid => $group) {
+    foreach ($group as $b) {
+        $result[] = $format_row($b, $group);
+    }
+}
+
+// Add standalone bookings
+foreach ($standalone as $b) {
+    $result[] = $format_row($b);
+}
+
+// Sort all results by rental_start descending
+usort($result, fn($a, $b) => strcmp($b['rental_start'] ?? '', $a['rental_start'] ?? ''));
 
 echo json_encode(['success' => true, 'bookings' => $result, 'count' => count($result)]);

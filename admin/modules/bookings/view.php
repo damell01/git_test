@@ -48,6 +48,13 @@ layout_start('Booking Detail', 'bookings');
             </button>
         </form>
         <?php endif; ?>
+        <?php if (has_role('admin')): ?>
+        <a href="delete.php?id=<?= $id ?>"
+           class="btn-tp-danger btn-tp-sm"
+           onclick="return confirm('Permanently delete booking <?= e($booking['booking_number']) ?>? This cannot be undone.')">
+            <i class="fa-solid fa-trash"></i> Delete
+        </a>
+        <?php endif; ?>
     </div>
 </div>
 

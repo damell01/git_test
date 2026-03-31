@@ -215,6 +215,29 @@ echo "\n--- Upgrade 5: customers table ---\n";
 $log[] = "[INFO] customers.active — no DB change needed (PHP code already fixed)";
 
 // =============================================================================
+// UPGRADE 6 — bookings: add booking_group_id for multi-unit booking groups
+// =============================================================================
+echo "\n--- Upgrade 6: bookings.booking_group_id ---\n";
+
+if (table_exists($pdo, 'bookings') && !column_exists($pdo, 'bookings', 'booking_group_id')) {
+    run_step(
+        $pdo,
+        'bookings.booking_group_id column',
+        "ALTER TABLE `bookings`
+         ADD COLUMN `booking_group_id` VARCHAR(32) DEFAULT NULL
+             COMMENT 'Shared key linking multiple units booked together in one session'
+         AFTER `notes`"
+    );
+    run_step(
+        $pdo,
+        'bookings.booking_group_id index',
+        "ALTER TABLE `bookings` ADD KEY `idx_bookings_group` (`booking_group_id`)"
+    );
+} else {
+    $log[] = "[SKIP] bookings.booking_group_id already exists";
+}
+
+// =============================================================================
 // Summary
 // =============================================================================
 echo "\n" . str_repeat('=', 60) . "\n";

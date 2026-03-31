@@ -31,12 +31,14 @@ CREATE TABLE IF NOT EXISTS `bookings` (
   `stripe_session_id`  VARCHAR(255)           DEFAULT NULL,
   `stripe_payment_id`  VARCHAR(255)           DEFAULT NULL,
   `booking_status`     ENUM('pending','confirmed','paid','canceled','completed') NOT NULL DEFAULT 'pending',
+  `booking_group_id`   VARCHAR(32)            DEFAULT NULL COMMENT 'Shared key linking multiple units booked together in one session',
   `notes`              TEXT                   DEFAULT NULL,
   `created_by`         INT(11)                DEFAULT NULL,
   `created_at`         DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`         DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_bookings_number` (`booking_number`),
+  KEY `idx_bookings_group` (`booking_group_id`),
   CONSTRAINT `fk_bookings_dumpster_id` FOREIGN KEY (`dumpster_id`) REFERENCES `dumpsters` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_bookings_created_by`  FOREIGN KEY (`created_by`)  REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
