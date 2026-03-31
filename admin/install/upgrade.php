@@ -238,6 +238,56 @@ if (table_exists($pdo, 'bookings') && !column_exists($pdo, 'bookings', 'booking_
 }
 
 // =============================================================================
+// UPGRADE 7 — push_subscriptions table (PWA push notifications)
+// =============================================================================
+echo "\n--- Upgrade 7: push_subscriptions table ---\n";
+
+if (!table_exists($pdo, 'push_subscriptions')) {
+    run_step($pdo, "CREATE TABLE push_subscriptions", "
+        CREATE TABLE `push_subscriptions` (
+          `id`              INT(11)       NOT NULL AUTO_INCREMENT,
+          `subscriber_type` ENUM('admin','customer') NOT NULL DEFAULT 'customer',
+          `subscriber_id`   VARCHAR(200)  NOT NULL COMMENT 'admin user_id (int as string) or customer email/phone',
+          `endpoint`        TEXT          NOT NULL,
+          `p256dh`          VARCHAR(255)  NOT NULL,
+          `auth`            VARCHAR(64)   NOT NULL,
+          `user_agent`      VARCHAR(255)           DEFAULT NULL,
+          `created_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          `updated_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`),
+          UNIQUE KEY `uq_push_endpoint` (endpoint(200)),
+          KEY `idx_push_subscriber` (`subscriber_type`, `subscriber_id`(100))
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+} else {
+    $log[] = "[SKIP] push_subscriptions table (already exists)";
+}
+
+// =============================================================================
+// UPGRADE 8 — settings: VAPID keys for push notifications
+// =============================================================================
+echo "\n--- Upgrade 8: VAPID / push settings defaults ---\n";
+
+if (table_exists($pdo, 'settings')) {
+    $push_defaults = [
+        'vapid_public_key'  => '',
+        'vapid_private_key' => '',
+        'vapid_subject'     => '',
+    ];
+    foreach ($push_defaults as $key => $value) {
+        try {
+            $pdo->prepare("INSERT IGNORE INTO `settings` (`key`, `value`) VALUES (?, ?)")
+                ->execute([$key, $value]);
+            $log[] = "[OK]  settings.$key (inserted if missing)";
+        } catch (PDOException $e) {
+            $errors[] = "[FAIL] settings.$key — " . $e->getMessage();
+        }
+    }
+} else {
+    $log[] = "[SKIP] settings table does not exist — skipping VAPID defaults";
+}
+
+// =============================================================================
 // Summary
 // =============================================================================
 echo "\n" . str_repeat('=', 60) . "\n";
