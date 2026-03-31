@@ -98,9 +98,23 @@ if (!column_exists($pdo, 'dumpsters', 'daily_rate')) {
     $log[] = "[SKIP] dumpsters.daily_rate (already exists)";
 }
 
+if (!column_exists($pdo, 'dumpsters', 'weekly_rate')) {
+    run_step($pdo, "dumpsters.weekly_rate", "ALTER TABLE `dumpsters`
+        ADD COLUMN `weekly_rate` DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER `daily_rate`");
+} else {
+    $log[] = "[SKIP] dumpsters.weekly_rate (already exists)";
+}
+
+if (!column_exists($pdo, 'dumpsters', 'monthly_rate')) {
+    run_step($pdo, "dumpsters.monthly_rate", "ALTER TABLE `dumpsters`
+        ADD COLUMN `monthly_rate` DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER `weekly_rate`");
+} else {
+    $log[] = "[SKIP] dumpsters.monthly_rate (already exists)";
+}
+
 if (!column_exists($pdo, 'dumpsters', 'active')) {
     run_step($pdo, "dumpsters.active", "ALTER TABLE `dumpsters`
-        ADD COLUMN `active` TINYINT(1) NOT NULL DEFAULT 1 AFTER `daily_rate`");
+        ADD COLUMN `active` TINYINT(1) NOT NULL DEFAULT 1 AFTER `monthly_rate`");
 } else {
     $log[] = "[SKIP] dumpsters.active (already exists)";
 }
@@ -235,6 +249,212 @@ if (table_exists($pdo, 'bookings') && !column_exists($pdo, 'bookings', 'booking_
     );
 } else {
     $log[] = "[SKIP] bookings.booking_group_id already exists";
+}
+
+// =============================================================================
+// UPGRADE 7 — notifications table
+// =============================================================================
+echo "\n--- Upgrade 7: notifications table ---\n";
+
+if (!table_exists($pdo, 'notifications')) {
+    run_step($pdo, "CREATE TABLE notifications", "
+        CREATE TABLE `notifications` (
+          `id`           INT(11)      NOT NULL AUTO_INCREMENT,
+          `type`         ENUM('email','sms') NOT NULL DEFAULT 'email',
+          `recipient`    VARCHAR(180)          DEFAULT NULL,
+          `subject`      VARCHAR(255)          DEFAULT NULL,
+          `body`         TEXT                  DEFAULT NULL,
+          `status`       ENUM('queued','sent','failed') NOT NULL DEFAULT 'queued',
+          `related_type` VARCHAR(50)           DEFAULT NULL,
+          `related_id`   INT(11)               DEFAULT NULL,
+          `sent_at`      DATETIME              DEFAULT NULL,
+          `created_at`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+} else {
+    $log[] = "[SKIP] notifications table (already exists)";
+}
+
+// =============================================================================
+// UPGRADE 8 — invoices table
+// =============================================================================
+echo "\n--- Upgrade 8: invoices table ---\n";
+
+if (!table_exists($pdo, 'invoices')) {
+    run_step($pdo, "CREATE TABLE invoices", "
+        CREATE TABLE `invoices` (
+          `id`                  INT(11)       NOT NULL AUTO_INCREMENT,
+          `invoice_number`      VARCHAR(20)   NOT NULL,
+          `customer_id`         INT(11)                DEFAULT NULL,
+          `cust_name`           VARCHAR(100)  NOT NULL,
+          `cust_email`          VARCHAR(150)           DEFAULT NULL,
+          `cust_phone`          VARCHAR(20)            DEFAULT NULL,
+          `cust_address`        VARCHAR(200)           DEFAULT NULL,
+          `subtotal`            DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+          `tax_rate`            DECIMAL(5,2)  NOT NULL DEFAULT 0.00,
+          `tax_amount`          DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+          `total`               DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+          `notes`               TEXT                   DEFAULT NULL,
+          `terms`               TEXT                   DEFAULT NULL,
+          `status`              ENUM('draft','sent','paid','void') NOT NULL DEFAULT 'draft',
+          `due_date`            DATE                   DEFAULT NULL,
+          `stripe_payment_link` VARCHAR(500)           DEFAULT NULL,
+          `created_by`          INT(11)                DEFAULT NULL,
+          `created_at`          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          `updated_at`          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`),
+          UNIQUE KEY `uq_invoices_number` (`invoice_number`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+} else {
+    $log[] = "[SKIP] invoices table (already exists)";
+}
+
+// =============================================================================
+// UPGRADE 9 — invoice_items table
+// =============================================================================
+echo "\n--- Upgrade 9: invoice_items table ---\n";
+
+if (!table_exists($pdo, 'invoice_items')) {
+    run_step($pdo, "CREATE TABLE invoice_items", "
+        CREATE TABLE `invoice_items` (
+          `id`          INT(11)       NOT NULL AUTO_INCREMENT,
+          `invoice_id`  INT(11)       NOT NULL,
+          `description` VARCHAR(255)  NOT NULL,
+          `quantity`    DECIMAL(10,2) NOT NULL DEFAULT 1.00,
+          `unit_price`  DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+          `amount`      DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+          `rate_type`   ENUM('fixed','daily','weekly','monthly') NOT NULL DEFAULT 'fixed',
+          PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+} else {
+    $log[] = "[SKIP] invoice_items table (already exists)";
+}
+
+// =============================================================================
+// UPGRADE 10 — push_subscriptions table
+// =============================================================================
+echo "\n--- Upgrade 10: push_subscriptions table ---\n";
+
+if (!table_exists($pdo, 'push_subscriptions')) {
+    run_step($pdo, "CREATE TABLE push_subscriptions", "
+        CREATE TABLE `push_subscriptions` (
+          `id`              INT(11)       NOT NULL AUTO_INCREMENT,
+          `subscriber_type` ENUM('admin','customer') NOT NULL DEFAULT 'customer',
+          `subscriber_id`   VARCHAR(200)  NOT NULL,
+          `endpoint`        TEXT          NOT NULL,
+          `p256dh`          VARCHAR(255)  NOT NULL,
+          `auth`            VARCHAR(64)   NOT NULL,
+          `user_agent`      VARCHAR(255)           DEFAULT NULL,
+          `created_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          `updated_at`      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`),
+          UNIQUE KEY `uq_push_endpoint` (endpoint(200)),
+          KEY `idx_push_subscriber` (`subscriber_type`, `subscriber_id`(100))
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+} else {
+    $log[] = "[SKIP] push_subscriptions table (already exists)";
+}
+
+// =============================================================================
+// UPGRADE 11 — two_factor_secrets table
+// =============================================================================
+echo "\n--- Upgrade 11: two_factor_secrets table ---\n";
+
+if (!table_exists($pdo, 'two_factor_secrets')) {
+    run_step($pdo, "CREATE TABLE two_factor_secrets", "
+        CREATE TABLE `two_factor_secrets` (
+          `user_id`      INT(11)     NOT NULL,
+          `secret`       VARCHAR(64) NOT NULL,
+          `enabled`      TINYINT(1)  NOT NULL DEFAULT 0,
+          `backup_codes` TEXT                  DEFAULT NULL,
+          `created_at`   DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          `updated_at`   DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (`user_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+} else {
+    $log[] = "[SKIP] two_factor_secrets table (already exists)";
+}
+
+// =============================================================================
+// UPGRADE 12 — login_attempts table
+// =============================================================================
+echo "\n--- Upgrade 12: login_attempts table ---\n";
+
+if (!table_exists($pdo, 'login_attempts')) {
+    run_step($pdo, "CREATE TABLE login_attempts", "
+        CREATE TABLE `login_attempts` (
+          `id`           INT(11)      NOT NULL AUTO_INCREMENT,
+          `ip_address`   VARCHAR(45)  NOT NULL,
+          `email`        VARCHAR(180)          DEFAULT NULL,
+          `attempted_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`),
+          KEY `idx_ip`   (`ip_address`),
+          KEY `idx_time` (`attempted_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+} else {
+    $log[] = "[SKIP] login_attempts table (already exists)";
+}
+
+// =============================================================================
+// UPGRADE 13 — rate_limit_locks table
+// =============================================================================
+echo "\n--- Upgrade 13: rate_limit_locks table ---\n";
+
+if (!table_exists($pdo, 'rate_limit_locks')) {
+    run_step($pdo, "CREATE TABLE rate_limit_locks", "
+        CREATE TABLE `rate_limit_locks` (
+          `ip_address`   VARCHAR(45) NOT NULL,
+          `attempts`     INT(11)     NOT NULL DEFAULT 0,
+          `locked_until` DATETIME             DEFAULT NULL,
+          `updated_at`   DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (`ip_address`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+} else {
+    $log[] = "[SKIP] rate_limit_locks table (already exists)";
+}
+
+// =============================================================================
+// UPGRADE 14 — quotes: add subtotal column if missing
+// =============================================================================
+echo "\n--- Upgrade 14: quotes.subtotal ---\n";
+
+if (!column_exists($pdo, 'quotes', 'subtotal')) {
+    run_step($pdo, "quotes.subtotal", "ALTER TABLE `quotes`
+        ADD COLUMN `subtotal` DECIMAL(10,2) DEFAULT 0.00 AFTER `extra_fee_desc`");
+} else {
+    $log[] = "[SKIP] quotes.subtotal (already exists)";
+}
+
+// =============================================================================
+// UPGRADE 15 — settings: add all missing defaults
+// =============================================================================
+echo "\n--- Upgrade 15: settings defaults (invoice_terms, vapid keys) ---\n";
+
+if (table_exists($pdo, 'settings')) {
+    $extra_defaults = [
+        'invoice_terms'   => 'Payment is due within 30 days of invoice date. Thank you for your business!',
+        'vapid_public_key'  => '',
+        'vapid_private_key' => '',
+        'vapid_subject'     => '',
+    ];
+    foreach ($extra_defaults as $key => $value) {
+        try {
+            $pdo->prepare("INSERT IGNORE INTO `settings` (`key`, `value`) VALUES (?, ?)")
+                ->execute([$key, $value]);
+            $log[] = "[OK]  settings.$key (inserted if missing)";
+        } catch (PDOException $e) {
+            $errors[] = "[FAIL] settings.$key — " . $e->getMessage();
+        }
+    }
+} else {
+    $log[] = "[SKIP] settings table does not exist — skipping extra defaults";
 }
 
 // =============================================================================
