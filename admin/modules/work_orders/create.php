@@ -9,16 +9,6 @@ $pdo = get_db();
 $quote_id   = null;
 $from_quote = null;
 
-if (!empty($_GET['quote_id'])) {
-    $quote_id = (int)$_GET['quote_id'];
-    $qs       = $pdo->prepare('SELECT * FROM quotes WHERE id = ? LIMIT 1');
-    $qs->execute([$quote_id]);
-    $from_quote = $qs->fetch(PDO::FETCH_ASSOC);
-    if (!$from_quote) {
-        $quote_id = null;
-    }
-}
-
 // ── Default field values ──────────────────────────────────────────────────────
 $wo_footer_default = get_setting('wo_footer', '');
 

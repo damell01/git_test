@@ -10,13 +10,8 @@ require_once TMPL_PATH . '/layout.php';
 require_login();
 require_role('admin', 'office');
 
-// ── Pre-populate from lead if lead_id supplied ───────────────────────────────
-$lead_id  = (int)($_GET['lead_id'] ?? $_POST['lead_id'] ?? 0);
-$lead     = null;
-
-if ($lead_id > 0) {
-    $lead = db_fetch("SELECT * FROM leads WHERE id = ? LIMIT 1", [$lead_id]);
-}
+$lead_id = 0;
+$lead    = null;
 
 $errors = [];
 $data   = [
@@ -36,17 +31,7 @@ $data   = [
     'notes'            => '',
 ];
 
-// Pre-fill from lead if available
-if ($lead && $_SERVER['REQUEST_METHOD'] !== 'POST') {
-    $data['name']    = $lead['name']    ?? '';
-    $data['email']   = $lead['email']   ?? '';
-    $data['phone']   = $lead['phone']   ?? '';
-    $data['address'] = $lead['address'] ?? '';
-    $data['city']    = $lead['city']    ?? '';
-    $data['state']   = $lead['state']   ?? '';
-    $data['zip']     = $lead['zip']     ?? '';
-    $data['notes']   = $lead['message'] ?? '';
-}
+
 
 // ── Handle POST ──────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -105,17 +90,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $customer_id = (int)db_insert('customers', $insert);
 
-        // Update lead if created from a lead
-        if ($lead_id > 0) {
-            db_update('leads', [
-                'status'       => 'won',
-                'converted_to' => $customer_id,
-                'updated_at'   => date('Y-m-d H:i:s'),
-            ], 'id', $lead_id);
-
-            log_activity('convert', 'Lead #' . $lead_id . ' converted to customer', 'lead', $lead_id);
-        }
-
         log_activity('create', 'Created customer: ' . $data['name'], 'customer', $customer_id);
 
         flash_success('Customer "' . $data['name'] . '" created successfully.');
@@ -123,30 +97,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$page_title = $lead ? 'Convert Lead to Customer' : 'New Customer';
+$page_title = 'New Customer';
 layout_start($page_title, 'customers');
 ?>
 
 <div class="tp-page-header d-flex align-items-center justify-content-between mb-3">
     <div>
-        <?php if ($lead): ?>
-        <a href="<?= APP_URL ?>/modules/leads/view.php?id=<?= (int)$lead['id'] ?>"
-           class="text-muted small text-decoration-none">
-            <i class="fa-solid fa-arrow-left"></i> Back to Lead
-        </a>
-        <?php else: ?>
         <a href="<?= APP_URL ?>/modules/customers/index.php" class="text-muted small text-decoration-none">
             <i class="fa-solid fa-arrow-left"></i> Back to Customers
         </a>
-        <?php endif; ?>
-        <h2 class="tp-page-title mb-0 mt-1"><?= e($page_title) ?></h2>
-        <?php if ($lead): ?>
-        <p class="text-muted mb-0 mt-1">
-            Pre-filled from lead: <strong><?= e($lead['name']) ?></strong>
-        </p>
-        <?php endif; ?>
-    </div>
-</div>
+        <h2 class="tp-page-title mb-0 mt-1"><?= e($page_title) ?></h2></div>
 
 <?php if (!empty($errors)): ?>
 <div class="alert alert-danger">
@@ -294,12 +254,9 @@ layout_start($page_title, 'customers');
         <div class="d-flex gap-2 mt-4">
             <button type="submit" class="btn-tp-primary">
                 <i class="fa-solid fa-floppy-disk"></i>
-                <?= $lead ? 'Convert &amp; Save' : 'Create Customer' ?>
+                Create Customer
             </button>
-            <a href="<?= $lead
-                ? APP_URL . '/modules/leads/view.php?id=' . (int)$lead_id
-                : APP_URL . '/modules/customers/index.php' ?>"
-               class="btn-tp-ghost">
+            <a href="<?= APP_URL . '/modules/customers/index.php' ?>" class="btn-tp-ghost">
                 Cancel
             </a>
         </div>

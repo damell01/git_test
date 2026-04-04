@@ -24,10 +24,39 @@ $work_orders = db_fetchall(
     [$id]
 );
 
-$quotes = db_fetchall(
-    "SELECT * FROM quotes WHERE customer_id = ? ORDER BY created_at DESC",
-    [$id]
-);
+$bookings_list = [];
+try {
+    $bookings_list = db_fetchall(
+        "SELECT id, booking_number, rental_start, rental_end, total_amount, payment_status, booking_status
+         FROM bookings WHERE customer_id = ? ORDER BY created_at DESC LIMIT 50",
+        [$id]
+    );
+} catch (\Throwable $e) {}
+
+$invoices_list = [];
+try {
+    $invoices_list = db_fetchall(
+        "SELECT * FROM invoices WHERE customer_id = ? ORDER BY created_at DESC LIMIT 50",
+        [$id]
+    );
+} catch (\Throwable $e) {}
+
+// Payment history summary
+$payment_summary = ['stripe' => 0.0, 'cash' => 0.0, 'check' => 0.0, 'pending' => 0.0];
+try {
+    $pay_rows = db_fetchall(
+        "SELECT payment_status, COALESCE(SUM(total_amount),0) AS total FROM bookings
+         WHERE customer_id = ? AND booking_status != 'canceled' GROUP BY payment_status",
+        [$id]
+    );
+    foreach ($pay_rows as $pr) {
+        $ps = $pr['payment_status'];
+        if ($ps === 'paid')           $payment_summary['stripe']  += (float)$pr['total'];
+        elseif ($ps === 'paid_cash')  $payment_summary['cash']    += (float)$pr['total'];
+        elseif ($ps === 'paid_check') $payment_summary['check']   += (float)$pr['total'];
+        else                          $payment_summary['pending']  += (float)$pr['total'];
+    }
+} catch (\Throwable $e) {}
 
 // ── Type badge helper ─────────────────────────────────────────────────────────
 function cust_type_badge(string $type): string
@@ -203,29 +232,87 @@ layout_start('Customer: ' . $cust['name'], 'customers');
             <?php endif; ?>
         </div>
 
-        <!-- Linked Quotes -->
+        <!-- Linked Bookings -->
         <div class="tp-card">
             <div class="tp-card-header d-flex align-items-center justify-content-between">
                 <h5 class="mb-0">
-                    <i class="fa-solid fa-file-invoice-dollar me-2"></i>Quotes
-                    <span class="tp-badge badge-active ms-2"><?= count($quotes) ?></span>
+                    <i class="fa-solid fa-calendar-check me-2"></i>Bookings
+                    <span class="tp-badge badge-active ms-2"><?= count($bookings_list) ?></span>
                 </h5>
                 <?php if (has_role('admin', 'office')): ?>
-                <a href="<?= APP_URL ?>/modules/quotes/create.php?customer_id=<?= (int)$cust['id'] ?>"
+                <a href="<?= APP_URL ?>/modules/bookings/create.php?customer_id=<?= (int)$cust['id'] ?>"
                    class="btn-tp-ghost btn-tp-sm">
-                    <i class="fa-solid fa-plus"></i> New Quote
+                    <i class="fa-solid fa-plus"></i> New Booking
                 </a>
                 <?php endif; ?>
             </div>
 
-            <?php if (empty($quotes)): ?>
-                <p class="text-muted mt-3 mb-0">No quotes found for this customer.</p>
+            <?php if (empty($bookings_list)): ?>
+                <p class="text-muted mt-3 mb-0">No bookings found for this customer.</p>
             <?php else: ?>
             <div class="table-responsive mt-3">
-                <table class="tp-table">
+                <table class="tp-table table-sm">
                     <thead>
                         <tr>
-                            <th>Quote #</th>
+                            <th>Booking #</th>
+                            <th>Dates</th>
+                            <th>Amount</th>
+                            <th>Payment</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($bookings_list as $bk): ?>
+                        <tr>
+                            <td>
+                                <a href="<?= APP_URL ?>/modules/bookings/view.php?id=<?= (int)$bk['id'] ?>">
+                                    <?= e($bk['booking_number']) ?>
+                                </a>
+                            </td>
+                            <td style="font-size:.82rem;">
+                                <?= e(fmt_date($bk['rental_start'])) ?> → <?= e(fmt_date($bk['rental_end'])) ?>
+                            </td>
+                            <td><?= e(fmt_money($bk['total_amount'])) ?></td>
+                            <td><?= payment_badge($bk['payment_status']) ?></td>
+                            <td><?= status_badge($bk['booking_status']) ?></td>
+                            <td class="text-end">
+                                <a href="<?= APP_URL ?>/modules/bookings/view.php?id=<?= (int)$bk['id'] ?>"
+                                   class="btn-tp-ghost btn-tp-sm">
+                                    <i class="fa-solid fa-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Linked Invoices -->
+        <div class="tp-card">
+            <div class="tp-card-header d-flex align-items-center justify-content-between">
+                <h5 class="mb-0">
+                    <i class="fa-solid fa-file-invoice-dollar me-2"></i>Invoices
+                    <span class="tp-badge badge-active ms-2"><?= count($invoices_list) ?></span>
+                </h5>
+                <?php if (has_role('admin', 'office')): ?>
+                <a href="<?= APP_URL ?>/modules/invoices/create.php?customer_id=<?= (int)$cust['id'] ?>"
+                   class="btn-tp-ghost btn-tp-sm">
+                    <i class="fa-solid fa-plus"></i> New Invoice
+                </a>
+                <?php endif; ?>
+            </div>
+
+            <?php if (empty($invoices_list)): ?>
+                <p class="text-muted mt-3 mb-0">No invoices found for this customer.</p>
+            <?php else: ?>
+            <div class="table-responsive mt-3">
+                <table class="tp-table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
                             <th>Status</th>
                             <th>Amount</th>
                             <th>Date</th>
@@ -233,18 +320,18 @@ layout_start('Customer: ' . $cust['name'], 'customers');
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($quotes as $quote): ?>
+                        <?php foreach ($invoices_list as $inv): ?>
                         <tr>
                             <td>
-                                <a href="<?= APP_URL ?>/modules/quotes/view.php?id=<?= (int)$quote['id'] ?>">
-                                    <?= e($quote['quote_number'] ?? '#' . $quote['id']) ?>
+                                <a href="<?= APP_URL ?>/modules/invoices/view.php?id=<?= (int)$inv['id'] ?>">
+                                    <?= e($inv['invoice_number'] ?? '#' . $inv['id']) ?>
                                 </a>
                             </td>
-                            <td><?= status_badge($quote['status'] ?? 'draft') ?></td>
-                            <td><?= e(fmt_money($quote['total'] ?? 0)) ?></td>
-                            <td><?= e(fmt_date($quote['created_at'])) ?></td>
+                            <td><?= status_badge($inv['status'] ?? 'draft') ?></td>
+                            <td><?= e(fmt_money($inv['total'] ?? 0)) ?></td>
+                            <td><?= e(fmt_date($inv['created_at'])) ?></td>
                             <td class="text-end">
-                                <a href="<?= APP_URL ?>/modules/quotes/view.php?id=<?= (int)$quote['id'] ?>"
+                                <a href="<?= APP_URL ?>/modules/invoices/view.php?id=<?= (int)$inv['id'] ?>"
                                    class="btn-tp-ghost btn-tp-sm">
                                     <i class="fa-solid fa-eye"></i> View
                                 </a>
@@ -273,9 +360,9 @@ layout_start('Customer: ' . $cust['name'], 'customers');
                    class="btn-tp-primary w-100 justify-content-start">
                     <i class="fa-solid fa-clipboard-list"></i> New Work Order
                 </a>
-                <a href="<?= APP_URL ?>/modules/quotes/create.php?customer_id=<?= (int)$cust['id'] ?>"
+                <a href="<?= APP_URL ?>/modules/bookings/create.php?customer_id=<?= (int)$cust['id'] ?>"
                    class="btn-tp-ghost w-100 justify-content-start">
-                    <i class="fa-solid fa-file-invoice-dollar"></i> New Quote
+                    <i class="fa-solid fa-calendar-check"></i> New Booking
                 </a>
                 <a href="<?= APP_URL ?>/modules/customers/edit.php?id=<?= (int)$cust['id'] ?>"
                    class="btn-tp-ghost w-100 justify-content-start">

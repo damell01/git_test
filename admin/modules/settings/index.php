@@ -175,12 +175,12 @@ layout_start('Settings', 'settings');
 
             <!-- Quote Terms -->
             <div class="col-12">
-                <label class="form-label" for="quote_terms">Quote Terms &amp; Conditions</label>
+                <label class="form-label" for="quote_terms">Invoice / Work Order Terms &amp; Conditions</label>
                 <textarea id="quote_terms"
                           name="quote_terms"
                           class="form-control"
                           rows="4"
-                          placeholder="Terms and conditions to display on quotes…"><?= e(get_setting('quote_terms')) ?></textarea>
+                          placeholder="Terms and conditions to display on invoices and work orders…"><?= e(get_setting('quote_terms')) ?></textarea>
             </div>
 
             <!-- Work Order Footer -->
@@ -254,7 +254,7 @@ layout_start('Settings', 'settings');
             <div class="col-12">
                 <label class="form-label" for="notification_emails">
                     Notification Email(s)
-                    <span style="font-weight:400;color:var(--gy);font-size:.8rem;"> — receive alerts for new contact-form leads</span>
+                    <span style="font-weight:400;color:var(--gy);font-size:.8rem;"> — receive alerts for contact form submissions</span>
                 </label>
                 <input type="text" id="notification_emails" name="notification_emails" class="form-control"
                        placeholder="admin@example.com, manager@example.com"

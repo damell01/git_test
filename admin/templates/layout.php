@@ -25,14 +25,6 @@ function layout_start(string $page_title, string $active_nav = ''): void
             'badge' => null,
         ],
         [
-            'key'   => 'leads',
-            'label' => 'Leads',
-            'icon'  => 'fa-funnel',
-            'href'  => APP_URL . '/modules/leads/index.php',
-            'roles' => null,
-            'badge' => 'leads',
-        ],
-        [
             'key'   => 'customers',
             'label' => 'Customers',
             'icon'  => 'fa-users',
@@ -41,12 +33,12 @@ function layout_start(string $page_title, string $active_nav = ''): void
             'badge' => null,
         ],
         [
-            'key'   => 'quotes',
-            'label' => 'Quotes',
-            'icon'  => 'fa-file-invoice-dollar',
-            'href'  => APP_URL . '/modules/quotes/index.php',
+            'key'   => 'bookings',
+            'label' => 'Bookings',
+            'icon'  => 'fa-calendar-check',
+            'href'  => APP_URL . '/modules/bookings/index.php',
             'roles' => null,
-            'badge' => null,
+            'badge' => 'bookings',
         ],
         [
             'key'   => 'work_orders',
@@ -65,14 +57,6 @@ function layout_start(string $page_title, string $active_nav = ''): void
             'badge' => null,
         ],
         [
-            'key'   => 'scheduling',
-            'label' => 'Scheduling',
-            'icon'  => 'fa-calendar-days',
-            'href'  => APP_URL . '/modules/scheduling/index.php',
-            'roles' => null,
-            'badge' => null,
-        ],
-        [
             'key'   => 'inventory',
             'label' => 'Inventory',
             'icon'  => 'fa-dumpster',
@@ -81,12 +65,12 @@ function layout_start(string $page_title, string $active_nav = ''): void
             'badge' => null,
         ],
         [
-            'key'   => 'bookings',
-            'label' => 'Bookings',
-            'icon'  => 'fa-calendar-check',
-            'href'  => APP_URL . '/modules/bookings/index.php',
+            'key'   => 'calendar',
+            'label' => 'Calendar',
+            'icon'  => 'fa-calendar-days',
+            'href'  => APP_URL . '/modules/calendar/index.php',
             'roles' => null,
-            'badge' => 'bookings',
+            'badge' => null,
         ],
         [
             'key'   => 'reports',
@@ -101,14 +85,6 @@ function layout_start(string $page_title, string $active_nav = ''): void
             'label' => 'Payments',
             'icon'  => 'fa-money-bill-wave',
             'href'  => APP_URL . '/modules/payments/index.php',
-            'roles' => ['admin', 'office'],
-            'badge' => null,
-        ],
-        [
-            'key'   => 'workers',
-            'label' => 'Workers',
-            'icon'  => 'fa-hard-hat',
-            'href'  => APP_URL . '/modules/workers/index.php',
             'roles' => ['admin', 'office'],
             'badge' => null,
         ],
@@ -144,12 +120,6 @@ function layout_start(string $page_title, string $active_nav = ''): void
             return 0;
         }
         try {
-            if ($type === 'leads') {
-                $row = db_fetch(
-                    "SELECT COUNT(*) AS cnt FROM leads WHERE status IN ('new','contacted')"
-                );
-                return (int) ($row['cnt'] ?? 0);
-            }
             if ($type === 'work_orders') {
                 $row = db_fetch(
                     "SELECT COUNT(*) AS cnt FROM work_orders WHERE status IN ('scheduled','pickup_requested')"
@@ -331,10 +301,10 @@ function layout_start(string $page_title, string $active_nav = ''): void
 
         <!-- Right-side quick actions -->
         <div class="d-flex gap-2 align-items-center">
-            <a href="<?= htmlspecialchars($app_url, ENT_QUOTES, 'UTF-8') ?>/modules/leads/create.php"
+            <a href="<?= htmlspecialchars($app_url, ENT_QUOTES, 'UTF-8') ?>/modules/bookings/create.php"
                class="btn-tp-ghost btn-tp-sm no-print">
                 <i class="fa-solid fa-plus"></i>
-                New Lead
+                New Booking
             </a>
             <a href="<?= htmlspecialchars($app_url, ENT_QUOTES, 'UTF-8') ?>/modules/work_orders/create.php"
                class="btn-tp-primary btn-tp-sm no-print">

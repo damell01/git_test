@@ -130,7 +130,7 @@ if (!empty($errors)) {
     exit;
 }
 
-// ── Save as Lead ──────────────────────────────────────────────────────────────
+// ── Save contact inquiry ──────────────────────────────────────────────────────
 $lead_id = 0;
 try {
     // Parse city/state/zip from address if possible (basic heuristic)
@@ -161,16 +161,14 @@ try {
         'updated_at'   => date('Y-m-d H:i:s'),
     ]);
 } catch (\Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['success' => false, 'error' => 'Unable to save your request. Please call us directly.']);
-    exit;
+    // If leads table is unavailable, continue — the email notification below
+    // is the primary delivery mechanism for contact form submissions.
+    $lead_id = 0;
 }
 
 // ── Send admin notification email ─────────────────────────────────────────────
 try {
     $admin_url  = defined('APP_URL') ? APP_URL : '';
-    $lead_url   = $admin_url ? $admin_url . '/modules/leads/view.php?id=' . $lead_id : '';
-
     $detail_rows = '';
     $details = [
         'Name'            => htmlspecialchars($name,         ENT_QUOTES, 'UTF-8'),
@@ -195,19 +193,19 @@ try {
 
     $body_html = '<p style="font-size:1rem;color:#111;">A new quote request has been submitted through the website contact form.</p>
 <table style="border-collapse:collapse;width:100%;font-size:.9rem;margin:1rem 0;">'
-    . $detail_rows . '</table>';
+        . $detail_rows . '</table>';
 
     $html = email_template(
-        'New Website Lead',
+        'New Contact Form Submission',
         $body_html,
-        $lead_url ? 'View Lead in Admin' : '',
-        $lead_url
+        $admin_url ? 'View Customers in Admin' : '',
+        $admin_url ? $admin_url . '/modules/customers/index.php' : ''
     );
 
     notify_admins('🗑️ New Quote Request: ' . $name, $html);
 } catch (\Throwable $e) {
-    // Email failure should not fail the API response — lead is already saved
+    // Email failure should not fail the API response
 }
 
-// ── Success ───────────────────────────────────────────────────────────────────
-echo json_encode(['success' => true, 'lead_id' => $lead_id]);
+// Success
+echo json_encode(['success' => true]);

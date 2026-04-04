@@ -23,16 +23,6 @@ if (!$booking) {
 $stripe_payment_url = stripe_dashboard_url($booking['stripe_payment_id'] ?? '');
 $stripe_session_url = stripe_dashboard_url($booking['stripe_session_id'] ?? '');
 
-// Fetch assigned worker info
-$assigned_worker = null;
-if (!empty($booking['worker_id'])) {
-    try {
-        $assigned_worker = db_fetch('SELECT id, name, phone FROM workers WHERE id = ? LIMIT 1', [(int)$booking['worker_id']]);
-    } catch (\Throwable $e) {
-        // workers table may not exist yet
-    }
-}
-
 layout_start('Booking Detail', 'bookings');
 ?>
 
@@ -173,42 +163,6 @@ layout_start('Booking Detail', 'bookings');
             </div>
             <div class="tp-card-body">
                 <p class="mb-0" style="white-space:pre-wrap;"><?= e($booking['notes']) ?></p>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <!-- Assigned Worker -->
-        <?php if ($assigned_worker || has_role('admin', 'office')): ?>
-        <div class="tp-card">
-            <div class="tp-card-header d-flex align-items-center justify-content-between">
-                <span><i class="fa-solid fa-hard-hat me-2 text-muted"></i> Assigned Worker</span>
-                <?php if (has_role('admin', 'office')): ?>
-                <a href="edit.php?id=<?= $id ?>" class="btn-tp-ghost btn-tp-xs">
-                    <i class="fa-solid fa-pencil"></i> Assign
-                </a>
-                <?php endif; ?>
-            </div>
-            <div class="tp-card-body">
-                <?php if ($assigned_worker): ?>
-                <div class="d-flex align-items-center gap-3">
-                    <div style="width:38px;height:38px;border-radius:50%;background:rgba(249,115,22,.15);
-                                display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <i class="fa-solid fa-user" style="color:#f97316;font-size:.9rem;"></i>
-                    </div>
-                    <div>
-                        <div class="fw-semibold"><?= e($assigned_worker['name']) ?></div>
-                        <?php if (!empty($assigned_worker['phone'])): ?>
-                        <div style="font-size:.82rem;color:#9ca3af;">
-                            <a href="tel:<?= e(preg_replace('/\D/', '', $assigned_worker['phone'])) ?>">
-                                <?= e(fmt_phone($assigned_worker['phone'])) ?>
-                            </a>
-                        </div>
-                        <?php endif; ?>
-                    </div>
-                </div>
-                <?php else: ?>
-                <p class="text-muted mb-0" style="font-size:.875rem;">No worker assigned yet.</p>
-                <?php endif; ?>
             </div>
         </div>
         <?php endif; ?>

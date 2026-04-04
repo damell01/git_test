@@ -19,14 +19,6 @@ $units = db_fetchall(
      ORDER BY size, unit_code"
 );
 
-// Fetch active workers for assignment
-$workers = [];
-try {
-    $workers = db_fetchall("SELECT id, name FROM workers WHERE active = 1 ORDER BY name ASC");
-} catch (\Throwable $e) {
-    // workers table may not exist yet
-}
-
 // ── POST handler ──────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
@@ -358,20 +350,7 @@ layout_start('New Booking', 'bookings');
                     <option value="check"   <?= $f['payment_method'] === 'check'   ? 'selected' : '' ?>>Check</option>
                 </select>
             </div>
-            <?php if (!empty($workers)): ?>
-            <div class="col-md-6">
-                <label class="form-label" for="worker_id">Assigned Worker <small class="text-muted">optional</small></label>
-                <select id="worker_id" name="worker_id" class="form-select">
-                    <option value="">— Unassigned —</option>
-                    <?php foreach ($workers as $w): ?>
-                    <option value="<?= (int)$w['id'] ?>"
-                            <?= (int)($f['worker_id'] ?? 0) === (int)$w['id'] ? 'selected' : '' ?>>
-                        <?= e($w['name']) ?>
-                    </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <?php endif; ?>
+
             <div class="col-12">
                 <label class="form-label" for="notes">Notes</label>
                 <textarea id="notes" name="notes" class="form-control" rows="3"

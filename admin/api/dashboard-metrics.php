@@ -34,10 +34,6 @@ $payload = [
 
 // ── Core KPIs ────────────────────────────────────────────────────────────────
 $payload['kpis'] = [
-    'leads_new' => api_int(
-        db_fetch("SELECT COUNT(*) AS cnt FROM leads WHERE status IN ('new','contacted') AND archived = 0"),
-        'cnt'
-    ),
     'wo_active' => api_int(
         db_fetch("SELECT COUNT(*) AS cnt FROM work_orders WHERE status IN ('scheduled','delivered','active','pickup_requested')"),
         'cnt'
