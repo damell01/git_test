@@ -55,13 +55,8 @@ layout_start('Workers', 'workers');
 
 <!-- Active/Inactive toggle -->
 <div class="mb-3">
-    <?php if ($show_inactive): ?>
-        <a href="index.php" class="tp-filter-tab active">Active</a>
-        <a href="?inactive=1" class="tp-filter-tab">All</a>
-    <?php else: ?>
-        <a href="index.php" class="tp-filter-tab active">Active</a>
-        <a href="?inactive=1" class="tp-filter-tab">All</a>
-    <?php endif; ?>
+    <a href="index.php" class="tp-filter-tab<?= !$show_inactive ? ' active' : '' ?>">Active</a>
+    <a href="?inactive=1" class="tp-filter-tab<?= $show_inactive ? ' active' : '' ?>">All Workers</a>
 </div>
 
 <div class="tp-card">
