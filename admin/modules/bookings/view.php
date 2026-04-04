@@ -41,6 +41,16 @@ layout_start('Booking Detail', 'bookings');
         <a href="update_payment.php?id=<?= $id ?>" class="btn-tp-ghost btn-tp-sm">
             <i class="fa-solid fa-credit-card"></i> Update Payment
         </a>
+        <?php if (
+            $booking['payment_method'] === 'stripe' &&
+            $booking['payment_status'] === 'paid' &&
+            ($booking['stripe_payment_id'] || $booking['stripe_session_id'])
+        ): ?>
+        <a href="refund.php?id=<?= $id ?>" class="btn-tp-ghost btn-tp-sm"
+           style="color:#dc3545;border-color:#dc3545;">
+            <i class="fa-solid fa-rotate-left"></i> Issue Refund
+        </a>
+        <?php endif; ?>
         <?php if ($booking['booking_status'] !== 'canceled'): ?>
         <form method="POST" action="cancel.php" class="d-inline"
               onsubmit="return confirm('Cancel this booking?');">
@@ -243,6 +253,19 @@ layout_start('Booking Detail', 'bookings');
                         <i class="fa-brands fa-stripe"></i> Open Payment in Stripe
                     </a>
                     <?php endif; ?>
+                </div>
+                <?php endif; ?>
+                <?php if ($booking['payment_status'] === 'refunded'): ?>
+                <div class="mt-3 p-2 rounded" style="background:#fff3cd;font-size:.85rem;">
+                    <i class="fa-solid fa-rotate-left me-1 text-warning"></i>
+                    <strong>Refund issued.</strong> Check your Stripe dashboard for details.
+                </div>
+                <?php elseif ($booking['payment_method'] === 'stripe' && $booking['payment_status'] === 'paid'): ?>
+                <div class="mt-3">
+                    <a href="refund.php?id=<?= $id ?>" class="btn-tp-ghost btn-tp-xs"
+                       style="color:#dc3545;border-color:#dc3545;">
+                        <i class="fa-solid fa-rotate-left"></i> Issue Refund
+                    </a>
                 </div>
                 <?php endif; ?>
             </div>
