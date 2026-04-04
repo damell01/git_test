@@ -130,11 +130,14 @@ CREATE TABLE IF NOT EXISTS `dumpsters` (
   `unit_code`    varchar(50)  NOT NULL,
   `type`         ENUM('dumpster','trailer') NOT NULL DEFAULT 'dumpster',
   `size`         varchar(50)  NOT NULL,
-  `daily_rate`   decimal(10,2)         NOT NULL DEFAULT 0.00,
-  `weekly_rate`  decimal(10,2)         NOT NULL DEFAULT 0.00,
-  `monthly_rate` decimal(10,2)         NOT NULL DEFAULT 0.00,
-  `active`       tinyint(1)   NOT NULL DEFAULT 1,
-  `image`        varchar(255)          DEFAULT NULL,
+  `daily_rate`      decimal(10,2)         NOT NULL DEFAULT 0.00,
+  `weekly_rate`     decimal(10,2)         NOT NULL DEFAULT 0.00,
+  `monthly_rate`    decimal(10,2)         NOT NULL DEFAULT 0.00,
+  `base_price`      decimal(10,2)         NOT NULL DEFAULT 0.00 COMMENT 'Flat rental price for the included rental period',
+  `rental_days`     int(11)               NOT NULL DEFAULT 7    COMMENT 'Number of days included in the base price',
+  `extra_day_price` decimal(10,2)                  DEFAULT NULL COMMENT 'Per-day charge for days beyond the included rental period',
+  `active`          tinyint(1)            NOT NULL DEFAULT 1,
+  `image`           varchar(255)                   DEFAULT NULL,
   `status`       ENUM('available','reserved','in_use','maintenance') NOT NULL DEFAULT 'available',
   `condition`    ENUM('excellent','good','fair','poor')              NOT NULL DEFAULT 'good',
   `notes`        text                  DEFAULT NULL,
@@ -142,6 +145,20 @@ CREATE TABLE IF NOT EXISTS `dumpsters` (
   `updated_at`   datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_dumpsters_unit_code` (`unit_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------------------------------
+-- workers  (simple driver/worker roster for job assignment)
+-- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `workers` (
+  `id`         int(11)      NOT NULL AUTO_INCREMENT,
+  `name`       varchar(100) NOT NULL,
+  `phone`      varchar(25)           DEFAULT NULL,
+  `active`     tinyint(1)   NOT NULL DEFAULT 1,
+  `notes`      text                  DEFAULT NULL,
+  `created_at` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------------------------------

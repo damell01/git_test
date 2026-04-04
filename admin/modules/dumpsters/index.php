@@ -91,9 +91,9 @@ layout_start('Inventory', 'inventory');
                     <th>Size</th>
                     <th>Status</th>
                     <th>Condition</th>
-                    <th>Daily Rate</th>
-                    <th>Weekly Rate</th>
-                    <th>Monthly Rate</th>
+                    <th>Base Price</th>
+                    <th>Incl. Days</th>
+                    <th>Extra Day</th>
                     <th>Current WO#</th>
                     <th>Notes</th>
                     <?php if (has_role('admin', 'office')): ?>
@@ -108,9 +108,21 @@ layout_start('Inventory', 'inventory');
                     <td><?= e($d['size']) ?></td>
                     <td><?= status_badge($d['status']) ?></td>
                     <td><?= e(ucfirst($d['condition'] ?? '')) ?></td>
-                    <td><?= !empty($d['daily_rate'])   ? '$' . number_format((float)$d['daily_rate'],   2) : '<span class="text-muted">—</span>' ?></td>
-                    <td><?= !empty($d['weekly_rate'])  ? '$' . number_format((float)$d['weekly_rate'],  2) : '<span class="text-muted">—</span>' ?></td>
-                    <td><?= !empty($d['monthly_rate']) ? '$' . number_format((float)$d['monthly_rate'], 2) : '<span class="text-muted">—</span>' ?></td>
+                    <td>
+                        <?php if (!empty($d['base_price']) && (float)$d['base_price'] > 0): ?>
+                            <strong><?= '$' . number_format((float)$d['base_price'], 2) ?></strong>
+                        <?php elseif (!empty($d['daily_rate'])): ?>
+                            <span class="text-muted" title="Legacy daily rate"><?= '$' . number_format((float)$d['daily_rate'], 2) ?>/day</span>
+                        <?php else: ?>
+                            <span class="text-muted">—</span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <?= !empty($d['rental_days']) ? (int)$d['rental_days'] . ' days' : '<span class="text-muted">—</span>' ?>
+                    </td>
+                    <td>
+                        <?= ($d['extra_day_price'] !== null && (float)$d['extra_day_price'] > 0) ? '$' . number_format((float)$d['extra_day_price'], 2) : '<span class="text-muted">—</span>' ?>
+                    </td>
                     <td>
                         <?php if (!empty($d['wo_id'])): ?>
                             <a href="<?= e(APP_URL) ?>/modules/work_orders/view.php?id=<?= (int)$d['wo_id'] ?>">

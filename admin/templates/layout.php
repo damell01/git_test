@@ -105,6 +105,14 @@ function layout_start(string $page_title, string $active_nav = ''): void
             'badge' => null,
         ],
         [
+            'key'   => 'workers',
+            'label' => 'Workers',
+            'icon'  => 'fa-hard-hat',
+            'href'  => APP_URL . '/modules/workers/index.php',
+            'roles' => ['admin', 'office'],
+            'badge' => null,
+        ],
+        [
             'key'   => 'notifications',
             'label' => 'Notifications',
             'icon'  => 'fa-bell',

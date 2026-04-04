@@ -24,11 +24,19 @@ if (!$booking) {
 $errors = [];
 
 $units = db_fetchall(
-    "SELECT id, unit_code, type, size, daily_rate
+    "SELECT id, unit_code, type, size, daily_rate, base_price, rental_days, extra_day_price
      FROM dumpsters
      WHERE active = 1 AND status != 'maintenance'
      ORDER BY size, unit_code"
 );
+
+// Fetch active workers for assignment
+$workers = [];
+try {
+    $workers = db_fetchall("SELECT id, name FROM workers WHERE active = 1 ORDER BY name ASC");
+} catch (\Throwable $e) {
+    // workers table may not exist yet
+}
 
 // ── POST handler ──────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -43,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $rental_start     = trim($_POST['rental_start']     ?? '');
     $rental_end       = trim($_POST['rental_end']       ?? '');
     $payment_method   = trim($_POST['payment_method']   ?? 'stripe');
+    $worker_id        = (int)($_POST['worker_id']       ?? 0) ?: null;
     $notes            = trim($_POST['notes']            ?? '');
 
     if ($customer_name === '') {
@@ -110,7 +119,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $d2         = new \DateTime($rental_end);
         $days       = max(1, (int)$d1->diff($d2)->days);
         $daily_rate = (float)$unit['daily_rate'];
-        $total      = round($daily_rate * $days, 2);
+
+        // Use base_price model if configured, otherwise fall back to daily_rate
+        $base_price      = (float)($unit['base_price'] ?? 0);
+        $incl_days       = max(1, (int)($unit['rental_days'] ?? 7));
+        $extra_day_price = isset($unit['extra_day_price']) && $unit['extra_day_price'] !== null
+            ? (float)$unit['extra_day_price'] : null;
+
+        if ($base_price > 0) {
+            $extra_days = max(0, $days - $incl_days);
+            $total = round($base_price + ($extra_days * ($extra_day_price ?? 0)), 2);
+        } else {
+            $total = round($daily_rate * $days, 2);
+        }
 
         db_update('bookings', [
             'customer_name'    => $customer_name,
@@ -128,6 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'daily_rate'       => $daily_rate,
             'total_amount'     => $total,
             'payment_method'   => $payment_method,
+            'worker_id'        => $worker_id,
             'notes'            => $notes ?: null,
             'updated_at'       => date('Y-m-d H:i:s'),
         ], 'id', $id);
@@ -148,6 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'rental_start'     => $rental_start,
         'rental_end'       => $rental_end,
         'payment_method'   => $payment_method,
+        'worker_id'        => $worker_id,
         'notes'            => $notes,
     ]);
 }
@@ -226,9 +249,17 @@ layout_start('Edit Booking', 'bookings');
                     <?php foreach ($units as $u): ?>
                     <option value="<?= (int)$u['id'] ?>"
                             data-rate="<?= e($u['daily_rate']) ?>"
+                            data-base="<?= e($u['base_price'] ?? 0) ?>"
+                            data-incl="<?= (int)($u['rental_days'] ?? 7) ?>"
+                            data-extra="<?= e($u['extra_day_price'] ?? '') ?>"
                             <?= (int)$booking['dumpster_id'] === (int)$u['id'] ? 'selected' : '' ?>>
                         <?= e($u['unit_code']) ?> — <?= e($u['size']) ?>
-                        (<?= e(ucfirst($u['type'])) ?>) — <?= e(fmt_money($u['daily_rate'])) ?>/day
+                        (<?= e(ucfirst($u['type'])) ?>)
+                        <?php if ((float)($u['base_price'] ?? 0) > 0): ?>
+                            — <?= e(fmt_money($u['base_price'])) ?> / <?= (int)($u['rental_days'] ?? 7) ?> days
+                        <?php else: ?>
+                            — <?= e(fmt_money($u['daily_rate'])) ?>/day
+                        <?php endif; ?>
                     </option>
                     <?php endforeach; ?>
                 </select>
@@ -270,6 +301,20 @@ layout_start('Edit Booking', 'bookings');
                     <option value="check"  <?= $booking['payment_method'] === 'check'  ? 'selected' : '' ?>>Check</option>
                 </select>
             </div>
+            <?php if (!empty($workers)): ?>
+            <div class="col-md-6">
+                <label class="form-label" for="worker_id">Assigned Worker <small class="text-muted">optional</small></label>
+                <select id="worker_id" name="worker_id" class="form-select">
+                    <option value="">— Unassigned —</option>
+                    <?php foreach ($workers as $w): ?>
+                    <option value="<?= (int)$w['id'] ?>"
+                            <?= (int)($booking['worker_id'] ?? 0) === (int)$w['id'] ? 'selected' : '' ?>>
+                        <?= e($w['name']) ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <?php endif; ?>
             <div class="col-12">
                 <label class="form-label" for="notes">Notes</label>
                 <textarea id="notes" name="notes" class="form-control" rows="3"><?= e($booking['notes'] ?? '') ?></textarea>
@@ -293,12 +338,25 @@ function updateTotal() {
     var disp  = document.getElementById('totalDisplay');
 
     if (!sel.value || !start || !end) { disp.textContent = '—'; return; }
-    var rate     = parseFloat(sel.options[sel.selectedIndex].dataset.rate) || 0;
+    var opt      = sel.options[sel.selectedIndex];
+    var rate     = parseFloat(opt.dataset.rate)  || 0;
+    var base     = parseFloat(opt.dataset.base)  || 0;
+    var incl     = parseInt(opt.dataset.incl, 10) || 7;
+    var extra    = opt.dataset.extra !== '' ? parseFloat(opt.dataset.extra) : 0;
+
     var startUTC = Date.UTC.apply(null, start.split('-').map(function(v,i){ return i===1?parseInt(v,10)-1:parseInt(v,10); }));
     var endUTC   = Date.UTC.apply(null, end.split('-').map(function(v,i){ return i===1?parseInt(v,10)-1:parseInt(v,10); }));
     var days     = Math.round((endUTC - startUTC) / 86400000);
     if (days <= 0) { disp.textContent = 'Invalid dates'; return; }
-    disp.textContent = days + ' day' + (days !== 1 ? 's' : '') + ' — $' + (rate * days).toFixed(2);
+
+    var total;
+    if (base > 0) {
+        var extraDays = Math.max(0, days - incl);
+        total = base + (extraDays * extra);
+    } else {
+        total = rate * days;
+    }
+    disp.textContent = days + ' day' + (days !== 1 ? 's' : '') + ' — $' + total.toFixed(2);
 }
 document.addEventListener('DOMContentLoaded', updateTotal);
 </script>

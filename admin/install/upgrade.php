@@ -458,6 +458,86 @@ if (table_exists($pdo, 'settings')) {
 }
 
 // =============================================================================
+// UPGRADE 16 — dumpsters: add base_price, rental_days, extra_day_price
+// =============================================================================
+echo "\n--- Upgrade 16: dumpsters pricing fields ---\n";
+
+if (!column_exists($pdo, 'dumpsters', 'base_price')) {
+    run_step($pdo, "dumpsters.base_price", "ALTER TABLE `dumpsters`
+        ADD COLUMN `base_price` DECIMAL(10,2) NOT NULL DEFAULT 0.00
+        COMMENT 'Flat rental price for the included rental period' AFTER `monthly_rate`");
+} else {
+    $log[] = "[SKIP] dumpsters.base_price (already exists)";
+}
+
+if (!column_exists($pdo, 'dumpsters', 'rental_days')) {
+    run_step($pdo, "dumpsters.rental_days", "ALTER TABLE `dumpsters`
+        ADD COLUMN `rental_days` INT(11) NOT NULL DEFAULT 7
+        COMMENT 'Number of days included in the base price' AFTER `base_price`");
+} else {
+    $log[] = "[SKIP] dumpsters.rental_days (already exists)";
+}
+
+if (!column_exists($pdo, 'dumpsters', 'extra_day_price')) {
+    run_step($pdo, "dumpsters.extra_day_price", "ALTER TABLE `dumpsters`
+        ADD COLUMN `extra_day_price` DECIMAL(10,2) DEFAULT NULL
+        COMMENT 'Per-day charge for days beyond the included rental period' AFTER `rental_days`");
+} else {
+    $log[] = "[SKIP] dumpsters.extra_day_price (already exists)";
+}
+
+// =============================================================================
+// UPGRADE 17 — workers table
+// =============================================================================
+echo "\n--- Upgrade 17: workers table ---\n";
+
+if (!table_exists($pdo, 'workers')) {
+    run_step($pdo, "CREATE TABLE workers", "
+        CREATE TABLE `workers` (
+          `id`         INT(11)      NOT NULL AUTO_INCREMENT,
+          `name`       VARCHAR(100) NOT NULL,
+          `phone`      VARCHAR(25)           DEFAULT NULL,
+          `active`     TINYINT(1)   NOT NULL DEFAULT 1,
+          `notes`      TEXT                  DEFAULT NULL,
+          `created_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          `updated_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    ");
+} else {
+    $log[] = "[SKIP] workers table (already exists)";
+}
+
+// =============================================================================
+// UPGRADE 18 — bookings: add worker_id column
+// =============================================================================
+echo "\n--- Upgrade 18: bookings.worker_id ---\n";
+
+if (table_exists($pdo, 'bookings') && !column_exists($pdo, 'bookings', 'worker_id')) {
+    run_step($pdo, "bookings.worker_id", "ALTER TABLE `bookings`
+        ADD COLUMN `worker_id` INT(11) DEFAULT NULL
+        COMMENT 'Assigned worker/driver for this booking' AFTER `notes`,
+        ADD CONSTRAINT `fk_bookings_worker_id`
+          FOREIGN KEY (`worker_id`) REFERENCES `workers` (`id`) ON DELETE SET NULL");
+} else {
+    $log[] = "[SKIP] bookings.worker_id (already exists or bookings table missing)";
+}
+
+// =============================================================================
+// UPGRADE 19 — bookings: add booking_group_id column if missing
+// =============================================================================
+echo "\n--- Upgrade 19: bookings.booking_group_id ---\n";
+
+if (table_exists($pdo, 'bookings') && !column_exists($pdo, 'bookings', 'booking_group_id')) {
+    run_step($pdo, "bookings.booking_group_id", "ALTER TABLE `bookings`
+        ADD COLUMN `booking_group_id` VARCHAR(32) DEFAULT NULL
+        COMMENT 'Shared key linking multiple units booked together in one session' AFTER `booking_status`,
+        ADD KEY `idx_bookings_group` (`booking_group_id`)");
+} else {
+    $log[] = "[SKIP] bookings.booking_group_id (already exists or bookings table missing)";
+}
+
+// =============================================================================
 // Summary
 // =============================================================================
 echo "\n" . str_repeat('=', 60) . "\n";

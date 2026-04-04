@@ -9,9 +9,10 @@ require_once TMPL_PATH . '/layout.php';
 require_login();
 
 // ── Filters ───────────────────────────────────────────────────────────────────
-$filter  = trim($_GET['filter'] ?? 'all');
-$page    = max(1, (int)($_GET['page'] ?? 1));
-$per_page = 25;
+$filter    = trim($_GET['filter']    ?? 'all');
+$worker_id = (int)($_GET['worker_id'] ?? 0);
+$page      = max(1, (int)($_GET['page'] ?? 1));
+$per_page  = 25;
 
 $allowed_filters = ['all', 'pending', 'confirmed', 'paid', 'canceled', 'upcoming'];
 if (!in_array($filter, $allowed_filters, true)) {
@@ -43,6 +44,12 @@ switch ($filter) {
         break;
 }
 
+// Worker filter
+if ($worker_id > 0) {
+    $where  .= ' AND b.worker_id = ?';
+    $params[] = $worker_id;
+}
+
 // ── Count ─────────────────────────────────────────────────────────────────────
 $total_row = db_fetch(
     "SELECT COUNT(*) AS cnt FROM bookings b WHERE $where",
@@ -51,20 +58,40 @@ $total_row = db_fetch(
 $total = (int)($total_row['cnt'] ?? 0);
 $pager = paginate($total, $page, $per_page);
 
-// ── Fetch rows ────────────────────────────────────────────────────────────────
-$bookings = db_fetchall(
-    "SELECT b.id, b.booking_number, b.customer_name, b.customer_email,
-            b.unit_code, b.unit_type, b.unit_size,
-            b.rental_start, b.rental_end, b.rental_days,
-            b.total_amount, b.payment_method, b.payment_status, b.booking_status,
-            b.stripe_payment_id, b.stripe_session_id,
-            b.created_at
-     FROM bookings b
-     WHERE $where
-     ORDER BY b.created_at DESC
-     LIMIT ? OFFSET ?",
-    array_merge($params, [$pager['per_page'], $pager['offset']])
-);
+// ── Fetch rows (wrap in try/catch for graceful fallback if workers table missing) ─
+try {
+    $bookings = db_fetchall(
+        "SELECT b.id, b.booking_number, b.customer_name, b.customer_email,
+                b.unit_code, b.unit_type, b.unit_size,
+                b.rental_start, b.rental_end, b.rental_days,
+                b.total_amount, b.payment_method, b.payment_status, b.booking_status,
+                b.stripe_payment_id, b.stripe_session_id,
+                b.worker_id, w.name AS worker_name,
+                b.created_at
+         FROM bookings b
+         LEFT JOIN workers w ON w.id = b.worker_id
+         WHERE $where
+         ORDER BY b.created_at DESC
+         LIMIT ? OFFSET ?",
+        array_merge($params, [$pager['per_page'], $pager['offset']])
+    );
+} catch (\Throwable $e) {
+    // Fallback without worker JOIN
+    $bookings = db_fetchall(
+        "SELECT b.id, b.booking_number, b.customer_name, b.customer_email,
+                b.unit_code, b.unit_type, b.unit_size,
+                b.rental_start, b.rental_end, b.rental_days,
+                b.total_amount, b.payment_method, b.payment_status, b.booking_status,
+                b.stripe_payment_id, b.stripe_session_id,
+                NULL AS worker_id, NULL AS worker_name,
+                b.created_at
+         FROM bookings b
+         WHERE $where
+         ORDER BY b.created_at DESC
+         LIMIT ? OFFSET ?",
+        array_merge($params, [$pager['per_page'], $pager['offset']])
+    );
+}
 
 layout_start('Bookings', 'bookings');
 ?>
