@@ -32,7 +32,7 @@ try {
     $assigned_count = 0;
 }
 
-db_exec("DELETE FROM workers WHERE id = ?", [$id]);
+db_execute("DELETE FROM workers WHERE id = ?", [$id]);
 
 log_activity('delete', "Deleted worker: {$worker['name']}", 'worker', $id);
 

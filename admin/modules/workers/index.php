@@ -11,34 +11,31 @@ require_login();
 // Active filter
 $show_inactive = !empty($_GET['inactive']);
 
-$workers = db_fetchall(
-    $show_inactive
-        ? "SELECT w.*, COUNT(b.id) AS booking_count
-           FROM workers w
-           LEFT JOIN bookings b ON b.worker_id = w.id AND b.booking_status != 'canceled'
-           GROUP BY w.id
-           ORDER BY w.name ASC"
-        : "SELECT w.*, COUNT(b.id) AS booking_count
-           FROM workers w
-           LEFT JOIN bookings b ON b.worker_id = w.id AND b.booking_status != 'canceled'
-           WHERE w.active = 1
-           GROUP BY w.id
-           ORDER BY w.name ASC"
-);
-
-// Handle bookings table not yet created (e.g. pre-upgrade)
+// Fetch workers with booking count (gracefully handles missing bookings table)
 $has_bookings_table = true;
-if (!$workers) {
-    try {
-        db_fetch("SELECT 1 FROM bookings LIMIT 1");
-    } catch (\Throwable $e) {
-        $has_bookings_table = false;
-        $workers = db_fetchall(
-            $show_inactive
-                ? "SELECT *, 0 AS booking_count FROM workers ORDER BY name ASC"
-                : "SELECT *, 0 AS booking_count FROM workers WHERE active = 1 ORDER BY name ASC"
-        );
-    }
+$workers = [];
+try {
+    $workers = db_fetchall(
+        $show_inactive
+            ? "SELECT w.*, COUNT(b.id) AS booking_count
+               FROM workers w
+               LEFT JOIN bookings b ON b.worker_id = w.id AND b.booking_status != 'canceled'
+               GROUP BY w.id
+               ORDER BY w.name ASC"
+            : "SELECT w.*, COUNT(b.id) AS booking_count
+               FROM workers w
+               LEFT JOIN bookings b ON b.worker_id = w.id AND b.booking_status != 'canceled'
+               WHERE w.active = 1
+               GROUP BY w.id
+               ORDER BY w.name ASC"
+    );
+} catch (\Throwable $e) {
+    $has_bookings_table = false;
+    $workers = db_fetchall(
+        $show_inactive
+            ? "SELECT *, 0 AS booking_count FROM workers ORDER BY name ASC"
+            : "SELECT *, 0 AS booking_count FROM workers WHERE active = 1 ORDER BY name ASC"
+    );
 }
 
 layout_start('Workers', 'workers');

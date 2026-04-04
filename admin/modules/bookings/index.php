@@ -160,6 +160,11 @@ layout_start('Bookings', 'bookings');
                     <?php if ($b['customer_email']): ?>
                     <div style="font-size:.8rem;color:var(--gy);"><?= e($b['customer_email']) ?></div>
                     <?php endif; ?>
+                    <?php if (!empty($b['worker_name'])): ?>
+                    <div style="font-size:.78rem;color:var(--or);" title="Assigned worker">
+                        <i class="fa-solid fa-hard-hat" style="font-size:.72rem;"></i> <?= e($b['worker_name']) ?>
+                    </div>
+                    <?php endif; ?>
                 </td>
                 <td>
                     <?php if ($b['unit_code']): ?>
