@@ -109,36 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $invoice_number = next_number('INV', 'invoices', 'invoice_number');
 
-        // Auto-generate Stripe Checkout payment link if Stripe is configured
-        $stripe_payment_link = null;
-        $stripe_session_id   = null;
-        $stripe_key = trim(get_setting('stripe_secret_key', ''));
-        if ($stripe_key !== '' && $total > 0) {
-            $autoload = dirname(__DIR__, 2) . '/vendor/autoload.php';
-            if (file_exists($autoload)) {
-                require_once $autoload;
-            }
-            require_once INC_PATH . '/stripe.php';
-            try {
-                $inv_row = [
-                    'id'             => 0, // placeholder; we'll update after insert
-                    'invoice_number' => $invoice_number,
-                    'cust_name'      => $old['cust_name'],
-                    'cust_email'     => $old['cust_email'] ?: null,
-                    'total'          => $total,
-                ];
-                $base_url    = rtrim(APP_URL, '/');
-                $success_url = $base_url . '/modules/invoices/view.php?id=0&paid=1';
-                $cancel_url  = $base_url . '/modules/invoices/view.php?id=0';
-                $session = stripe_create_invoice_checkout($inv_row, $success_url, $cancel_url);
-                $stripe_payment_link = $session->url;
-                $stripe_session_id   = $session->id;
-            } catch (\Throwable $stripeEx) {
-                error_log('[Invoice create] Stripe Checkout error: ' . $stripeEx->getMessage());
-                // Non-fatal — invoice still saves without payment link
-            }
-        }
-
+        // Insert the invoice first (without payment link) to get the real ID
         $inv_id = db_insert('invoices', [
             'invoice_number'      => $invoice_number,
             'customer_id'         => $old['customer_id'],
@@ -154,22 +125,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'terms'               => $old['terms'],
             'status'              => $old['status'],
             'due_date'            => $old['due_date'] ?: null,
-            'stripe_payment_link' => $stripe_payment_link,
-            'stripe_session_id'   => $stripe_session_id,
+            'stripe_payment_link' => null,
+            'stripe_session_id'   => null,
             'created_by'          => $_SESSION['user_id'],
             'created_at'          => date('Y-m-d H:i:s'),
             'updated_at'          => date('Y-m-d H:i:s'),
         ]);
 
-        // Update the payment link URLs with the real invoice ID now that we have it
-        if ($stripe_payment_link && $stripe_session_id && (int)$inv_id > 0) {
-            $base_url    = rtrim(APP_URL, '/');
-            // The session URL is already generated; just fix the redirect URLs aren't
-            // stored server-side — the customer will land on the correct page via
-            // the success_url we passed to Stripe which included id=0.
-            // Update the success/cancel URL by regenerating the payment link:
+        // Auto-generate Stripe Checkout payment link if Stripe is configured
+        $stripe_key = trim(get_setting('stripe_secret_key', ''));
+        if ($stripe_key !== '' && $total > 0 && (int)$inv_id > 0) {
+            $autoload = dirname(__DIR__, 2) . '/vendor/autoload.php';
+            if (file_exists($autoload)) {
+                require_once $autoload;
+            }
+            require_once INC_PATH . '/stripe.php';
             try {
-                $inv_row_upd = [
+                $base_url    = rtrim(APP_URL, '/');
+                $inv_row = [
                     'id'             => (int)$inv_id,
                     'invoice_number' => $invoice_number,
                     'cust_name'      => $old['cust_name'],
@@ -178,15 +151,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ];
                 $success_url = $base_url . '/modules/invoices/view.php?id=' . (int)$inv_id . '&paid=1';
                 $cancel_url  = $base_url . '/modules/invoices/view.php?id=' . (int)$inv_id;
-                $new_session = stripe_create_invoice_checkout($inv_row_upd, $success_url, $cancel_url);
+                $session = stripe_create_invoice_checkout($inv_row, $success_url, $cancel_url);
                 db_update('invoices', [
-                    'stripe_payment_link' => $new_session->url,
-                    'stripe_session_id'   => $new_session->id,
+                    'stripe_payment_link' => $session->url,
+                    'stripe_session_id'   => $session->id,
                     'updated_at'          => date('Y-m-d H:i:s'),
                 ], 'id', (int)$inv_id);
-            } catch (\Throwable $e2) {
-                // Keep the original link if regeneration fails
-                error_log('[Invoice create] Stripe link update error: ' . $e2->getMessage());
+            } catch (\Throwable $stripeEx) {
+                error_log('[Invoice create] Stripe Checkout error: ' . $stripeEx->getMessage());
+                // Non-fatal — invoice still saves without payment link
             }
         }
 

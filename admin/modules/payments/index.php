@@ -38,6 +38,7 @@ $mtd_booking_rev = ['total' => 0, 'cnt' => 0];
 $mtd_invoice_rev = ['total' => 0, 'cnt' => 0];
 $booking_records = [];
 $inv_records     = [];
+$month_start     = date('Y-m-01');
 
 try {
 $alltime_stripe = db_fetch(
@@ -86,8 +87,6 @@ $alltime_total_check  = (float)$alltime_check['total']  + (float)$alltime_inv_ch
 $alltime_grand_total  = $alltime_total_stripe + $alltime_total_cash + $alltime_total_check;
 
 // ── Month-to-date totals ──────────────────────────────────────────────────────
-$month_start = date('Y-m-01');
-
 $mtd_booking_rev = db_fetch(
     "SELECT COALESCE(SUM(total_amount),0) AS total, COUNT(*) AS cnt
      FROM bookings
