@@ -148,6 +148,12 @@ layout_start('Inventory', 'inventory');
                            class="btn-tp-ghost btn-tp-sm">
                             <i class="fa-solid fa-pencil"></i> Edit
                         </a>
+                        <?php $sp_url = stripe_dashboard_url($d['stripe_product_id'] ?? ''); if ($sp_url): ?>
+                        <a href="<?= e($sp_url) ?>" target="_blank" rel="noopener noreferrer"
+                           class="btn-tp-ghost btn-tp-sm" title="Open product in Stripe">
+                            <i class="fa-brands fa-stripe"></i>
+                        </a>
+                        <?php endif; ?>
                         <a href="delete.php?id=<?= (int)$d['id'] ?>"
                            class="btn-tp-ghost btn-tp-sm text-danger"
                            onclick="return confirm('Delete dumpster <?= e($d['unit_code']) ?>?')">

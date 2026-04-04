@@ -288,8 +288,16 @@ layout_start('Invoice ' . $inv['invoice_number'], 'invoices');
 
         <!-- Payment Link card -->
         <div class="tp-card mb-4">
-            <div class="tp-card-header">
+            <div class="tp-card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fab fa-stripe me-2" style="color:#635bff;"></i>Stripe Payment Link</h5>
+                <?php
+                $stripe_session_url_inv = stripe_dashboard_url($inv['stripe_session_id'] ?? '');
+                if ($stripe_session_url_inv): ?>
+                <a href="<?= e($stripe_session_url_inv) ?>" target="_blank" rel="noopener noreferrer"
+                   class="btn-tp-ghost btn-tp-xs" title="Open in Stripe">
+                    <i class="fa-brands fa-stripe"></i> Open in Stripe
+                </a>
+                <?php endif; ?>
             </div>
             <?php if (!empty($inv['stripe_payment_link'])): ?>
             <div class="mt-3">
@@ -314,32 +322,87 @@ function copyPayLink(btn) {
     });
 }
 </script>
+                <?php if (has_role('admin', 'office') && trim(get_setting('stripe_secret_key','')) !== ''): ?>
+                <form method="POST" action="generate_payment_link.php" class="mt-2">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="id" value="<?= $id ?>">
+                    <button type="submit" class="btn-tp-ghost btn-tp-xs w-100"
+                            onclick="return confirm('Regenerate Stripe payment link? The old link may still work.')">
+                        <i class="fa-solid fa-arrows-rotate me-1"></i> Regenerate Link
+                    </button>
+                </form>
+                <?php endif; ?>
             </div>
             <?php else: ?>
-            <p class="text-muted mt-3 mb-2" style="font-size:.9rem;">No payment link generated.</p>
-            <?php if (has_role('admin', 'office')): ?>
-            <a href="edit.php?id=<?= $id ?>" class="btn-tp-ghost btn-tp-sm">
-                <i class="fa-solid fa-link me-1"></i> Edit invoice to generate one
-            </a>
+            <?php if (has_role('admin', 'office') && trim(get_setting('stripe_secret_key','')) !== '' && !in_array($inv['status'], ['void','canceled'], true)): ?>
+            <div class="mt-3">
+                <p class="text-muted mb-2" style="font-size:.9rem;">No payment link generated yet.</p>
+                <form method="POST" action="generate_payment_link.php">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="id" value="<?= $id ?>">
+                    <button type="submit" class="btn-tp-primary btn-tp-sm w-100">
+                        <i class="fa-brands fa-stripe me-1"></i> Generate Stripe Payment Link
+                    </button>
+                </form>
+            </div>
+            <?php else: ?>
+            <p class="text-muted mt-3 mb-2" style="font-size:.9rem;">No payment link. Configure Stripe in Settings to enable.</p>
             <?php endif; ?>
             <?php endif; ?>
         </div>
 
-        <!-- Quick status update -->
-        <?php if (has_role('admin', 'office') && $inv['status'] !== 'paid' && $inv['status'] !== 'void'): ?>
+        <!-- Quick status update / cash-check actions -->
+        <?php if (has_role('admin', 'office') && !in_array($inv['status'], ['void','canceled'], true)): ?>
         <div class="tp-card mb-4">
             <div class="tp-card-header">
-                <h5 class="mb-0"><i class="fa-solid fa-circle-check me-2"></i>Mark as Paid</h5>
+                <h5 class="mb-0"><i class="fa-solid fa-bolt me-2"></i>Quick Actions</h5>
             </div>
-            <form method="post" action="update_status.php" class="mt-3">
-                <?= csrf_field() ?>
-                <input type="hidden" name="id"     value="<?= $id ?>">
-                <input type="hidden" name="status" value="paid">
-                <button type="submit" class="btn-tp-primary btn-tp-sm w-100"
-                        onclick="return confirm('Mark this invoice as Paid?')">
-                    <i class="fa-solid fa-check me-1"></i> Mark Paid
-                </button>
-            </form>
+            <div class="mt-3">
+                <form method="post" action="quick_pay.php" id="inv-quick-pay-form">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="id" value="<?= $id ?>">
+                    <input type="hidden" name="action" id="inv-quick-action" value="">
+                    <div class="mb-2">
+                        <input type="text" name="payment_notes" class="form-control form-control-sm"
+                               placeholder="Payment note (e.g. check #1042)…"
+                               value="<?= e($inv['payment_notes'] ?? '') ?>">
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        <?php if ($inv['status'] !== 'paid'): ?>
+                        <button type="button" class="btn-tp-primary btn-tp-sm"
+                                onclick="invQuickPay('mark_paid_cash')">
+                            <i class="fa-solid fa-money-bill"></i> Mark Paid (Cash)
+                        </button>
+                        <button type="button" class="btn-tp-primary btn-tp-sm"
+                                onclick="invQuickPay('mark_paid_check')">
+                            <i class="fa-solid fa-check-square"></i> Mark Paid (Check)
+                        </button>
+                        <?php endif; ?>
+                        <?php if ($inv['status'] !== 'sent'): ?>
+                        <button type="button" class="btn-tp-ghost btn-tp-sm"
+                                onclick="invQuickPay('mark_sent')">
+                            <i class="fa-solid fa-envelope"></i> Mark as Sent
+                        </button>
+                        <?php endif; ?>
+                        <button type="button" class="btn-tp-ghost btn-tp-sm"
+                                style="color:#dc3545;border-color:#dc3545;"
+                                onclick="if(confirm('Cancel this invoice?')) invQuickPay('mark_canceled')">
+                            <i class="fa-solid fa-ban"></i> Cancel Invoice
+                        </button>
+                    </div>
+                </form>
+                <script>
+                function invQuickPay(action) {
+                    document.getElementById('inv-quick-action').value = action;
+                    document.getElementById('inv-quick-pay-form').submit();
+                }
+                </script>
+                <?php if (!empty($inv['payment_notes'])): ?>
+                <div class="mt-2 pt-2" style="border-top:1px solid var(--st2);font-size:.82rem;">
+                    <span class="text-muted">Note:</span> <?= e($inv['payment_notes']) ?>
+                </div>
+                <?php endif; ?>
+            </div>
         </div>
         <?php endif; ?>
 
@@ -351,6 +414,9 @@ function copyPayLink(btn) {
             <table class="table tp-table table-sm mt-3 mb-0">
                 <tr><td style="color:var(--gl);">Invoice #</td><td class="fw-semibold"><?= e($inv['invoice_number']) ?></td></tr>
                 <tr><td style="color:var(--gl);">Status</td><td><?= status_badge($inv['status']) ?></td></tr>
+                <?php if (!empty($inv['payment_method'])): ?>
+                <tr><td style="color:var(--gl);">Paid Via</td><td><?= e(ucfirst($inv['payment_method'])) ?></td></tr>
+                <?php endif; ?>
                 <tr><td style="color:var(--gl);">Items</td><td><?= count($items) ?></td></tr>
                 <tr><td style="color:var(--gl);">Subtotal</td><td><?= e(fmt_money($inv['subtotal'])) ?></td></tr>
                 <tr><td style="color:var(--gl);">Tax</td><td><?= e(fmt_money($inv['tax_amount'])) ?></td></tr>

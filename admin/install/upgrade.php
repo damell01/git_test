@@ -538,6 +538,77 @@ if (table_exists($pdo, 'bookings') && !column_exists($pdo, 'bookings', 'booking_
 }
 
 // =============================================================================
+// UPGRADE 20 — dumpsters: add product/pricing fields + Stripe IDs
+// =============================================================================
+echo "\n--- Upgrade 20: dumpsters product/pricing fields ---\n";
+
+$dumpster_cols = [
+    'product_name'      => "ALTER TABLE `dumpsters` ADD COLUMN `product_name` VARCHAR(100) DEFAULT NULL COMMENT 'Display name for this dumpster product' AFTER `unit_code`",
+    'description'       => "ALTER TABLE `dumpsters` ADD COLUMN `description` TEXT DEFAULT NULL COMMENT 'Product description shown in UI' AFTER `product_name`",
+    'delivery_fee'      => "ALTER TABLE `dumpsters` ADD COLUMN `delivery_fee` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT 'Delivery fee' AFTER `extra_day_price`",
+    'pickup_fee'        => "ALTER TABLE `dumpsters` ADD COLUMN `pickup_fee` DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT 'Pickup fee' AFTER `delivery_fee`",
+    'mileage_fee'       => "ALTER TABLE `dumpsters` ADD COLUMN `mileage_fee` DECIMAL(10,2) DEFAULT NULL COMMENT 'Optional mileage/trip fee' AFTER `pickup_fee`",
+    'tax_rate'          => "ALTER TABLE `dumpsters` ADD COLUMN `tax_rate` DECIMAL(5,2) NOT NULL DEFAULT 0.00 COMMENT 'Optional tax rate %' AFTER `mileage_fee`",
+    'stripe_product_id' => "ALTER TABLE `dumpsters` ADD COLUMN `stripe_product_id` VARCHAR(100) DEFAULT NULL COMMENT 'Linked Stripe product ID' AFTER `tax_rate`",
+    'stripe_price_id'   => "ALTER TABLE `dumpsters` ADD COLUMN `stripe_price_id` VARCHAR(100) DEFAULT NULL COMMENT 'Linked Stripe price ID' AFTER `stripe_product_id`",
+];
+
+foreach ($dumpster_cols as $col => $sql) {
+    if (!column_exists($pdo, 'dumpsters', $col)) {
+        run_step($pdo, "dumpsters.$col", $sql);
+    } else {
+        $log[] = "[SKIP] dumpsters.$col (already exists)";
+    }
+}
+
+// =============================================================================
+// UPGRADE 21 — bookings: add payment_notes column
+// =============================================================================
+echo "\n--- Upgrade 21: bookings.payment_notes ---\n";
+
+if (table_exists($pdo, 'bookings') && !column_exists($pdo, 'bookings', 'payment_notes')) {
+    run_step($pdo, "bookings.payment_notes", "ALTER TABLE `bookings`
+        ADD COLUMN `payment_notes` TEXT DEFAULT NULL
+        COMMENT 'Notes for manual cash/check payment' AFTER `notes`");
+} else {
+    $log[] = "[SKIP] bookings.payment_notes (already exists or bookings table missing)";
+}
+
+// =============================================================================
+// UPGRADE 22 — invoices: add stripe_session_id + canceled status
+// =============================================================================
+echo "\n--- Upgrade 22: invoices stripe_session_id + canceled status ---\n";
+
+if (table_exists($pdo, 'invoices')) {
+    if (!column_exists($pdo, 'invoices', 'stripe_session_id')) {
+        run_step($pdo, "invoices.stripe_session_id", "ALTER TABLE `invoices`
+            ADD COLUMN `stripe_session_id` VARCHAR(255) DEFAULT NULL
+            COMMENT 'Stripe Checkout session ID for invoice payment' AFTER `stripe_payment_link`");
+    } else {
+        $log[] = "[SKIP] invoices.stripe_session_id (already exists)";
+    }
+    if (!column_exists($pdo, 'invoices', 'payment_method')) {
+        run_step($pdo, "invoices.payment_method", "ALTER TABLE `invoices`
+            ADD COLUMN `payment_method` ENUM('stripe','cash','check') DEFAULT NULL
+            COMMENT 'How the invoice was paid' AFTER `stripe_session_id`");
+    } else {
+        $log[] = "[SKIP] invoices.payment_method (already exists)";
+    }
+    if (!column_exists($pdo, 'invoices', 'payment_notes')) {
+        run_step($pdo, "invoices.payment_notes", "ALTER TABLE `invoices`
+            ADD COLUMN `payment_notes` TEXT DEFAULT NULL
+            COMMENT 'Notes for manual payment' AFTER `payment_method`");
+    } else {
+        $log[] = "[SKIP] invoices.payment_notes (already exists)";
+    }
+    // Modify status ENUM to add 'canceled' — safe to re-run
+    run_step($pdo, "invoices.status add canceled", "ALTER TABLE `invoices`
+        MODIFY COLUMN `status` ENUM('draft','sent','paid','void','canceled') NOT NULL DEFAULT 'draft'");
+} else {
+    $log[] = "[SKIP] invoices table does not exist";
+}
+
+// =============================================================================
 // Summary
 // =============================================================================
 echo "\n" . str_repeat('=', 60) . "\n";

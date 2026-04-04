@@ -33,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $payment_status = trim($_POST['payment_status'] ?? '');
     $booking_status = trim($_POST['booking_status'] ?? '');
+    $payment_notes  = trim($_POST['payment_notes']  ?? '');
 
     $errors = [];
     if (!in_array($payment_status, $allowed_payment_statuses, true)) {
@@ -48,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db_update('bookings', [
             'payment_status' => $payment_status,
             'booking_status' => $booking_status,
+            'payment_notes'  => $payment_notes !== '' ? $payment_notes : null,
             'updated_at'     => date('Y-m-d H:i:s'),
         ], 'id', $id);
 
@@ -167,6 +169,16 @@ layout_start('Update Payment', 'bookings');
                     </option>
                     <?php endforeach; ?>
                 </select>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label" for="payment_notes">Payment Note <small class="text-muted">optional — for cash/check</small></label>
+                <input type="text"
+                       id="payment_notes"
+                       name="payment_notes"
+                       class="form-control"
+                       placeholder="e.g. Paid at office, check #1042…"
+                       value="<?= e($booking['payment_notes'] ?? '') ?>">
             </div>
 
             <div class="col-12 d-flex gap-2">
