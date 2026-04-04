@@ -237,7 +237,7 @@ function confirmRefund(form) {
     const amount    = isPartial
         ? '$' + parseFloat(document.getElementById('custom_amount').value || 0).toFixed(2)
         : '<?= e(fmt_money($booking['total_amount'])) ?>';
-    return confirm('Issue a ' + amount + ' refund to ' + '<?= e($booking['customer_name']) ?>' + '?\n\nThis action cannot be reversed.');
+    return confirm('Issue a ' + amount + ' refund to ' + <?= json_encode($booking['customer_name']) ?> + '?\n\nThis action cannot be reversed.');
 }
 </script>
 

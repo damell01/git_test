@@ -212,8 +212,8 @@ function stripe_list_payouts(int $limit = 20): \Stripe\Collection
  * List recent Stripe charges.
  *
  * @param int         $limit
- * @param string|null $created_gte  Unix timestamp — return charges on/after this time
- * @param string|null $created_lte  Unix timestamp — return charges on/before this time
+ * @param int|null    $created_gte  Unix timestamp — return charges on/after this time
+ * @param int|null    $created_lte  Unix timestamp — return charges on/before this time
  * @return \Stripe\Collection
  */
 function stripe_list_charges(int $limit = 50, ?int $created_gte = null, ?int $created_lte = null): \Stripe\Collection

@@ -248,7 +248,7 @@ layout_start('Payments', 'payments');
                         </thead>
                         <tbody>
                         <?php foreach ($stripe_charges as $ch):
-                            $ch_date   = date('M j, g:i A', $ch->created);
+                            $ch_date   = date('M j, Y g:i A', $ch->created);
                             $ch_name   = $ch->billing_details->name ?? $ch->metadata['customer_name'] ?? '—';
                             $ch_desc   = $ch->description ?? $ch->metadata['booking_number'] ?? '';
                             $ch_amount = $ch->amount / 100;
