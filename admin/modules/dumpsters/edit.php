@@ -31,9 +31,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $unit_code    = trim($_POST['unit_code']    ?? '');
     $type         = trim($_POST['type']         ?? 'dumpster');
     $size         = trim($_POST['size']         ?? '');
-    $daily_rate   = (float)($_POST['daily_rate']   ?? 0.00);
-    $weekly_rate  = (float)($_POST['weekly_rate']  ?? 0.00);
-    $monthly_rate = (float)($_POST['monthly_rate'] ?? 0.00);
+    $daily_rate          = (float)($_POST['daily_rate']         ?? 0.00);
+    $weekly_rate         = (float)($_POST['weekly_rate']        ?? 0.00);
+    $monthly_rate        = (float)($_POST['monthly_rate']       ?? 0.00);
+    $base_price          = (float)($_POST['base_price']         ?? 0.00);
+    $rental_days         = max(1, (int)($_POST['rental_days']   ?? 7));
+    $extra_day_price_raw = trim($_POST['extra_day_price']       ?? '');
+    $extra_day_price     = $extra_day_price_raw !== '' ? (float)$extra_day_price_raw : null;
     $active     = isset($_POST['active']) ? 1 : 0;
     $status     = trim($_POST['status']     ?? 'available');
     $condition  = trim($_POST['condition']  ?? 'good');
@@ -112,18 +116,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         db_update('dumpsters', [
-            'unit_code'    => $unit_code,
-            'type'         => $type,
-            'size'         => $size,
-            'daily_rate'   => $daily_rate,
-            'weekly_rate'  => $weekly_rate,
-            'monthly_rate' => $monthly_rate,
-            'active'       => $active,
-            'status'       => $status,
-            'condition'    => $condition,
-            'notes'        => $notes,
-            'image'        => $image,
-            'updated_at'   => date('Y-m-d H:i:s'),
+            'unit_code'       => $unit_code,
+            'type'            => $type,
+            'size'            => $size,
+            'daily_rate'      => $daily_rate,
+            'weekly_rate'     => $weekly_rate,
+            'monthly_rate'    => $monthly_rate,
+            'base_price'      => $base_price,
+            'rental_days'     => $rental_days,
+            'extra_day_price' => $extra_day_price,
+            'active'          => $active,
+            'status'          => $status,
+            'condition'       => $condition,
+            'notes'           => $notes,
+            'image'           => $image,
+            'updated_at'      => date('Y-m-d H:i:s'),
         ], 'id', $id);
 
         log_activity('update', "Updated dumpster $unit_code ($size)", 'dumpster', $id);
@@ -133,17 +140,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Re-populate form values from POST on validation failure
     $dumpster = array_merge($dumpster, [
-        'unit_code'    => $unit_code,
-        'type'         => $type,
-        'size'         => $size,
-        'daily_rate'   => $daily_rate,
-        'weekly_rate'  => $weekly_rate,
-        'monthly_rate' => $monthly_rate,
-        'active'       => $active,
-        'status'       => $status,
-        'condition'    => $condition,
-        'notes'        => $notes,
-        'image'        => $image,
+        'unit_code'       => $unit_code,
+        'type'            => $type,
+        'size'            => $size,
+        'daily_rate'      => $daily_rate,
+        'weekly_rate'     => $weekly_rate,
+        'monthly_rate'    => $monthly_rate,
+        'base_price'      => $base_price,
+        'rental_days'     => $rental_days,
+        'extra_day_price' => $extra_day_price,
+        'active'          => $active,
+        'status'          => $status,
+        'condition'       => $condition,
+        'notes'           => $notes,
+        'image'           => $image,
     ]);
 }
 
@@ -210,6 +220,64 @@ layout_start('Edit Dumpster', 'inventory');
                     <option value="dumpster" <?= ($dumpster['type'] ?? 'dumpster') === 'dumpster' ? 'selected' : '' ?>>Dumpster</option>
                     <option value="trailer"  <?= ($dumpster['type'] ?? '') === 'trailer'  ? 'selected' : '' ?>>Trailer</option>
                 </select>
+            </div>
+
+            <!-- Pricing section header -->
+            <div class="col-12 mt-2">
+                <h6 class="mb-0" style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gy,#9ca3af);">
+                    Booking Pricing
+                </h6>
+                <hr class="mt-1 mb-0" style="border-color:rgba(255,255,255,.07);">
+            </div>
+
+            <!-- Base Price -->
+            <div class="col-md-4">
+                <label class="form-label" for="base_price">Base Price ($)</label>
+                <input type="number"
+                       id="base_price"
+                       name="base_price"
+                       class="form-control"
+                       step="0.01"
+                       min="0"
+                       value="<?= e(number_format((float)($dumpster['base_price'] ?? 0), 2, '.', '')) ?>"
+                       placeholder="e.g. 350.00">
+                <div class="form-text">Flat rental price shown to customers</div>
+            </div>
+
+            <!-- Rental Days -->
+            <div class="col-md-4">
+                <label class="form-label" for="rental_days">Included Days</label>
+                <input type="number"
+                       id="rental_days"
+                       name="rental_days"
+                       class="form-control"
+                       step="1"
+                       min="1"
+                       value="<?= (int)($dumpster['rental_days'] ?? 7) ?>"
+                       placeholder="7">
+                <div class="form-text">Days included in base price</div>
+            </div>
+
+            <!-- Extra Day Price -->
+            <div class="col-md-4">
+                <label class="form-label" for="extra_day_price">Extra Day Price ($) <small class="text-muted">optional</small></label>
+                <input type="number"
+                       id="extra_day_price"
+                       name="extra_day_price"
+                       class="form-control"
+                       step="0.01"
+                       min="0"
+                       value="<?= $dumpster['extra_day_price'] !== null ? e(number_format((float)$dumpster['extra_day_price'], 2, '.', '')) : '' ?>"
+                       placeholder="e.g. 40.00">
+                <div class="form-text">Per day beyond included days</div>
+            </div>
+
+            <!-- Legacy rates section -->
+            <div class="col-12 mt-2">
+                <h6 class="mb-0" style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gy,#9ca3af);">
+                    Legacy Rates <small class="text-muted" style="text-transform:none;letter-spacing:0;">(work order pricing)</small>
+                </h6>
+                <hr class="mt-1 mb-0" style="border-color:rgba(255,255,255,.07);">
             </div>
 
             <!-- Daily Rate -->

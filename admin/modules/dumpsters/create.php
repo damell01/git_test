@@ -18,9 +18,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $unit_code = trim($_POST['unit_code'] ?? '');
     $type      = trim($_POST['type']      ?? 'dumpster');
     $size      = trim($_POST['size']      ?? '');
-    $daily_rate   = (float)($_POST['daily_rate']   ?? 0.00);
-    $weekly_rate  = (float)($_POST['weekly_rate']  ?? 0.00);
-    $monthly_rate = (float)($_POST['monthly_rate'] ?? 0.00);
+    $daily_rate     = (float)($_POST['daily_rate']     ?? 0.00);
+    $weekly_rate    = (float)($_POST['weekly_rate']    ?? 0.00);
+    $monthly_rate   = (float)($_POST['monthly_rate']   ?? 0.00);
+    $base_price     = (float)($_POST['base_price']     ?? 0.00);
+    $rental_days    = max(1, (int)($_POST['rental_days']  ?? 7));
+    $extra_day_price_raw = trim($_POST['extra_day_price'] ?? '');
+    $extra_day_price = $extra_day_price_raw !== '' ? (float)$extra_day_price_raw : null;
     $active    = isset($_POST['active']) ? 1 : 0;
     $status    = trim($_POST['status']    ?? 'available');
     $condition = trim($_POST['condition'] ?? 'good');
@@ -81,18 +85,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         $insert_data = [
-            'unit_code'    => $unit_code,
-            'type'         => $type,
-            'size'         => $size,
-            'daily_rate'   => $daily_rate,
-            'weekly_rate'  => $weekly_rate,
-            'monthly_rate' => $monthly_rate,
-            'active'       => $active,
-            'status'       => $status,
-            'condition'    => $condition,
-            'notes'        => $notes,
-            'created_at'   => date('Y-m-d H:i:s'),
-            'updated_at'   => date('Y-m-d H:i:s'),
+            'unit_code'       => $unit_code,
+            'type'            => $type,
+            'size'            => $size,
+            'daily_rate'      => $daily_rate,
+            'weekly_rate'     => $weekly_rate,
+            'monthly_rate'    => $monthly_rate,
+            'base_price'      => $base_price,
+            'rental_days'     => $rental_days,
+            'extra_day_price' => $extra_day_price,
+            'active'          => $active,
+            'status'          => $status,
+            'condition'       => $condition,
+            'notes'           => $notes,
+            'created_at'      => date('Y-m-d H:i:s'),
+            'updated_at'      => date('Y-m-d H:i:s'),
         ];
         if ($image !== null) {
             $insert_data['image'] = $image;
@@ -107,16 +114,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // ── Pre-fill form values on validation failure ────────────────────────────────
 $f = [
-    'unit_code'  => $_POST['unit_code']  ?? '',
-    'type'       => $_POST['type']       ?? 'dumpster',
-    'size'       => $_POST['size']       ?? '',
-    'daily_rate'   => $_POST['daily_rate']   ?? '0.00',
-    'weekly_rate'  => $_POST['weekly_rate']  ?? '0.00',
-    'monthly_rate' => $_POST['monthly_rate'] ?? '0.00',
-    'active'     => isset($_POST['active']) ? 1 : (isset($_POST['unit_code']) ? 0 : 1),
-    'status'     => $_POST['status']     ?? 'available',
-    'condition'  => $_POST['condition']  ?? 'good',
-    'notes'      => $_POST['notes']      ?? '',
+    'unit_code'       => $_POST['unit_code']       ?? '',
+    'type'            => $_POST['type']             ?? 'dumpster',
+    'size'            => $_POST['size']             ?? '',
+    'daily_rate'      => $_POST['daily_rate']       ?? '0.00',
+    'weekly_rate'     => $_POST['weekly_rate']      ?? '0.00',
+    'monthly_rate'    => $_POST['monthly_rate']     ?? '0.00',
+    'base_price'      => $_POST['base_price']       ?? '0.00',
+    'rental_days'     => $_POST['rental_days']      ?? '7',
+    'extra_day_price' => $_POST['extra_day_price']  ?? '',
+    'active'          => isset($_POST['active']) ? 1 : (isset($_POST['unit_code']) ? 0 : 1),
+    'status'          => $_POST['status']           ?? 'available',
+    'condition'       => $_POST['condition']        ?? 'good',
+    'notes'           => $_POST['notes']            ?? '',
 ];
 
 layout_start('Add Dumpster', 'inventory');
@@ -181,6 +191,64 @@ layout_start('Add Dumpster', 'inventory');
                     <option value="dumpster" <?= $f['type'] === 'dumpster' ? 'selected' : '' ?>>Dumpster</option>
                     <option value="trailer"  <?= $f['type'] === 'trailer'  ? 'selected' : '' ?>>Trailer</option>
                 </select>
+            </div>
+
+            <!-- Pricing section header -->
+            <div class="col-12 mt-2">
+                <h6 class="mb-0" style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gy,#9ca3af);">
+                    Booking Pricing
+                </h6>
+                <hr class="mt-1 mb-0" style="border-color:rgba(255,255,255,.07);">
+            </div>
+
+            <!-- Base Price -->
+            <div class="col-md-4">
+                <label class="form-label" for="base_price">Base Price ($) <span class="text-danger">*</span></label>
+                <input type="number"
+                       id="base_price"
+                       name="base_price"
+                       class="form-control"
+                       step="0.01"
+                       min="0"
+                       value="<?= e(number_format((float)$f['base_price'], 2, '.', '')) ?>"
+                       placeholder="e.g. 350.00">
+                <div class="form-text">Flat rental price shown to customers</div>
+            </div>
+
+            <!-- Rental Days -->
+            <div class="col-md-4">
+                <label class="form-label" for="rental_days">Included Days</label>
+                <input type="number"
+                       id="rental_days"
+                       name="rental_days"
+                       class="form-control"
+                       step="1"
+                       min="1"
+                       value="<?= (int)$f['rental_days'] ?>"
+                       placeholder="7">
+                <div class="form-text">Days included in base price</div>
+            </div>
+
+            <!-- Extra Day Price -->
+            <div class="col-md-4">
+                <label class="form-label" for="extra_day_price">Extra Day Price ($) <small class="text-muted">optional</small></label>
+                <input type="number"
+                       id="extra_day_price"
+                       name="extra_day_price"
+                       class="form-control"
+                       step="0.01"
+                       min="0"
+                       value="<?= $f['extra_day_price'] !== '' ? e(number_format((float)$f['extra_day_price'], 2, '.', '')) : '' ?>"
+                       placeholder="e.g. 40.00">
+                <div class="form-text">Per day beyond included days</div>
+            </div>
+
+            <!-- Legacy rates section -->
+            <div class="col-12 mt-2">
+                <h6 class="mb-0" style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gy,#9ca3af);">
+                    Legacy Rates <small class="text-muted" style="text-transform:none;letter-spacing:0;">(work order pricing)</small>
+                </h6>
+                <hr class="mt-1 mb-0" style="border-color:rgba(255,255,255,.07);">
             </div>
 
             <!-- Daily Rate -->

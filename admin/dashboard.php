@@ -73,13 +73,30 @@ $dumpsters_available = (int)(db_fetch(
 )['cnt'] ?? 0);
 
 // ── Booking KPIs (wrapped in try/catch in case bookings table not yet installed) ──
-$bookings_total    = 0;
-$bookings_upcoming = 0;
-$bookings_unpaid   = 0;
+$bookings_total      = 0;
+$bookings_this_month = 0;
+$bookings_upcoming   = 0;
+$bookings_unpaid     = 0;
+$recent_bookings     = [];
 try {
-    $bookings_total    = (int)(db_fetch("SELECT COUNT(*) AS cnt FROM bookings WHERE booking_status != 'canceled'")['cnt'] ?? 0);
+    $bookings_total      = (int)(db_fetch("SELECT COUNT(*) AS cnt FROM bookings WHERE booking_status != 'canceled'")['cnt'] ?? 0);
+    $bookings_this_month = (int)(db_fetch(
+        "SELECT COUNT(*) AS cnt FROM bookings
+         WHERE booking_status != 'canceled'
+           AND MONTH(created_at) = MONTH(NOW())
+           AND YEAR(created_at)  = YEAR(NOW())"
+    )['cnt'] ?? 0);
     $bookings_upcoming = (int)(db_fetch("SELECT COUNT(*) AS cnt FROM bookings WHERE rental_start >= CURDATE() AND booking_status NOT IN ('canceled','completed')")['cnt'] ?? 0);
     $bookings_unpaid   = (int)(db_fetch("SELECT COUNT(*) AS cnt FROM bookings WHERE payment_status IN ('unpaid','pending','pending_cash','pending_check') AND booking_status != 'canceled'")['cnt'] ?? 0);
+    $recent_bookings   = db_fetchall(
+        "SELECT b.id, b.booking_number, b.customer_name, b.unit_size,
+                b.rental_start, b.rental_end, b.total_amount,
+                b.booking_status, b.payment_status, b.created_at
+         FROM bookings b
+         WHERE b.booking_status != 'canceled'
+         ORDER BY b.created_at DESC
+         LIMIT 8"
+    );
 } catch (\Throwable $e) {
     // Bookings table not yet installed — silently skip.
 }
@@ -331,12 +348,12 @@ layout_start('Dashboard', 'dashboard');
 <!-- ── Booking KPI Cards ──────────────────────────────────────────────────── -->
 <div class="row g-3 mb-4">
 
-    <!-- Total Bookings -->
+    <!-- Bookings This Month -->
     <div class="col-6 col-md-4 col-xl-4">
         <a href="<?= e(APP_URL) ?>/modules/bookings/index.php" class="tp-kpi-card tp-kpi-blue text-decoration-none d-block">
             <div class="kpi-icon"><i class="fa-solid fa-calendar-check"></i></div>
-            <div class="kpi-value" data-metric="bookings.total"><?= $bookings_total ?></div>
-            <div class="kpi-label">Total Bookings</div>
+            <div class="kpi-value" data-metric="bookings.this_month"><?= $bookings_this_month ?></div>
+            <div class="kpi-label">Bookings This Month</div>
         </a>
     </div>
 
@@ -359,6 +376,59 @@ layout_start('Dashboard', 'dashboard');
     </div>
 
 </div><!-- /.row booking KPI cards -->
+
+<!-- ── Recent Bookings ──────────────────────────────────────────────────── -->
+<?php if (!empty($recent_bookings)): ?>
+<div class="tp-card mb-4">
+    <div class="tp-card-header d-flex align-items-center justify-content-between">
+        <span><i class="fa-solid fa-calendar-check me-2 text-muted"></i>Recent Bookings</span>
+        <a href="<?= e(APP_URL) ?>/modules/bookings/index.php" class="btn-tp-ghost btn-tp-xs">
+            View All <i class="fa-solid fa-arrow-right ms-1"></i>
+        </a>
+    </div>
+    <div class="tp-card-body p-0">
+        <div class="table-responsive">
+            <table class="tp-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Booking #</th>
+                        <th>Customer</th>
+                        <th>Size</th>
+                        <th>Dates</th>
+                        <th class="text-end">Amount</th>
+                        <th>Status</th>
+                        <th>Payment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($recent_bookings as $b): ?>
+                    <tr>
+                        <td>
+                            <a href="<?= e(APP_URL) ?>/modules/bookings/view.php?id=<?= (int)$b['id'] ?>"
+                               class="tp-link fw-semibold">
+                                <?= e($b['booking_number']) ?>
+                            </a>
+                        </td>
+                        <td><?= e($b['customer_name']) ?></td>
+                        <td><?= e($b['unit_size'] ?: '—') ?></td>
+                        <td style="white-space:nowrap;">
+                            <?= e(fmt_date($b['rental_start'])) ?>
+                            <span class="text-muted">→</span>
+                            <?= e(fmt_date($b['rental_end'])) ?>
+                        </td>
+                        <td class="text-end" style="color:#22c55e;font-weight:600;">
+                            <?= e(fmt_money($b['total_amount'])) ?>
+                        </td>
+                        <td><?= status_badge($b['booking_status']) ?></td>
+                        <td><?= payment_badge($b['payment_status']) ?></td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- ── Two-column grid: Recent WOs + Quick Stats ─────────────────────────── -->
 <div class="row g-4 mb-4">

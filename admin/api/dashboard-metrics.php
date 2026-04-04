@@ -77,13 +77,19 @@ $payload['kpis'] = [
 // ── Booking KPIs ─────────────────────────────────────────────────────────────
 try {
     $payload['bookings'] = [
-        'total'    => api_int(db_fetch("SELECT COUNT(*) AS cnt FROM bookings WHERE booking_status != 'canceled'"), 'cnt'),
-        'upcoming' => api_int(db_fetch("SELECT COUNT(*) AS cnt FROM bookings WHERE rental_start >= CURDATE() AND booking_status NOT IN ('canceled','completed')"), 'cnt'),
-        'unpaid'   => api_int(db_fetch("SELECT COUNT(*) AS cnt FROM bookings WHERE payment_status IN ('unpaid','pending','pending_cash','pending_check') AND booking_status != 'canceled'"), 'cnt'),
-        'past'     => api_int(db_fetch("SELECT COUNT(*) AS cnt FROM bookings WHERE rental_end < CURDATE() AND booking_status = 'completed'"), 'cnt'),
+        'total'      => api_int(db_fetch("SELECT COUNT(*) AS cnt FROM bookings WHERE booking_status != 'canceled'"), 'cnt'),
+        'this_month' => api_int(db_fetch(
+            "SELECT COUNT(*) AS cnt FROM bookings
+             WHERE booking_status != 'canceled'
+               AND MONTH(created_at) = MONTH(NOW())
+               AND YEAR(created_at)  = YEAR(NOW())"
+        ), 'cnt'),
+        'upcoming'   => api_int(db_fetch("SELECT COUNT(*) AS cnt FROM bookings WHERE rental_start >= CURDATE() AND booking_status NOT IN ('canceled','completed')"), 'cnt'),
+        'unpaid'     => api_int(db_fetch("SELECT COUNT(*) AS cnt FROM bookings WHERE payment_status IN ('unpaid','pending','pending_cash','pending_check') AND booking_status != 'canceled'"), 'cnt'),
+        'past'       => api_int(db_fetch("SELECT COUNT(*) AS cnt FROM bookings WHERE rental_end < CURDATE() AND booking_status = 'completed'"), 'cnt'),
     ];
 } catch (\Throwable $e) {
-    $payload['bookings'] = ['total' => 0, 'upcoming' => 0, 'unpaid' => 0, 'past' => 0];
+    $payload['bookings'] = ['total' => 0, 'this_month' => 0, 'upcoming' => 0, 'unpaid' => 0, 'past' => 0];
 }
 
 // ── Stripe Revenue Metrics ────────────────────────────────────────────────────

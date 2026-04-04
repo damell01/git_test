@@ -13,11 +13,19 @@ $errors = [];
 
 // ── Load active dumpsters ─────────────────────────────────────────────────────
 $units = db_fetchall(
-    "SELECT id, unit_code, type, size, daily_rate
+    "SELECT id, unit_code, type, size, daily_rate, base_price, rental_days, extra_day_price
      FROM dumpsters
      WHERE active = 1 AND status != 'maintenance'
      ORDER BY size, unit_code"
 );
+
+// Fetch active workers for assignment
+$workers = [];
+try {
+    $workers = db_fetchall("SELECT id, name FROM workers WHERE active = 1 ORDER BY name ASC");
+} catch (\Throwable $e) {
+    // workers table may not exist yet
+}
 
 // ── POST handler ──────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -31,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $rental_start     = trim($_POST['rental_start']     ?? '');
     $rental_end       = trim($_POST['rental_end']       ?? '');
     $payment_method   = trim($_POST['payment_method']   ?? 'stripe');
+    $worker_id        = (int)($_POST['worker_id']       ?? 0) ?: null;
     $notes            = trim($_POST['notes']            ?? '');
 
     // Support both single dumpster_id and multi dumpster_ids[]
@@ -72,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         foreach ($selected_ids as $did) {
             $unit = db_fetch(
-                "SELECT id, unit_code, type, size, daily_rate, active, status
+                "SELECT id, unit_code, type, size, daily_rate, base_price, rental_days, extra_day_price, active, status
                  FROM dumpsters WHERE id = ? LIMIT 1",
                 [$did]
             );
@@ -126,8 +135,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $created_numbers = [];
 
         foreach ($validated_units as $unit) {
-            $daily_rate     = (float)$unit['daily_rate'];
-            $total          = round($daily_rate * $days, 2);
+            $daily_rate      = (float)$unit['daily_rate'];
+            $base_price      = (float)($unit['base_price'] ?? 0);
+            $incl_days       = max(1, (int)($unit['rental_days'] ?? 7));
+            $extra_day_price = isset($unit['extra_day_price']) && $unit['extra_day_price'] !== null
+                ? (float)$unit['extra_day_price'] : null;
+
+            if ($base_price > 0) {
+                $extra_days = max(0, $days - $incl_days);
+                $total = round($base_price + ($extra_days * ($extra_day_price ?? 0)), 2);
+            } else {
+                $total = round($daily_rate * $days, 2);
+            }
             $booking_number = next_number('BK', 'bookings', 'booking_number');
 
             $new_id = db_insert('bookings', [
@@ -149,6 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'payment_method'   => $payment_method,
                 'payment_status'   => $payment_status,
                 'booking_status'   => 'confirmed',
+                'worker_id'        => $worker_id,
                 'notes'            => $notes ?: null,
                 'created_by'       => (int)($_SESSION['user_id'] ?? 0),
                 'created_at'       => date('Y-m-d H:i:s'),
@@ -189,6 +209,7 @@ $f = [
     'rental_start'     => $_POST['rental_start']     ?? '',
     'rental_end'       => $_POST['rental_end']       ?? '',
     'payment_method'   => $_POST['payment_method']   ?? 'stripe',
+    'worker_id'        => (int)($_POST['worker_id']  ?? 0),
     'notes'            => $_POST['notes']            ?? '',
 ];
 
@@ -268,7 +289,10 @@ layout_start('New Booking', 'bookings');
                     <?php $checked = in_array((int)$u['id'], $f['selected_ids'], true); ?>
                     <label class="unit-checkbox-card<?= $checked ? ' selected' : '' ?>"
                            data-id="<?= (int)$u['id'] ?>"
-                           data-rate="<?= e($u['daily_rate']) ?>">
+                           data-rate="<?= e($u['daily_rate']) ?>"
+                           data-base="<?= e($u['base_price'] ?? 0) ?>"
+                           data-incl="<?= (int)($u['rental_days'] ?? 7) ?>"
+                           data-extra="<?= e($u['extra_day_price'] ?? '') ?>">
                         <input type="checkbox" name="dumpster_ids[]"
                                value="<?= (int)$u['id'] ?>"
                                <?= $checked ? 'checked' : '' ?>
@@ -277,7 +301,11 @@ layout_start('New Booking', 'bookings');
                         <strong><?= e($u['unit_code']) ?></strong>
                         — <?= e($u['size']) ?>
                         <span style="font-size:.78rem;color:var(--gl);display:block;margin-left:20px;">
-                            <?= e(fmt_money($u['daily_rate'])) ?>/day
+                            <?php if ((float)($u['base_price'] ?? 0) > 0): ?>
+                                <?= e(fmt_money($u['base_price'])) ?> / <?= (int)($u['rental_days'] ?? 7) ?> days
+                            <?php else: ?>
+                                <?= e(fmt_money($u['daily_rate'])) ?>/day
+                            <?php endif; ?>
                             <?php if ($u['status'] !== 'available'): ?>
                                 · <span style="color:var(--am);"><?= e(ucfirst($u['status'])) ?></span>
                             <?php endif; ?>
@@ -330,6 +358,20 @@ layout_start('New Booking', 'bookings');
                     <option value="check"   <?= $f['payment_method'] === 'check'   ? 'selected' : '' ?>>Check</option>
                 </select>
             </div>
+            <?php if (!empty($workers)): ?>
+            <div class="col-md-6">
+                <label class="form-label" for="worker_id">Assigned Worker <small class="text-muted">optional</small></label>
+                <select id="worker_id" name="worker_id" class="form-select">
+                    <option value="">— Unassigned —</option>
+                    <?php foreach ($workers as $w): ?>
+                    <option value="<?= (int)$w['id'] ?>"
+                            <?= (int)($f['worker_id'] ?? 0) === (int)$w['id'] ? 'selected' : '' ?>>
+                        <?= e($w['name']) ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <?php endif; ?>
             <div class="col-12">
                 <label class="form-label" for="notes">Notes</label>
                 <textarea id="notes" name="notes" class="form-control" rows="3"
@@ -387,9 +429,18 @@ function updateTotal() {
 
     var totalAmt = 0;
     boxes.forEach(function(cb) {
-        var card = cb.closest('.unit-checkbox-card');
-        var rate = parseFloat(card ? card.dataset.rate : 0) || 0;
-        totalAmt += rate * days;
+        var card  = cb.closest('.unit-checkbox-card');
+        if (!card) return;
+        var base  = parseFloat(card.dataset.base)  || 0;
+        var incl  = parseInt(card.dataset.incl, 10) || 7;
+        var extra = card.dataset.extra !== '' ? parseFloat(card.dataset.extra) : 0;
+        var rate  = parseFloat(card.dataset.rate)  || 0;
+        if (base > 0) {
+            var extraDays = Math.max(0, days - incl);
+            totalAmt += base + (extraDays * extra);
+        } else {
+            totalAmt += rate * days;
+        }
     });
 
     var unitWord = boxes.length > 1 ? ' (' + boxes.length + ' units)' : '';

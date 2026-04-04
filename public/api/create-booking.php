@@ -125,7 +125,7 @@ $grand_total = 0.0;
 
 foreach ($unit_ids as $unit_id) {
     $unit = db_fetch(
-        "SELECT id, unit_code, type, size, daily_rate, active, status
+        "SELECT id, unit_code, type, size, daily_rate, base_price, rental_days, extra_day_price, active, status
          FROM dumpsters WHERE id = ? LIMIT 1",
         [$unit_id]
     );
@@ -162,8 +162,18 @@ foreach ($unit_ids as $unit_id) {
         api_error('Unit ' . $unit['unit_code'] . ' is blocked for the selected dates. Please choose different dates.');
     }
 
-    $daily_rate   = (float)$unit['daily_rate'];
-    $unit_total   = round($daily_rate * $days, 2);
+    $daily_rate      = (float)$unit['daily_rate'];
+    $base_price      = (float)($unit['base_price'] ?? 0);
+    $incl_days       = max(1, (int)($unit['rental_days'] ?? 7));
+    $extra_day_price = isset($unit['extra_day_price']) && $unit['extra_day_price'] !== null
+        ? (float)$unit['extra_day_price'] : null;
+
+    if ($base_price > 0) {
+        $extra_days = max(0, $days - $incl_days);
+        $unit_total = round($base_price + ($extra_days * ($extra_day_price ?? 0)), 2);
+    } else {
+        $unit_total = round($daily_rate * $days, 2);
+    }
     $grand_total += $unit_total;
 
     $units_data[] = [
