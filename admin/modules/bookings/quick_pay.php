@@ -64,4 +64,10 @@ $status_label = [
 
 log_activity('update', "Quick pay: booking {$booking['booking_number']} → $status_label", 'booking', $id);
 flash_success("Payment status updated: $status_label.");
+
+// Allow the caller to specify a redirect target (e.g. back to the list)
+$redirect_to = trim($_POST['redirect_to'] ?? '');
+if ($redirect_to !== '' && preg_match('/^[a-zA-Z0-9_.?&=%-]+$/', $redirect_to)) {
+    redirect($redirect_to);
+}
 redirect('view.php?id=' . $id);

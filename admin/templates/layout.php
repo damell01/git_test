@@ -24,14 +24,8 @@ function layout_start(string $page_title, string $active_nav = ''): void
             'roles' => null,
             'badge' => null,
         ],
-        [
-            'key'   => 'customers',
-            'label' => 'Customers',
-            'icon'  => 'fa-users',
-            'href'  => APP_URL . '/modules/customers/index.php',
-            'roles' => null,
-            'badge' => null,
-        ],
+        // ── Operations ──────────────────────────────────────────────────────
+        ['group' => 'Operations'],
         [
             'key'   => 'bookings',
             'label' => 'Bookings',
@@ -49,6 +43,24 @@ function layout_start(string $page_title, string $active_nav = ''): void
             'badge' => 'work_orders',
         ],
         [
+            'key'   => 'calendar',
+            'label' => 'Calendar',
+            'icon'  => 'fa-calendar-days',
+            'href'  => APP_URL . '/modules/calendar/index.php',
+            'roles' => null,
+            'badge' => null,
+        ],
+        [
+            'key'   => 'customers',
+            'label' => 'Customers',
+            'icon'  => 'fa-users',
+            'href'  => APP_URL . '/modules/customers/index.php',
+            'roles' => null,
+            'badge' => null,
+        ],
+        // ── Finance ─────────────────────────────────────────────────────────
+        ['group' => 'Finance'],
+        [
             'key'   => 'invoices',
             'label' => 'Invoices',
             'icon'  => 'fa-file-invoice-dollar',
@@ -57,19 +69,11 @@ function layout_start(string $page_title, string $active_nav = ''): void
             'badge' => null,
         ],
         [
-            'key'   => 'inventory',
-            'label' => 'Inventory',
-            'icon'  => 'fa-dumpster',
-            'href'  => APP_URL . '/modules/dumpsters/index.php',
-            'roles' => null,
-            'badge' => null,
-        ],
-        [
-            'key'   => 'calendar',
-            'label' => 'Calendar',
-            'icon'  => 'fa-calendar-days',
-            'href'  => APP_URL . '/modules/calendar/index.php',
-            'roles' => null,
+            'key'   => 'payments',
+            'label' => 'Payments',
+            'icon'  => 'fa-money-bill-wave',
+            'href'  => APP_URL . '/modules/payments/index.php',
+            'roles' => ['admin', 'office'],
             'badge' => null,
         ],
         [
@@ -80,12 +84,14 @@ function layout_start(string $page_title, string $active_nav = ''): void
             'roles' => null,
             'badge' => null,
         ],
+        // ── Tools ────────────────────────────────────────────────────────────
+        ['group' => 'Tools'],
         [
-            'key'   => 'payments',
-            'label' => 'Payments',
-            'icon'  => 'fa-money-bill-wave',
-            'href'  => APP_URL . '/modules/payments/index.php',
-            'roles' => ['admin', 'office'],
+            'key'   => 'inventory',
+            'label' => 'Inventory',
+            'icon'  => 'fa-dumpster',
+            'href'  => APP_URL . '/modules/dumpsters/index.php',
+            'roles' => null,
             'badge' => null,
         ],
         [
@@ -222,6 +228,12 @@ function layout_start(string $page_title, string $active_nav = ''): void
     <nav class="sb-nav">
         <ul class="list-unstyled mb-0">
         <?php foreach ($nav_items as $item):
+            // Group label separator
+            if (isset($item['group'])):
+        ?>
+            <li><div class="sb-group-label"><?= htmlspecialchars($item['group'], ENT_QUOTES, 'UTF-8') ?></div></li>
+            <?php continue; endif; ?>
+            <?php
             // Role-gate: skip if user does not meet requirements
             if (!empty($item['roles'])) {
                 if (!function_exists('has_role') || !has_role(...$item['roles'])) {

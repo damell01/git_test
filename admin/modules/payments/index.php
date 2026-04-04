@@ -356,6 +356,40 @@ layout_start('Payments', 'payments');
 
 <!-- ── Filters ── -->
 <div class="filter-bar">
+    <!-- Date quick-selectors -->
+    <div class="tp-date-qs mb-3 pb-2" style="border-bottom:1px solid var(--st2);">
+        <span style="font-size:.72rem;color:var(--gy);font-family:var(--font-cond);letter-spacing:.06em;text-transform:uppercase;margin-right:.25rem;">Quick:</span>
+        <?php
+        $today_str      = date('Y-m-d');
+        $week_start     = date('Y-m-d', strtotime('monday this week'));
+        $month_start_s  = date('Y-m-01');
+        $month_end_s    = date('Y-m-t');
+
+        function pay_qs_url(string $from, string $to, string $method, string $status, string $src): string {
+            return 'index.php?' . http_build_query(array_filter([
+                'date_from'  => $from,
+                'date_to'    => $to,
+                'pay_method' => $method !== 'all' ? $method : '',
+                'pay_status' => $status !== 'all' ? $status : '',
+                'source'     => $src !== 'all' ? $src : '',
+            ]));
+        }
+
+        $is_today  = ($date_from === $today_str && $date_to === $today_str);
+        $is_week   = ($date_from === $week_start && $date_to === $today_str);
+        $is_month  = ($date_from === $month_start_s && $date_to === $month_end_s);
+        $is_all    = ($date_from === '' && $date_to === '');
+        ?>
+        <a href="index.php?pay_method=<?= e($pay_method !== 'all' ? $pay_method : '') ?>&pay_status=<?= e($pay_status !== 'all' ? $pay_status : '') ?>&source=<?= e($source !== 'all' ? $source : '') ?>"
+           class="<?= $is_all ? 'active' : '' ?>">All Time</a>
+        <a href="index.php?date_from=<?= $today_str ?>&date_to=<?= $today_str ?>&pay_method=<?= e($pay_method !== 'all' ? $pay_method : '') ?>&pay_status=<?= e($pay_status !== 'all' ? $pay_status : '') ?>&source=<?= e($source !== 'all' ? $source : '') ?>"
+           class="<?= $is_today ? 'active' : '' ?>">Today</a>
+        <a href="index.php?date_from=<?= $week_start ?>&date_to=<?= $today_str ?>&pay_method=<?= e($pay_method !== 'all' ? $pay_method : '') ?>&pay_status=<?= e($pay_status !== 'all' ? $pay_status : '') ?>&source=<?= e($source !== 'all' ? $source : '') ?>"
+           class="<?= $is_week ? 'active' : '' ?>">This Week</a>
+        <a href="index.php?date_from=<?= $month_start_s ?>&date_to=<?= $month_end_s ?>&pay_method=<?= e($pay_method !== 'all' ? $pay_method : '') ?>&pay_status=<?= e($pay_status !== 'all' ? $pay_status : '') ?>&source=<?= e($source !== 'all' ? $source : '') ?>"
+           class="<?= $is_month ? 'active' : '' ?>">This Month</a>
+    </div>
+
     <form method="GET" action="index.php" class="row g-2 align-items-end">
         <div class="col-6 col-md-2">
             <label class="form-label" style="font-size:.8rem;">Method</label>

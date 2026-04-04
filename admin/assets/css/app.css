@@ -299,6 +299,179 @@ a:hover {
 }
 
 /* --------------------------------------------------------------------------
+   Page Header (tp- prefixed alias)
+   -------------------------------------------------------------------------- */
+.tp-page-header {
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .75rem;
+}
+
+.tp-page-title {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 400;
+    color: var(--wh);
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    line-height: 1.1;
+}
+
+.tp-page-sub {
+    color: var(--gy);
+    font-size: .875rem;
+    margin-top: .2rem;
+    margin-bottom: 0;
+}
+
+/* --------------------------------------------------------------------------
+   TP KPI Cards (dashboard)
+   -------------------------------------------------------------------------- */
+.tp-kpi-card {
+    background-color: var(--dk1);
+    border: 1px solid var(--st);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+    transition: var(--transition);
+    text-decoration: none;
+    color: var(--wh);
+    height: 100%;
+}
+
+.tp-kpi-card:hover {
+    border-color: rgba(249,115,22,0.35);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(249,115,22,0.12);
+    text-decoration: none;
+    color: var(--wh);
+}
+
+.tp-kpi-card .kpi-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    margin-bottom: .25rem;
+    background-color: rgba(255,255,255,.06);
+    color: var(--gy);
+}
+
+.tp-kpi-card .kpi-value {
+    font-family: var(--font-display);
+    font-size: 1.65rem;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--wh);
+}
+
+.tp-kpi-card .kpi-label {
+    font-family: var(--font-cond);
+    font-size: .78rem;
+    color: var(--gy);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+
+/* Color variants */
+.tp-kpi-orange { border-left: 3px solid var(--or); }
+.tp-kpi-orange .kpi-icon { background-color: rgba(249,115,22,.12); color: var(--or); }
+
+.tp-kpi-blue   { border-left: 3px solid var(--bl); }
+.tp-kpi-blue   .kpi-icon { background-color: rgba(59,130,246,.12); color: var(--bl); }
+
+.tp-kpi-green  { border-left: 3px solid var(--gr); }
+.tp-kpi-green  .kpi-icon { background-color: rgba(16,185,129,.12); color: var(--gr); }
+
+.tp-kpi-amber  { border-left: 3px solid var(--am); }
+.tp-kpi-amber  .kpi-icon { background-color: rgba(245,158,11,.12); color: var(--am); }
+
+.tp-kpi-red    { border-left: 3px solid var(--rd); }
+.tp-kpi-red    .kpi-icon { background-color: rgba(239,68,68,.12); color: var(--rd); }
+
+.tp-kpi-gray   { border-left: 3px solid var(--gy); }
+.tp-kpi-gray   .kpi-icon { background-color: rgba(107,114,128,.12); color: var(--gl); }
+
+/* tp-link utility */
+.tp-link {
+    color: var(--or);
+    text-decoration: none;
+}
+.tp-link:hover {
+    color: var(--or-d);
+    text-decoration: underline;
+}
+
+/* tp-empty-state */
+.tp-empty-state {
+    color: var(--gy);
+    padding: 2.5rem 1rem;
+    text-align: center;
+}
+
+/* Sidebar group dividers */
+.sb-group-label {
+    font-family: var(--font-cond);
+    font-size: .65rem;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--gy);
+    padding: .9rem 1rem .25rem;
+    opacity: .7;
+}
+
+/* Quick-pay inline form */
+.quick-pay-inline {
+    display: flex;
+    gap: .35rem;
+    flex-wrap: wrap;
+}
+
+/* Date quick-filter strip */
+.tp-date-qs {
+    display: flex;
+    gap: .35rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.tp-date-qs a, .tp-date-qs button {
+    font-size: .75rem;
+    padding: .2rem .55rem;
+    border-radius: 20px;
+    border: 1px solid var(--st2);
+    background: transparent;
+    color: var(--gl);
+    cursor: pointer;
+    text-decoration: none;
+    font-family: var(--font-cond);
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    transition: color .15s, border-color .15s, background-color .15s;
+    white-space: nowrap;
+}
+.tp-date-qs a:hover, .tp-date-qs button:hover {
+    color: var(--wh);
+    border-color: var(--gl);
+}
+.tp-date-qs a.active, .tp-date-qs button.active {
+    color: var(--or);
+    border-color: var(--or);
+    background-color: rgba(249,115,22,.1);
+}
+
+/* --------------------------------------------------------------------------
    KPI Row / Cards
    -------------------------------------------------------------------------- */
 .kpi-row {
@@ -689,6 +862,34 @@ tr.table-secondary > * {
     margin-bottom: 1rem;
 }
 
+/* filter-bar / filter-tabs variants (both prefixed and un-prefixed used across modules) */
+.filter-tabs {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+
+.tab-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    font-size: .68rem;
+    font-weight: 700;
+    background-color: var(--st2);
+    color: var(--gl);
+    line-height: 1;
+}
+
+.filter-tab.active .tab-count {
+    background-color: rgba(249,115,22,.25);
+    color: var(--or);
+}
+
 .tp-filter-tab {
     display: inline-flex;
     align-items: center;
@@ -868,13 +1069,19 @@ tr.table-secondary > * {
 .badge-rejected  { background-color: rgba(239,  68,  68, .15); color: var(--rd); }
 
 /* Work order statuses */
-.badge-scheduled    { background-color: rgba( 59, 130, 246, .15); color: var(--bl); }
-.badge-delivered    { background-color: rgba(249, 115,  22, .15); color: var(--or); }
-.badge-active       { background-color: rgba( 16, 185, 129, .15); color: var(--gr); }
-.badge-pickup-req   { background-color: rgba(245, 158,  11, .15); color: var(--am); }
-.badge-picked-up    { background-color: rgba(139,  92, 246, .15); color: var(--pu); }
-.badge-completed    { background-color: rgba( 16, 185, 129,  .2); color: var(--gr); }
-.badge-canceled     { background-color: rgba(239,  68,  68, .15); color: var(--rd); }
+.badge-scheduled        { background-color: rgba( 59, 130, 246, .15); color: var(--bl); }
+.badge-delivered        { background-color: rgba(249, 115,  22, .15); color: var(--or); }
+.badge-active           { background-color: rgba( 16, 185, 129, .15); color: var(--gr); }
+.badge-pickup-req       { background-color: rgba(245, 158,  11, .15); color: var(--am); }
+.badge-pickup-requested { background-color: rgba(245, 158,  11, .15); color: var(--am); }
+.badge-picked-up        { background-color: rgba(139,  92, 246, .15); color: var(--pu); }
+.badge-completed        { background-color: rgba( 59, 130, 246, .20); color: var(--bl); }  /* blue */
+.badge-canceled         { background-color: rgba(239,  68,  68, .15); color: var(--rd); }  /* red  */
+
+/* Booking-specific statuses */
+.badge-pending    { background-color: rgba(245, 158,  11, .15); color: var(--am); }  /* yellow */
+.badge-confirmed  { background-color: rgba( 59, 130, 246, .15); color: var(--bl); }
+.badge-paid       { background-color: rgba( 16, 185, 129, .20); color: var(--gr); }  /* green */
 
 /* Inventory / dumpster statuses */
 .badge-available    { background-color: rgba( 16, 185, 129, .15); color: var(--gr); }
@@ -882,16 +1089,17 @@ tr.table-secondary > * {
 .badge-in-use       { background-color: rgba( 59, 130, 246, .15); color: var(--bl); }
 .badge-maintenance  { background-color: rgba(245, 158,  11, .15); color: var(--am); }
 
-/* Payment statuses */
+/* Payment statuses — standardized: paid=green, pending=yellow, canceled=red, completed=blue, refunded=gray */
 .badge-unpaid        { background-color: rgba(239,  68,  68, .15); color: var(--rd); }
 .badge-pending       { background-color: rgba(245, 158,  11, .15); color: var(--am); }
 .badge-paid          { background-color: rgba( 16, 185, 129, .20); color: var(--gr); }
-.badge-refunded      { background-color: rgba(249, 115,  22, .15); color: var(--or); }
+.badge-refunded      { background-color: rgba(107, 114, 128, .20); color: var(--gy); }  /* gray */
 .badge-pending-cash  { background-color: rgba(245, 158,  11, .15); color: var(--am); }
 .badge-paid-cash     { background-color: rgba( 16, 185, 129, .20); color: var(--gr); }
 .badge-pending-check { background-color: rgba( 59, 130, 246, .15); color: var(--bl); }
 .badge-paid-check    { background-color: rgba( 16, 185, 129, .20); color: var(--gr); }
 .badge-void          { background-color: rgba(107, 114, 128, .15); color: var(--gy); }
+.badge-canceled      { background-color: rgba(239,  68,  68, .15); color: var(--rd); }
 
 /* --------------------------------------------------------------------------
    Forms
@@ -1390,6 +1598,47 @@ hr {
 
     .tp-content-inner {
         padding: 1rem;
+    }
+
+    /* Stack the topbar title and actions on very small screens */
+    .tp-topbar {
+        flex-wrap: wrap;
+        height: auto;
+        min-height: 56px;
+        padding: .5rem 1rem;
+        gap: .5rem;
+    }
+
+    /* Make action buttons smaller on mobile */
+    .tp-topbar .btn-tp-ghost,
+    .tp-topbar .btn-tp-primary {
+        font-size: .7rem;
+        padding: .25rem .6rem;
+    }
+
+    /* Larger tap targets for table action buttons */
+    .tp-table td .btn-tp-ghost,
+    .tp-table td .btn-tp-primary {
+        min-height: 36px;
+        padding: .4rem .65rem;
+    }
+
+    /* Date quick selectors wrap gracefully */
+    .tp-date-qs {
+        justify-content: flex-start;
+    }
+
+    /* Filter tabs scroll horizontally */
+    .tp-filter-tabs, .filter-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 2px;
+    }
+
+    /* KPI cards remain 2-col on tablet */
+    .tp-kpi-card .kpi-value {
+        font-size: 1.35rem;
     }
 }
 

@@ -77,28 +77,18 @@ $work_orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function wo_status_badge(string $status): string
 {
-    $map = [
-        'scheduled'        => ['Scheduled',        'bg-primary'],
-        'delivered'        => ['Delivered',         'bg-info text-dark'],
-        'active'           => ['Active',            'bg-success'],
-        'pickup_requested' => ['Pickup Requested',  'bg-warning text-dark'],
-        'picked_up'        => ['Picked Up',         'bg-secondary'],
-        'completed'        => ['Completed',         'bg-dark'],
-        'canceled'         => ['Canceled',          'bg-danger'],
-    ];
-    [$label, $cls] = $map[$status] ?? [ucfirst(str_replace('_', ' ', $status)), 'bg-secondary'];
-    return '<span class="badge ' . $cls . '">' . htmlspecialchars($label) . '</span>';
+    return status_badge($status);
 }
 
 function wo_priority_badge(string $priority): string
 {
     $map = [
-        'normal' => ['Normal', 'bg-secondary'],
-        'high'   => ['High',   'bg-warning text-dark'],
-        'urgent' => ['Urgent', 'bg-danger'],
+        'normal' => ['Normal', 'badge-draft'],
+        'high'   => ['High',   'badge-pickup-requested'],
+        'urgent' => ['Urgent', 'badge-canceled'],
     ];
-    [$label, $cls] = $map[$priority] ?? ['Normal', 'bg-secondary'];
-    return '<span class="badge ' . $cls . '">' . htmlspecialchars($label) . '</span>';
+    [$label, $cls] = $map[$priority] ?? ['Normal', 'badge-draft'];
+    return '<span class="tp-badge ' . $cls . '">' . htmlspecialchars($label) . '</span>';
 }
 
 function wo_qs(array $overrides = []): string
@@ -127,24 +117,26 @@ $status_labels = [
 layout_start('Work Orders', 'work_orders');
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3 mb-0">Work Orders</h1>
-    <a href="create.php" class="btn btn-primary">
-        <i class="fas fa-plus me-1"></i>New Work Order
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0">Work Orders
+        <?php if ($total > 0): ?>
+        <small class="text-muted fw-normal ms-2" style="font-size:.75rem;"><?= number_format($total) ?> total</small>
+        <?php endif; ?>
+    </h5>
+    <a href="create.php" class="btn-tp-primary btn-tp-sm">
+        <i class="fa-solid fa-plus"></i> New Work Order
     </a>
 </div>
 
 <!-- Status Tabs -->
-<ul class="nav nav-tabs mb-3 flex-nowrap overflow-auto">
+<div class="tp-filter-tabs mb-3">
     <?php foreach ($status_labels as $sv => $sl): ?>
-    <li class="nav-item">
-        <a class="nav-link text-nowrap <?= $status_filter === $sv ? 'active' : '' ?>"
-           href="?<?= wo_qs(['status' => $sv, 'page' => 1]) ?>">
-            <?= htmlspecialchars($sl) ?>
-        </a>
-    </li>
+    <a class="tp-filter-tab <?= $status_filter === $sv ? 'active' : '' ?>"
+       href="?<?= wo_qs(['status' => $sv, 'page' => 1]) ?>">
+        <?= htmlspecialchars($sl) ?>
+    </a>
     <?php endforeach; ?>
-</ul>
+</div>
 
 <!-- Search & Date Filters -->
 <form method="get" class="mb-3" action="">
@@ -153,158 +145,150 @@ layout_start('Work Orders', 'work_orders');
     <?php endif; ?>
     <div class="row g-2 align-items-end">
         <div class="col-md-4">
-            <label class="form-label small text-muted mb-1">Search</label>
-            <div class="input-group">
-                <input type="text" name="q" class="form-control"
+            <div class="d-flex gap-1">
+                <input type="text" name="q" class="tp-search form-control form-control-sm"
                        placeholder="WO#, customer, address…"
                        value="<?= htmlspecialchars($search) ?>">
                 <?php if ($search): ?>
-                <a href="?<?= wo_qs(['q' => '', 'page' => 1]) ?>" class="btn btn-outline-danger" title="Clear">
-                    <i class="fas fa-times"></i>
+                <a href="?<?= wo_qs(['q' => '', 'page' => 1]) ?>" class="btn-tp-ghost btn-tp-sm" title="Clear">
+                    <i class="fa-solid fa-xmark"></i>
                 </a>
                 <?php endif; ?>
             </div>
         </div>
         <div class="col-md-3">
-            <label class="form-label small text-muted mb-1">Delivery From</label>
-            <input type="date" name="delivery_date_from" class="form-control"
+            <input type="date" name="delivery_date_from" class="form-control form-control-sm"
+                   placeholder="Delivery From"
                    value="<?= htmlspecialchars($delivery_date_from) ?>">
         </div>
         <div class="col-md-3">
-            <label class="form-label small text-muted mb-1">Delivery To</label>
-            <input type="date" name="delivery_date_to" class="form-control"
+            <input type="date" name="delivery_date_to" class="form-control form-control-sm"
+                   placeholder="Delivery To"
                    value="<?= htmlspecialchars($delivery_date_to) ?>">
         </div>
         <div class="col-md-2">
-            <button type="submit" class="btn btn-outline-secondary w-100">
-                <i class="fas fa-filter me-1"></i>Filter
+            <button type="submit" class="btn-tp-primary btn-tp-sm w-100">
+                <i class="fa-solid fa-filter"></i> Filter
             </button>
         </div>
     </div>
 </form>
 
 <!-- Work Orders Table -->
-<div class="card shadow-sm">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>WO #</th>
-                        <th>Customer</th>
-                        <th>Service Address</th>
-                        <th>Size</th>
-                        <th>Dumpster</th>
-                        <th>Delivery</th>
-                        <th>Pickup</th>
-                        <th>Status</th>
-                        <th>Priority</th>
-                        <th class="text-end">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php if (empty($work_orders)): ?>
-                    <tr>
-                        <td colspan="10" class="text-center text-muted py-5">
-                            <i class="fas fa-truck fa-2x mb-2 d-block"></i>
-                            No work orders found.
-                        </td>
-                    </tr>
-                <?php else: ?>
-                    <?php foreach ($work_orders as $wo): ?>
-                    <tr>
-                        <td>
-                            <a href="view.php?id=<?= (int)$wo['id'] ?>" class="fw-semibold text-decoration-none">
-                                <?= htmlspecialchars($wo['wo_number']) ?>
+<div class="tp-card p-0">
+    <div class="table-responsive">
+        <table class="tp-table">
+            <thead>
+                <tr>
+                    <th>WO #</th>
+                    <th>Customer</th>
+                    <th>Service Address</th>
+                    <th>Size</th>
+                    <th>Dumpster</th>
+                    <th>Delivery</th>
+                    <th>Pickup</th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php if (empty($work_orders)): ?>
+                <tr>
+                    <td colspan="10" class="text-center text-muted py-5">
+                        <i class="fa-solid fa-truck fa-2x mb-2 d-block" style="color:var(--gy);"></i>
+                        No work orders found.
+                    </td>
+                </tr>
+            <?php else: ?>
+                <?php foreach ($work_orders as $wo): ?>
+                <tr>
+                    <td>
+                        <a href="view.php?id=<?= (int)$wo['id'] ?>" class="fw-semibold text-decoration-none">
+                            <?= htmlspecialchars($wo['wo_number']) ?>
+                        </a>
+                    </td>
+                    <td>
+                        <?= htmlspecialchars($wo['cust_name']) ?>
+                        <?php if (!empty($wo['cust_phone'])): ?>
+                            <br><small class="text-muted"><?= htmlspecialchars($wo['cust_phone']) ?></small>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <?= htmlspecialchars($wo['service_address'] ?? '—') ?>
+                        <?php if (!empty($wo['service_city'])): ?>
+                            <br><small class="text-muted"><?= htmlspecialchars($wo['service_city']) ?></small>
+                        <?php endif; ?>
+                    </td>
+                    <td><?= htmlspecialchars($wo['size'] ?? '—') ?></td>
+                    <td>
+                        <?php if (!empty($wo['dumpster_code'])): ?>
+                            <span class="tp-badge badge-available"><?= htmlspecialchars($wo['dumpster_code']) ?></span>
+                        <?php else: ?>
+                            <span class="text-muted">—</span>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <?= !empty($wo['delivery_date'])
+                            ? htmlspecialchars(date('m/d/Y', strtotime($wo['delivery_date'])))
+                            : '<span class="text-muted">—</span>' ?>
+                    </td>
+                    <td>
+                        <?= !empty($wo['pickup_date'])
+                            ? htmlspecialchars(date('m/d/Y', strtotime($wo['pickup_date'])))
+                            : '<span class="text-muted">—</span>' ?>
+                    </td>
+                    <td><?= wo_status_badge($wo['status']) ?></td>
+                    <td><?= wo_priority_badge($wo['priority'] ?? 'normal') ?></td>
+                    <td class="text-end">
+                        <div class="d-flex gap-1 justify-content-end">
+                            <a href="view.php?id=<?= (int)$wo['id'] ?>"
+                               class="btn-tp-ghost btn-tp-xs" title="View">
+                                <i class="fa-solid fa-eye"></i> View
                             </a>
-                        </td>
-                        <td>
-                            <?= htmlspecialchars($wo['cust_name']) ?>
-                            <?php if (!empty($wo['cust_phone'])): ?>
-                                <br><small class="text-muted"><?= htmlspecialchars($wo['cust_phone']) ?></small>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <?= htmlspecialchars($wo['service_address'] ?? '—') ?>
-                            <?php if (!empty($wo['service_city'])): ?>
-                                <br><small class="text-muted"><?= htmlspecialchars($wo['service_city']) ?></small>
-                            <?php endif; ?>
-                        </td>
-                        <td><?= htmlspecialchars($wo['size'] ?? '—') ?></td>
-                        <td>
-                            <?php if (!empty($wo['dumpster_code'])): ?>
-                                <span class="tp-badge badge-available"><?= htmlspecialchars($wo['dumpster_code']) ?></span>
-                            <?php else: ?>
-                                <span class="text-muted">—</span>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <?= !empty($wo['delivery_date'])
-                                ? date('m/d/Y', strtotime($wo['delivery_date']))
-                                : '<span class="text-muted">—</span>' ?>
-                        </td>
-                        <td>
-                            <?= !empty($wo['pickup_date'])
-                                ? date('m/d/Y', strtotime($wo['pickup_date']))
-                                : '<span class="text-muted">—</span>' ?>
-                        </td>
-                        <td><?= wo_status_badge($wo['status']) ?></td>
-                        <td><?= wo_priority_badge($wo['priority'] ?? 'normal') ?></td>
-                        <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                                <a href="view.php?id=<?= (int)$wo['id'] ?>"
-                                   class="btn btn-outline-secondary" title="View">
-                                    <i class="fas fa-eye"></i> View
-                                </a>
-                                <a href="edit.php?id=<?= (int)$wo['id'] ?>"
-                                   class="btn btn-outline-primary" title="Edit">
-                                    <i class="fas fa-edit"></i> Edit
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+                            <a href="edit.php?id=<?= (int)$wo['id'] ?>"
+                               class="btn-tp-ghost btn-tp-xs" title="Edit">
+                                <i class="fa-solid fa-pencil"></i> Edit
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+            </tbody>
+        </table>
     </div>
 </div>
 
 <!-- Pagination -->
 <?php if ($total_pages > 1): ?>
-<nav aria-label="Work orders pagination" class="mt-3 d-flex justify-content-between align-items-center">
-    <p class="text-muted small mb-0">
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <small class="text-muted">
         Showing <?= number_format(min($offset + 1, $total)) ?>–<?= number_format(min($offset + $per_page, $total)) ?>
         of <?= number_format($total) ?> work orders
-    </p>
-    <ul class="pagination pagination-sm mb-0">
-        <li class="page-item <?= $page <= 1 ? 'disabled' : '' ?>">
-            <a class="page-link" href="?<?= wo_qs(['page' => $page - 1]) ?>">‹ Prev</a>
-        </li>
+    </small>
+    <div class="d-flex gap-1">
+        <?php if ($page > 1): ?>
+        <a href="?<?= wo_qs(['page' => $page - 1]) ?>" class="btn-tp-ghost btn-tp-xs">
+            <i class="fa-solid fa-chevron-left"></i>
+        </a>
+        <?php endif; ?>
         <?php
         $start = max(1, $page - 2);
         $end   = min($total_pages, $page + 2);
-        if ($start > 1): ?>
-            <li class="page-item disabled"><span class="page-link">…</span></li>
-        <?php endif;
         for ($p = $start; $p <= $end; $p++): ?>
-            <li class="page-item <?= $p === $page ? 'active' : '' ?>">
-                <a class="page-link" href="?<?= wo_qs(['page' => $p]) ?>"><?= $p ?></a>
-            </li>
-        <?php endfor;
-        if ($end < $total_pages): ?>
-            <li class="page-item disabled"><span class="page-link">…</span></li>
+        <a href="?<?= wo_qs(['page' => $p]) ?>"
+           class="btn-tp-ghost btn-tp-xs<?= $p === $page ? ' active' : '' ?>"><?= $p ?></a>
+        <?php endfor; ?>
+        <?php if ($page < $total_pages): ?>
+        <a href="?<?= wo_qs(['page' => $page + 1]) ?>" class="btn-tp-ghost btn-tp-xs">
+            <i class="fa-solid fa-chevron-right"></i>
+        </a>
         <?php endif; ?>
-        <li class="page-item <?= $page >= $total_pages ? 'disabled' : '' ?>">
-            <a class="page-link" href="?<?= wo_qs(['page' => $page + 1]) ?>">Next ›</a>
-        </li>
-    </ul>
-</nav>
-<?php else: ?>
-    <?php if ($total > 0): ?>
+    </div>
+</div>
+<?php elseif ($total > 0): ?>
     <p class="text-muted small mt-2">Showing all <?= number_format($total) ?> work order<?= $total !== 1 ? 's' : '' ?>.</p>
-    <?php endif; ?>
 <?php endif; ?>
 
 <?php layout_end(); ?>

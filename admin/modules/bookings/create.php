@@ -190,13 +190,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ── Pre-fill values on validation failure ─────────────────────────────────────
+// ── Pre-fill values on validation failure or from customer_id ─────────────────
+$prefill_customer = null;
+if (!$_POST && ($cid = (int)($_GET['customer_id'] ?? 0)) > 0) {
+    $prefill_customer = db_fetch('SELECT * FROM customers WHERE id = ? LIMIT 1', [$cid]);
+}
+
 $f = [
-    'customer_name'    => $_POST['customer_name']    ?? '',
-    'customer_phone'   => $_POST['customer_phone']   ?? '',
-    'customer_email'   => $_POST['customer_email']   ?? '',
-    'customer_address' => $_POST['customer_address'] ?? '',
-    'customer_city'    => $_POST['customer_city']    ?? '',
+    'customer_name'    => $_POST['customer_name']    ?? ($prefill_customer['name']    ?? ''),
+    'customer_phone'   => $_POST['customer_phone']   ?? ($prefill_customer['phone']   ?? ''),
+    'customer_email'   => $_POST['customer_email']   ?? ($prefill_customer['email']   ?? ''),
+    'customer_address' => $_POST['customer_address'] ?? ($prefill_customer['address'] ?? ''),
+    'customer_city'    => $_POST['customer_city']    ?? ($prefill_customer['city']    ?? ''),
     'selected_ids'     => array_map('intval', (array)($_POST['dumpster_ids'] ?? [])),
     'rental_start'     => $_POST['rental_start']     ?? '',
     'rental_end'       => $_POST['rental_end']       ?? '',
@@ -214,6 +219,14 @@ layout_start('New Booking', 'bookings');
         <i class="fa-solid fa-arrow-left"></i> Back to Bookings
     </a>
 </div>
+
+<?php if (!empty($prefill_customer)): ?>
+<div class="alert alert-info" style="font-size:.875rem;">
+    <i class="fa-solid fa-circle-info me-1"></i>
+    Customer info pre-filled from <strong><?= e($prefill_customer['name']) ?></strong>.
+    <a href="<?= e(APP_URL) ?>/modules/customers/view.php?id=<?= (int)$prefill_customer['id'] ?>" class="ms-2">View Customer</a>
+</div>
+<?php endif; ?>
 
 <?php if (!empty($errors)): ?>
 <div class="alert alert-danger">

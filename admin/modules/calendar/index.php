@@ -189,6 +189,12 @@ layout_start('Calendar', 'calendar');
     color: #1e40af;
     border-left: 3px solid #3b82f6;
 }
+.cal-ev.bk-completed {
+    background: #e0e7ff;
+    color: #3730a3;
+    border-left: 3px solid #6366f1;
+    opacity: .8;
+}
 .cal-ev.blk {
     background: #fee2e2;
     color: #b91c1c;
@@ -232,6 +238,7 @@ layout_start('Calendar', 'calendar');
 <!-- Legend -->
 <div class="d-flex gap-3 mb-3 flex-wrap" style="font-size:.75rem;">
     <span><span class="cal-ev bk d-inline-block" style="width:90px;">Booking</span></span>
+    <span><span class="cal-ev bk-completed d-inline-block" style="width:90px;">Completed</span></span>
     <span><span class="cal-ev blk d-inline-block" style="width:90px;">Blocked</span></span>
 </div>
 
@@ -261,9 +268,11 @@ layout_start('Calendar', 'calendar');
     ?>
     <div class="<?= $cell_class ?>">
         <div class="cal-day-num"><?= $day ?></div>
-        <?php foreach ($day_bks as $bk): ?>
+        <?php foreach ($day_bks as $bk):
+            $bk_css = $bk['booking_status'] === 'completed' ? 'bk-completed' : 'bk';
+        ?>
         <a href="<?= e(APP_URL) ?>/modules/bookings/view.php?id=<?= (int)$bk['id'] ?>"
-           class="cal-ev bk"
+           class="cal-ev <?= $bk_css ?>"
            title="Booking: <?= e($bk['booking_number']) ?> — <?= e($bk['customer_name']) ?> | <?= e($bk['unit_code']) ?>">
             <i class="fa-solid fa-calendar-check fa-xs"></i>
             <?= e($bk['unit_code'] ?: $bk['booking_number']) ?> <?= e(mb_strimwidth($bk['customer_name'], 0, 10, '…')) ?>
