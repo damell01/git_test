@@ -12,7 +12,7 @@ csrf_check();
 $id     = (int)($_POST['id']     ?? 0);
 $status = trim($_POST['status']  ?? '');
 
-if ($id <= 0 || !in_array($status, ['draft', 'sent', 'paid', 'void'], true)) {
+if ($id <= 0 || !in_array($status, ['draft', 'sent', 'paid', 'void', 'canceled'], true)) {
     flash_error('Invalid request.');
     redirect('index.php');
 }

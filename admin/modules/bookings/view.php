@@ -224,6 +224,83 @@ layout_start('Booking Detail', 'bookings');
             </div>
         </div>
 
+        <!-- Quick Cash / Check Actions -->
+        <?php if (
+            has_role('admin', 'office') &&
+            !in_array($booking['payment_status'], ['paid', 'refunded'], true) &&
+            $booking['booking_status'] !== 'canceled'
+        ): ?>
+        <div class="tp-card mb-4">
+            <div class="tp-card-header">
+                <i class="fa-solid fa-money-bill-wave me-2 text-muted"></i> Record Manual Payment
+            </div>
+            <div class="tp-card-body">
+                <form method="POST" action="quick_pay.php" id="quick-pay-form">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="id" value="<?= $id ?>">
+                    <input type="hidden" name="action" id="quick-pay-action" value="">
+                    <div class="mb-2">
+                        <label class="form-label" style="font-size:.82rem;">Payment Note <small class="text-muted">optional</small></label>
+                        <input type="text" name="payment_notes" class="form-control form-control-sm"
+                               placeholder="e.g. Paid at office, check #1042…"
+                               value="<?= e($booking['payment_notes'] ?? '') ?>">
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                        <?php if (!in_array($booking['payment_status'], ['paid_cash'], true)): ?>
+                        <button type="button" class="btn-tp-primary btn-tp-xs"
+                                onclick="submitQuickPay('mark_paid_cash')">
+                            <i class="fa-solid fa-check"></i> Mark Paid (Cash)
+                        </button>
+                        <?php endif; ?>
+                        <?php if (!in_array($booking['payment_status'], ['paid_check'], true)): ?>
+                        <button type="button" class="btn-tp-primary btn-tp-xs"
+                                onclick="submitQuickPay('mark_paid_check')">
+                            <i class="fa-solid fa-check"></i> Mark Paid (Check)
+                        </button>
+                        <?php endif; ?>
+                        <?php if (!in_array($booking['payment_status'], ['pending_cash'], true)): ?>
+                        <button type="button" class="btn-tp-ghost btn-tp-xs"
+                                onclick="submitQuickPay('mark_pending_cash')">
+                            <i class="fa-solid fa-clock"></i> Pending Cash
+                        </button>
+                        <?php endif; ?>
+                        <?php if (!in_array($booking['payment_status'], ['pending_check'], true)): ?>
+                        <button type="button" class="btn-tp-ghost btn-tp-xs"
+                                onclick="submitQuickPay('mark_pending_check')">
+                            <i class="fa-solid fa-clock"></i> Pending Check
+                        </button>
+                        <?php endif; ?>
+                        <?php if ($booking['payment_status'] !== 'unpaid'): ?>
+                        <button type="button" class="btn-tp-ghost btn-tp-xs"
+                                style="color:#6c757d;border-color:#6c757d;"
+                                onclick="submitQuickPay('revert_unpaid')">
+                            <i class="fa-solid fa-rotate-left"></i> Revert to Unpaid
+                        </button>
+                        <?php endif; ?>
+                    </div>
+                </form>
+                <?php if (!empty($booking['payment_notes'])): ?>
+                <div class="mt-2 pt-2" style="border-top:1px solid var(--st2);font-size:.82rem;">
+                    <span class="text-muted">Note:</span> <?= e($booking['payment_notes']) ?>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        <script>
+        function submitQuickPay(action) {
+            document.getElementById('quick-pay-action').value = action;
+            document.getElementById('quick-pay-form').submit();
+        }
+        </script>
+        <?php elseif (!empty($booking['payment_notes'])): ?>
+        <div class="tp-card mb-4">
+            <div class="tp-card-header">
+                <i class="fa-solid fa-note-sticky me-2 text-muted"></i> Payment Note
+            </div>
+            <div class="tp-card-body" style="font-size:.88rem;"><?= e($booking['payment_notes']) ?></div>
+        </div>
+        <?php endif; ?>
+
         <!-- Stripe Info -->
         <?php if ($booking['stripe_session_id'] || $booking['stripe_payment_id']): ?>
         <div class="tp-card">

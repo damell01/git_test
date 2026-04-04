@@ -15,9 +15,11 @@ $errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
 
-    $unit_code = trim($_POST['unit_code'] ?? '');
-    $type      = trim($_POST['type']      ?? 'dumpster');
-    $size      = trim($_POST['size']      ?? '');
+    $unit_code   = trim($_POST['unit_code']    ?? '');
+    $product_name = trim($_POST['product_name'] ?? '');
+    $type        = trim($_POST['type']         ?? 'dumpster');
+    $size        = trim($_POST['size']         ?? '');
+    $description = trim($_POST['description']  ?? '');
     $daily_rate     = (float)($_POST['daily_rate']     ?? 0.00);
     $weekly_rate    = (float)($_POST['weekly_rate']    ?? 0.00);
     $monthly_rate   = (float)($_POST['monthly_rate']   ?? 0.00);
@@ -25,6 +27,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $rental_days    = max(1, (int)($_POST['rental_days']  ?? 7));
     $extra_day_price_raw = trim($_POST['extra_day_price'] ?? '');
     $extra_day_price = $extra_day_price_raw !== '' ? (float)$extra_day_price_raw : null;
+    $delivery_fee   = (float)($_POST['delivery_fee']  ?? 0.00);
+    $pickup_fee     = (float)($_POST['pickup_fee']    ?? 0.00);
+    $mileage_fee_raw = trim($_POST['mileage_fee'] ?? '');
+    $mileage_fee    = $mileage_fee_raw !== '' ? (float)$mileage_fee_raw : null;
+    $tax_rate       = (float)($_POST['tax_rate']      ?? 0.00);
     $active    = isset($_POST['active']) ? 1 : 0;
     $status    = trim($_POST['status']    ?? 'available');
     $condition = trim($_POST['condition'] ?? 'good');
@@ -86,14 +93,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         $insert_data = [
             'unit_code'       => $unit_code,
+            'product_name'    => $product_name !== '' ? $product_name : null,
             'type'            => $type,
             'size'            => $size,
+            'description'     => $description !== '' ? $description : null,
             'daily_rate'      => $daily_rate,
             'weekly_rate'     => $weekly_rate,
             'monthly_rate'    => $monthly_rate,
             'base_price'      => $base_price,
             'rental_days'     => $rental_days,
             'extra_day_price' => $extra_day_price,
+            'delivery_fee'    => $delivery_fee,
+            'pickup_fee'      => $pickup_fee,
+            'mileage_fee'     => $mileage_fee,
+            'tax_rate'        => $tax_rate,
             'active'          => $active,
             'status'          => $status,
             'condition'       => $condition,
@@ -115,14 +128,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // ── Pre-fill form values on validation failure ────────────────────────────────
 $f = [
     'unit_code'       => $_POST['unit_code']       ?? '',
+    'product_name'    => $_POST['product_name']    ?? '',
     'type'            => $_POST['type']             ?? 'dumpster',
     'size'            => $_POST['size']             ?? '',
+    'description'     => $_POST['description']     ?? '',
     'daily_rate'      => $_POST['daily_rate']       ?? '0.00',
     'weekly_rate'     => $_POST['weekly_rate']      ?? '0.00',
     'monthly_rate'    => $_POST['monthly_rate']     ?? '0.00',
     'base_price'      => $_POST['base_price']       ?? '0.00',
     'rental_days'     => $_POST['rental_days']      ?? '7',
     'extra_day_price' => $_POST['extra_day_price']  ?? '',
+    'delivery_fee'    => $_POST['delivery_fee']     ?? '0.00',
+    'pickup_fee'      => $_POST['pickup_fee']       ?? '0.00',
+    'mileage_fee'     => $_POST['mileage_fee']      ?? '',
+    'tax_rate'        => $_POST['tax_rate']         ?? '0.00',
     'active'          => isset($_POST['active']) ? 1 : (isset($_POST['unit_code']) ? 0 : 1),
     'status'          => $_POST['status']           ?? 'available',
     'condition'       => $_POST['condition']        ?? 'good',
@@ -169,6 +188,18 @@ layout_start('Add Dumpster', 'inventory');
                        required>
             </div>
 
+            <!-- Product Name -->
+            <div class="col-md-6">
+                <label class="form-label" for="product_name">Product Name <small class="text-muted">optional</small></label>
+                <input type="text"
+                       id="product_name"
+                       name="product_name"
+                       class="form-control"
+                       value="<?= e($f['product_name']) ?>"
+                       placeholder="e.g. 10 Yard Residential Dumpster">
+                <div class="form-text">Display name shown in Stripe and customer-facing views</div>
+            </div>
+
             <!-- Size -->
             <div class="col-md-6">
                 <label class="form-label" for="size">
@@ -191,6 +222,16 @@ layout_start('Add Dumpster', 'inventory');
                     <option value="dumpster" <?= $f['type'] === 'dumpster' ? 'selected' : '' ?>>Dumpster</option>
                     <option value="trailer"  <?= $f['type'] === 'trailer'  ? 'selected' : '' ?>>Trailer</option>
                 </select>
+            </div>
+
+            <!-- Description -->
+            <div class="col-12">
+                <label class="form-label" for="description">Description <small class="text-muted">optional</small></label>
+                <textarea id="description"
+                          name="description"
+                          class="form-control"
+                          rows="2"
+                          placeholder="Brief description of this dumpster size/type…"><?= e($f['description']) ?></textarea>
             </div>
 
             <!-- Pricing section header -->
@@ -241,6 +282,63 @@ layout_start('Add Dumpster', 'inventory');
                        value="<?= $f['extra_day_price'] !== '' ? e(number_format((float)$f['extra_day_price'], 2, '.', '')) : '' ?>"
                        placeholder="e.g. 40.00">
                 <div class="form-text">Per day beyond included days</div>
+            </div>
+
+            <!-- Delivery / Pickup Fees -->
+            <div class="col-12 mt-2">
+                <h6 class="mb-0" style="font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gy,#9ca3af);">
+                    Fees &amp; Taxes
+                </h6>
+                <hr class="mt-1 mb-0" style="border-color:rgba(255,255,255,.07);">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label" for="delivery_fee">Delivery Fee ($)</label>
+                <input type="number"
+                       id="delivery_fee"
+                       name="delivery_fee"
+                       class="form-control"
+                       step="0.01"
+                       min="0"
+                       value="<?= e(number_format((float)$f['delivery_fee'], 2, '.', '')) ?>"
+                       placeholder="0.00">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label" for="pickup_fee">Pickup Fee ($)</label>
+                <input type="number"
+                       id="pickup_fee"
+                       name="pickup_fee"
+                       class="form-control"
+                       step="0.01"
+                       min="0"
+                       value="<?= e(number_format((float)$f['pickup_fee'], 2, '.', '')) ?>"
+                       placeholder="0.00">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label" for="mileage_fee">Mileage/Trip Fee ($) <small class="text-muted">optional</small></label>
+                <input type="number"
+                       id="mileage_fee"
+                       name="mileage_fee"
+                       class="form-control"
+                       step="0.01"
+                       min="0"
+                       value="<?= $f['mileage_fee'] !== '' ? e(number_format((float)$f['mileage_fee'], 2, '.', '')) : '' ?>"
+                       placeholder="0.00">
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label" for="tax_rate">Tax Rate (%)</label>
+                <input type="number"
+                       id="tax_rate"
+                       name="tax_rate"
+                       class="form-control"
+                       step="0.01"
+                       min="0"
+                       max="100"
+                       value="<?= e(number_format((float)$f['tax_rate'], 2, '.', '')) ?>"
+                       placeholder="0.00">
             </div>
 
             <!-- Legacy rates section -->

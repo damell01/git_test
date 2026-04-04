@@ -230,3 +230,139 @@ function stripe_list_charges(int $limit = 50, ?int $created_gte = null, ?int $cr
     }
     return stripe_client()->charges->all($params);
 }
+
+/**
+ * Sync a dumpster product to Stripe.
+ * Creates or updates the Stripe product and price record.
+ *
+ * Returns an array with keys:
+ *   'stripe_product_id' => string
+ *   'stripe_price_id'   => string
+ *
+ * @param array $dumpster  Row from the dumpsters table
+ * @return array{stripe_product_id: string, stripe_price_id: string}
+ */
+function stripe_sync_dumpster_product(array $dumpster): array
+{
+    $client   = stripe_client();
+    $name     = trim($dumpster['product_name'] ?? '') ?: (($dumpster['size'] ?? '') . ' Dumpster');
+    $desc     = trim($dumpster['description'] ?? '') ?: null;
+    $metadata = [
+        'dumpster_id'  => (string)($dumpster['id'] ?? ''),
+        'unit_code'    => $dumpster['unit_code'] ?? '',
+        'size'         => $dumpster['size'] ?? '',
+    ];
+
+    // ── Product ──────────────────────────────────────────────────────────────
+    $existing_product_id = trim($dumpster['stripe_product_id'] ?? '');
+
+    if ($existing_product_id !== '') {
+        // Update existing product
+        $product = $client->products->update($existing_product_id, array_filter([
+            'name'        => $name,
+            'description' => $desc,
+            'metadata'    => $metadata,
+            'active'      => (bool)($dumpster['active'] ?? 1),
+        ], fn($v) => $v !== null));
+    } else {
+        // Create new product
+        $product = $client->products->create(array_filter([
+            'name'        => $name,
+            'description' => $desc,
+            'metadata'    => $metadata,
+        ], fn($v) => $v !== null));
+    }
+
+    $product_id = $product->id;
+
+    // ── Price ─────────────────────────────────────────────────────────────────
+    $base_price_cents = (int)round((float)($dumpster['base_price'] ?? 0) * 100);
+    $currency         = strtolower(get_setting('currency', 'usd'));
+
+    // Always create a new price (Stripe prices are immutable); archive the old one if needed
+    $existing_price_id = trim($dumpster['stripe_price_id'] ?? '');
+    if ($existing_price_id !== '' && $base_price_cents > 0) {
+        try {
+            // Archive the old price so it won't show up as the default
+            $client->prices->update($existing_price_id, ['active' => false]);
+        } catch (\Throwable) {
+            // Ignore if archiving fails (e.g. already inactive)
+        }
+    }
+
+    $price_id = '';
+    if ($base_price_cents > 0) {
+        $price = $client->prices->create([
+            'product'     => $product_id,
+            'currency'    => $currency,
+            'unit_amount' => $base_price_cents,
+            'nickname'    => $name . ' — Base (' . ($dumpster['rental_days'] ?? 7) . ' day rental)',
+            'metadata'    => [
+                'dumpster_id'   => (string)($dumpster['id'] ?? ''),
+                'rental_days'   => (string)($dumpster['rental_days'] ?? 7),
+            ],
+        ]);
+        $price_id = $price->id;
+    }
+
+    return [
+        'stripe_product_id' => $product_id,
+        'stripe_price_id'   => $price_id,
+    ];
+}
+
+/**
+ * Create a Stripe Checkout Session payment link for an invoice.
+ *
+ * Returns the checkout Session object.
+ *
+ * @param array  $invoice    Row from the invoices table (with at least id, invoice_number, cust_name, cust_email, total)
+ * @param string $success_url
+ * @param string $cancel_url
+ * @return \Stripe\Checkout\Session
+ */
+function stripe_create_invoice_checkout(array $invoice, string $success_url, string $cancel_url): \Stripe\Checkout\Session
+{
+    $currency     = strtolower(get_setting('currency', 'usd'));
+    $company      = get_setting('company_name', 'Trash Panda Roll-Offs');
+    $amount_cents = (int)round((float)($invoice['total'] ?? 0) * 100);
+
+    $session_params = [
+        'payment_method_types' => ['card'],
+        'line_items' => [[
+            'price_data' => [
+                'currency'     => $currency,
+                'product_data' => [
+                    'name'        => $company . ' — Invoice ' . ($invoice['invoice_number'] ?? ''),
+                    'description' => 'Invoice ' . ($invoice['invoice_number'] ?? '') . ' from ' . $company,
+                ],
+                'unit_amount'  => $amount_cents,
+            ],
+            'quantity' => 1,
+        ]],
+        'mode'        => 'payment',
+        'success_url' => $success_url,
+        'cancel_url'  => $cancel_url,
+        'metadata'    => [
+            'invoice_id'     => (string)($invoice['id'] ?? ''),
+            'invoice_number' => $invoice['invoice_number'] ?? '',
+            'customer_name'  => $invoice['cust_name'] ?? '',
+        ],
+        'payment_intent_data' => [
+            'metadata' => [
+                'invoice_id'     => (string)($invoice['id'] ?? ''),
+                'invoice_number' => $invoice['invoice_number'] ?? '',
+            ],
+        ],
+    ];
+
+    if (!empty($invoice['cust_email'])) {
+        $session_params['customer_email'] = $invoice['cust_email'];
+    }
+
+    if ($amount_cents === 0) {
+        $session_params['payment_method_collection'] = 'if_required';
+    }
+
+    return stripe_client()->checkout->sessions->create($session_params);
+}

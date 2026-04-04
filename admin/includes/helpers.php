@@ -165,6 +165,12 @@ function stripe_dashboard_url(?string $object_id): ?string
     if (str_starts_with($id, 'cs_')) {
         return $base . '/payments/checkout/sessions/' . rawurlencode($id);
     }
+    if (str_starts_with($id, 'prod_')) {
+        return $base . '/products/' . rawurlencode($id);
+    }
+    if (str_starts_with($id, 'price_')) {
+        return $base . '/prices/' . rawurlencode($id);
+    }
 
     return null;
 }

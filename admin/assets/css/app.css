@@ -882,6 +882,17 @@ tr.table-secondary > * {
 .badge-in-use       { background-color: rgba( 59, 130, 246, .15); color: var(--bl); }
 .badge-maintenance  { background-color: rgba(245, 158,  11, .15); color: var(--am); }
 
+/* Payment statuses */
+.badge-unpaid        { background-color: rgba(239,  68,  68, .15); color: var(--rd); }
+.badge-pending       { background-color: rgba(245, 158,  11, .15); color: var(--am); }
+.badge-paid          { background-color: rgba( 16, 185, 129, .20); color: var(--gr); }
+.badge-refunded      { background-color: rgba(249, 115,  22, .15); color: var(--or); }
+.badge-pending-cash  { background-color: rgba(245, 158,  11, .15); color: var(--am); }
+.badge-paid-cash     { background-color: rgba( 16, 185, 129, .20); color: var(--gr); }
+.badge-pending-check { background-color: rgba( 59, 130, 246, .15); color: var(--bl); }
+.badge-paid-check    { background-color: rgba( 16, 185, 129, .20); color: var(--gr); }
+.badge-void          { background-color: rgba(107, 114, 128, .15); color: var(--gy); }
+
 /* --------------------------------------------------------------------------
    Forms
    -------------------------------------------------------------------------- */
