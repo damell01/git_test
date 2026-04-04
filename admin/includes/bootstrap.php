@@ -49,6 +49,55 @@ if ($debugMode) {
         echo ($err['file'] ?? 'unknown file') . ':' . ($err['line'] ?? 0);
         echo '</pre>';
     });
+} else {
+    // Production mode: show a friendly error page instead of a blank white screen.
+    set_exception_handler(function (Throwable $e): void {
+        error_log('[TP Admin] Uncaught ' . get_class($e) . ': ' . $e->getMessage()
+            . ' in ' . $e->getFile() . ':' . $e->getLine());
+        if (!headers_sent()) {
+            http_response_code(500);
+        }
+        echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'
+            . '<title>Error – Trash Panda Roll-Offs Admin</title>'
+            . '<style>body{font-family:Arial,sans-serif;background:#0f0f0f;color:#f0f0f0;display:flex;'
+            . 'align-items:center;justify-content:center;min-height:100vh;margin:0;}'
+            . '.box{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:2rem 2.5rem;'
+            . 'max-width:520px;text-align:center;}'
+            . 'h2{color:#f97316;margin:0 0 .75rem;} p{color:#9ca3af;margin:.5rem 0;}'
+            . 'a{color:#f97316;}</style></head><body>'
+            . '<div class="box"><h2>Something went wrong</h2>'
+            . '<p>An unexpected error occurred. Please try again or contact your administrator.</p>'
+            . '<p style="margin-top:1.5rem;"><a href="javascript:history.back()">← Go back</a></p>'
+            . '</div></body></html>';
+    });
+
+    register_shutdown_function(function (): void {
+        $err = error_get_last();
+        if (!$err) {
+            return;
+        }
+        $fatalTypes = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR];
+        if (!in_array($err['type'], $fatalTypes, true)) {
+            return;
+        }
+        error_log('[TP Admin] Fatal error: ' . ($err['message'] ?? '') . ' in '
+            . ($err['file'] ?? '') . ':' . ($err['line'] ?? 0));
+        if (!headers_sent()) {
+            http_response_code(500);
+        }
+        echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">'
+            . '<title>Error – Trash Panda Roll-Offs Admin</title>'
+            . '<style>body{font-family:Arial,sans-serif;background:#0f0f0f;color:#f0f0f0;display:flex;'
+            . 'align-items:center;justify-content:center;min-height:100vh;margin:0;}'
+            . '.box{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:2rem 2.5rem;'
+            . 'max-width:520px;text-align:center;}'
+            . 'h2{color:#f97316;margin:0 0 .75rem;} p{color:#9ca3af;margin:.5rem 0;}'
+            . 'a{color:#f97316;}</style></head><body>'
+            . '<div class="box"><h2>Something went wrong</h2>'
+            . '<p>An unexpected error occurred. Please try again or contact your administrator.</p>'
+            . '<p style="margin-top:1.5rem;"><a href="javascript:history.back()">← Go back</a></p>'
+            . '</div></body></html>';
+    });
 }
 
 // ── Security Headers ─────────────────────────────────────────────────────────

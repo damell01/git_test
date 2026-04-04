@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'delivery_fee'    => $delivery_fee,
             'pickup_fee'      => $pickup_fee,
             'mileage_fee'     => $mileage_fee,
-            'tax_rate'        => $tax_rate,
+            'tax_rate'        => 0,
             'active'          => $active,
             'status'          => $status,
             'condition'       => $condition,
@@ -325,19 +325,6 @@ layout_start('Add Dumpster', 'inventory');
                        step="0.01"
                        min="0"
                        value="<?= $f['mileage_fee'] !== '' ? e(number_format((float)$f['mileage_fee'], 2, '.', '')) : '' ?>"
-                       placeholder="0.00">
-            </div>
-
-            <div class="col-md-3">
-                <label class="form-label" for="tax_rate">Tax Rate (%)</label>
-                <input type="number"
-                       id="tax_rate"
-                       name="tax_rate"
-                       class="form-control"
-                       step="0.01"
-                       min="0"
-                       max="100"
-                       value="<?= e(number_format((float)$f['tax_rate'], 2, '.', '')) ?>"
                        placeholder="0.00">
             </div>
 

@@ -27,6 +27,19 @@ if (!in_array($pay_status, $valid_statuses, true))  $pay_status = 'all';
 if (!in_array($source,     $valid_sources, true))   $source     = 'all';
 
 // ── All-time totals by method ─────────────────────────────────────────────────
+$db_error = null;
+$alltime_stripe = ['total' => 0, 'cnt' => 0];
+$alltime_cash   = ['total' => 0, 'cnt' => 0];
+$alltime_check  = ['total' => 0, 'cnt' => 0];
+$alltime_inv_stripe = ['total' => 0, 'cnt' => 0];
+$alltime_inv_cash   = ['total' => 0, 'cnt' => 0];
+$alltime_inv_check  = ['total' => 0, 'cnt' => 0];
+$mtd_booking_rev = ['total' => 0, 'cnt' => 0];
+$mtd_invoice_rev = ['total' => 0, 'cnt' => 0];
+$booking_records = [];
+$inv_records     = [];
+
+try {
 $alltime_stripe = db_fetch(
     "SELECT COALESCE(SUM(total_amount),0) AS total, COUNT(*) AS cnt
      FROM bookings
@@ -129,13 +142,12 @@ if ($date_to !== '') {
     $b_params[] = $date_to . ' 23:59:59';
 }
 
-$booking_records = [];
 if ($source === 'all' || $source === 'booking') {
     $b_where_sql = $b_where ? ('WHERE ' . implode(' AND ', $b_where)) : '';
     $booking_records = db_fetchall(
         "SELECT b.id, b.booking_number AS ref_number, b.customer_name, b.total_amount AS amount,
                 b.payment_method, b.payment_status, b.stripe_payment_id, b.stripe_session_id,
-                b.payment_notes, b.updated_at, 'booking' AS source_type
+                COALESCE(b.payment_notes,'') AS payment_notes, b.updated_at, 'booking' AS source_type
          FROM bookings b
          $b_where_sql
          ORDER BY b.updated_at DESC
@@ -145,7 +157,6 @@ if ($source === 'all' || $source === 'booking') {
 }
 
 // Invoice payments
-$inv_records = [];
 if ($source === 'all' || $source === 'invoice') {
     $inv_where  = ['1=1'];
     $inv_params = [];
@@ -182,13 +193,19 @@ if ($source === 'all' || $source === 'invoice') {
         "SELECT i.id, i.invoice_number AS ref_number, i.cust_name AS customer_name, i.total AS amount,
                 COALESCE(i.payment_method,'stripe') AS payment_method,
                 i.status AS payment_status, NULL AS stripe_payment_id,
-                i.stripe_session_id, i.payment_notes, i.updated_at, 'invoice' AS source_type
+                COALESCE(i.stripe_session_id,'') AS stripe_session_id,
+                COALESCE(i.payment_notes,'') AS payment_notes, i.updated_at, 'invoice' AS source_type
          FROM invoices i
          $inv_where_sql
          ORDER BY i.updated_at DESC
          LIMIT 200",
         $inv_params
     ) ?: [];
+}
+
+} catch (\Throwable $dbErr) {
+    $db_error = 'Database error: ' . $dbErr->getMessage() . '. Some data may be missing. Run the upgrade script to ensure all columns exist.';
+    error_log('[Payments] DB error: ' . $dbErr->getMessage());
 }
 
 // Merge and sort
@@ -233,20 +250,16 @@ layout_start('Payments', 'payments');
 <style>
 .kpi-row { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:1.5rem; }
 .kpi-card {
-    background:#fff; border:1px solid var(--st); border-radius:8px;
+    background:var(--dk1); border:1px solid var(--st); border-radius:8px;
     padding:16px 20px; flex:1; min-width:160px;
 }
-.kpi-card .kpi-label { font-size:.75rem; text-transform:uppercase; letter-spacing:.04em; color:#888; margin-bottom:4px; }
-.kpi-card .kpi-value { font-size:1.6rem; font-weight:700; color:#222; line-height:1; }
-.kpi-card .kpi-sub   { font-size:.75rem; color:#aaa; margin-top:4px; }
-.kpi-card.kpi-dark   { background:var(--dk2); border-color:var(--st2); }
-.kpi-card.kpi-dark .kpi-label,
-.kpi-card.kpi-dark .kpi-value,
-.kpi-card.kpi-dark .kpi-sub { color:inherit; }
+.kpi-card .kpi-label { font-size:.75rem; text-transform:uppercase; letter-spacing:.04em; color:var(--gy); margin-bottom:4px; }
+.kpi-card .kpi-value { font-size:1.6rem; font-weight:700; color:var(--wh); line-height:1; }
+.kpi-card .kpi-sub   { font-size:.75rem; color:var(--gy); margin-top:4px; }
 .charge-status-succeeded { color:#28a745; }
 .charge-status-failed    { color:#dc3545; }
 .charge-status-refunded  { color:#fd7e14; }
-.charge-status-pending   { color:#6c757d; }
+.charge-status-pending   { color:var(--gy); }
 .filter-bar { background:var(--dk2); border:1px solid var(--st2); border-radius:8px; padding:12px 16px; margin-bottom:1.25rem; }
 </style>
 
@@ -270,6 +283,13 @@ layout_start('Payments', 'payments');
 </div>
 
 <?php render_flash(); ?>
+
+<?php if (!empty($db_error)): ?>
+<div class="alert alert-danger" style="font-size:.88rem;">
+    <i class="fa-solid fa-triangle-exclamation me-1"></i>
+    <strong>Database error:</strong> <?= e($db_error) ?>
+</div>
+<?php endif; ?>
 
 <?php if ($stripe_error): ?>
 <div class="alert alert-warning" style="font-size:.88rem;">

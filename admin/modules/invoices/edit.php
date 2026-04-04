@@ -32,11 +32,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'cust_phone'   => trim($_POST['cust_phone']   ?? ''),
         'cust_address' => trim($_POST['cust_address'] ?? ''),
         'due_date'     => trim($_POST['due_date']     ?? ''),
-        'tax_rate'     => trim($_POST['tax_rate']     ?? '0'),
         'notes'        => trim($_POST['notes']        ?? ''),
         'terms'        => trim($_POST['terms']        ?? ''),
         'status'       => trim($_POST['status']       ?? 'draft'),
-        'gen_stripe'   => !empty($_POST['gen_stripe']) ? '1' : '',
+        'regen_stripe' => !empty($_POST['regen_stripe']) ? '1' : '',
     ];
 
     $item_descs   = $_POST['item_desc']      ?? [];
@@ -66,65 +65,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($items)) $errors[] = 'At least one valid line item is required.';
 
     if (empty($errors)) {
-        $subtotal   = array_sum(array_column($items, 'amount'));
-        $tax_rate   = max(0, (float)$upd['tax_rate']);
-        $tax_amount = round($subtotal * ($tax_rate / 100), 2);
-        $total      = $subtotal + $tax_amount;
+        $subtotal = array_sum(array_column($items, 'amount'));
+        $total    = $subtotal;
 
-        // Stripe Payment Link (re-generate if requested)
+        // Stripe Payment Link (re-generate if explicitly requested, or if none exists yet)
         $stripe_payment_link = $inv['stripe_payment_link']; // keep existing by default
-        if (!empty($upd['gen_stripe']) && $total > 0) {
+        $stripe_session_id   = $inv['stripe_session_id'] ?? null;
+        $stripe_key = trim(get_setting('stripe_secret_key', ''));
+        if ($stripe_key !== '' && $total > 0 && (!empty($upd['regen_stripe']) || empty($stripe_payment_link))) {
             $autoload = dirname(__DIR__, 2) . '/vendor/autoload.php';
             if (file_exists($autoload)) {
                 require_once $autoload;
-                require_once INC_PATH . '/stripe.php';
-                try {
-                    $sc       = stripe_client();
-                    $currency = get_setting('currency', 'usd');
-                    $company  = get_setting('company_name', 'Trash Panda Roll-Offs');
-                    $stripe_items = [];
-                    foreach ($items as $it) {
-                        $amt_cents = (int)round($it['amount'] * 100);
-                        if ($amt_cents <= 0) continue;
-                        $stripe_items[] = [
-                            'price_data' => [
-                                'currency'     => strtolower($currency),
-                                'product_data' => ['name' => $company . ' — ' . $it['description']],
-                                'unit_amount'  => $amt_cents,
-                            ],
-                            'quantity' => 1,
-                        ];
-                    }
-                    if ($tax_amount > 0) {
-                        $stripe_items[] = [
-                            'price_data' => [
-                                'currency'     => strtolower($currency),
-                                'product_data' => ['name' => 'Tax (' . number_format($tax_rate, 2) . '%)'],
-                                'unit_amount'  => (int)round($tax_amount * 100),
-                            ],
-                            'quantity' => 1,
-                        ];
-                    }
-                    if (!empty($stripe_items)) {
-                        $pl = $sc->paymentLinks->create([
-                            'line_items' => $stripe_items,
-                            'metadata'   => [
-                                'invoice_number' => $inv['invoice_number'],
-                                'customer_name'  => $upd['cust_name'],
-                            ],
-                            'after_completion' => [
-                                'type'     => 'redirect',
-                                'redirect' => ['url' => APP_URL . '/modules/invoices/paid.php?inv=' . urlencode($inv['invoice_number'])],
-                            ],
-                        ]);
-                        $stripe_payment_link = $pl->url;
-                    }
-                } catch (\Throwable $e) {
-                    error_log('[Invoice edit] Stripe Payment Link error: ' . $e->getMessage());
-                    $errors[] = 'Stripe Payment Link error: ' . $e->getMessage();
-                }
-            } else {
-                $errors[] = 'Stripe SDK not installed. Payment link not generated.';
+            }
+            require_once INC_PATH . '/stripe.php';
+            try {
+                $base_url    = rtrim(APP_URL, '/');
+                $inv_row = [
+                    'id'             => $id,
+                    'invoice_number' => $inv['invoice_number'],
+                    'cust_name'      => $upd['cust_name'],
+                    'cust_email'     => $upd['cust_email'] ?: null,
+                    'total'          => $total,
+                ];
+                $success_url = $base_url . '/modules/invoices/view.php?id=' . $id . '&paid=1';
+                $cancel_url  = $base_url . '/modules/invoices/view.php?id=' . $id;
+                $session = stripe_create_invoice_checkout($inv_row, $success_url, $cancel_url);
+                $stripe_payment_link = $session->url;
+                $stripe_session_id   = $session->id;
+            } catch (\Throwable $e) {
+                error_log('[Invoice edit] Stripe Checkout error: ' . $e->getMessage());
+                $errors[] = 'Stripe Payment Link error: ' . $e->getMessage();
             }
         }
 
@@ -135,14 +105,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'cust_phone'          => $upd['cust_phone'],
             'cust_address'        => $upd['cust_address'],
             'subtotal'            => $subtotal,
-            'tax_rate'            => $tax_rate,
-            'tax_amount'          => $tax_amount,
+            'tax_rate'            => 0,
+            'tax_amount'          => 0,
             'total'               => $total,
             'notes'               => $upd['notes'],
             'terms'               => $upd['terms'],
             'status'              => $upd['status'],
             'due_date'            => $upd['due_date'] ?: null,
             'stripe_payment_link' => $stripe_payment_link,
+            'stripe_session_id'   => $stripe_session_id,
             'updated_at'          => date('Y-m-d H:i:s'),
         ], 'id', $id);
 
@@ -352,12 +323,6 @@ layout_start('Edit Invoice ' . $inv['invoice_number'], 'invoices');
                         <input type="date" name="due_date" class="form-control"
                                value="<?= e($inv['due_date'] ?? '') ?>">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Tax Rate (%)</label>
-                        <input type="number" name="tax_rate" id="taxRate" class="form-control"
-                               step="0.01" min="0" max="100"
-                               value="<?= e($inv['tax_rate'] ?? '0') ?>">
-                    </div>
                 </div>
             </div>
 
@@ -368,10 +333,12 @@ layout_start('Edit Invoice ' . $inv['invoice_number'], 'invoices');
                 </div>
                 <div class="card-body">
                     <table class="table table-sm mb-0">
-                        <tr><td class="text-muted">Subtotal</td><td class="text-end fw-semibold" id="calcSubtotal">$0.00</td></tr>
-                        <tr><td class="text-muted">Tax (<span id="calcTaxPct">0</span>%)</td><td class="text-end fw-semibold" id="calcTax">$0.00</td></tr>
                         <tr class="table-active"><td class="fw-bold">Total</td><td class="text-end fw-bold fs-5" id="calcTotal">$0.00</td></tr>
                     </table>
+                    <small class="text-muted d-block mt-2">
+                        <i class="fa-brands fa-stripe me-1"></i>
+                        Tax is handled automatically by Stripe.
+                    </small>
                 </div>
             </div>
 
@@ -387,8 +354,8 @@ layout_start('Edit Invoice ' . $inv['invoice_number'], 'invoices');
                     </div>
                     <?php endif; ?>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="gen_stripe" id="genStripe" value="1">
-                        <label class="form-check-label" for="genStripe">
+                        <input class="form-check-input" type="checkbox" name="regen_stripe" id="regenStripe" value="1">
+                        <label class="form-check-label" for="regenStripe">
                             <?= !empty($inv['stripe_payment_link']) ? 'Re-generate' : 'Generate' ?> Stripe Payment Link
                         </label>
                     </div>
@@ -451,12 +418,7 @@ function recalcAll() {
         row.querySelector('.item-amt').textContent=fmtMoney(amt);
         subtotal+=amt;
     });
-    var taxRate=parseFloat(document.getElementById('taxRate').value)||0;
-    var taxAmt=Math.round(subtotal*(taxRate/100)*100)/100;
-    document.getElementById('calcSubtotal').textContent=fmtMoney(subtotal);
-    document.getElementById('calcTax').textContent=fmtMoney(taxAmt);
-    document.getElementById('calcTaxPct').textContent=taxRate.toFixed(2);
-    document.getElementById('calcTotal').textContent=fmtMoney(subtotal+taxAmt);
+    document.getElementById('calcTotal').textContent=fmtMoney(subtotal);
 }
 
 // Pre-populate existing items
@@ -466,7 +428,6 @@ addRow(<?= json_encode($it['description'] ?? '') ?>, <?= (float)($it['quantity']
 if (rowCount === 0) addRow();
 
 document.getElementById('itemsBody').addEventListener('input', recalcAll);
-document.getElementById('taxRate').addEventListener('input', recalcAll);
 document.getElementById('btnAddRow').addEventListener('click', function(){ addRow(); });
 
 // Quick-add inventory

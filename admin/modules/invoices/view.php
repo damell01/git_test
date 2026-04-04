@@ -131,10 +131,15 @@ if ($print_mode):
 
   <?php if (!empty($inv['stripe_payment_link'])): ?>
   <div class="payment-box">
-    <strong>Pay Online:</strong>
-    <a href="<?= e($inv['stripe_payment_link']) ?>" style="color:#d97706;">
-      <?= e($inv['stripe_payment_link']) ?>
+    <strong>Pay Online:</strong><br>
+    <a href="<?= e($inv['stripe_payment_link']) ?>"
+       style="display:inline-block;margin-top:.5rem;padding:.5rem 1.5rem;background:#f97316;color:#fff;
+              border-radius:6px;font-weight:700;text-decoration:none;font-size:1rem;">
+      💳 Pay Now
     </a>
+    <div style="margin-top:.5rem;font-size:.8rem;color:#6b7280;word-break:break-all;">
+      <?= e($inv['stripe_payment_link']) ?>
+    </div>
   </div>
   <?php endif; ?>
 
@@ -418,8 +423,10 @@ function copyPayLink(btn) {
                 <tr><td style="color:var(--gl);">Paid Via</td><td><?= e(ucfirst($inv['payment_method'])) ?></td></tr>
                 <?php endif; ?>
                 <tr><td style="color:var(--gl);">Items</td><td><?= count($items) ?></td></tr>
+                <?php if ((float)($inv['tax_rate'] ?? 0) > 0): ?>
                 <tr><td style="color:var(--gl);">Subtotal</td><td><?= e(fmt_money($inv['subtotal'])) ?></td></tr>
                 <tr><td style="color:var(--gl);">Tax</td><td><?= e(fmt_money($inv['tax_amount'])) ?></td></tr>
+                <?php endif; ?>
                 <tr><td style="color:var(--gl);font-weight:700;">Total</td><td style="color:var(--or);font-weight:700;font-size:1.1rem;"><?= e(fmt_money($inv['total'])) ?></td></tr>
                 <?php if ($inv['due_date']): ?>
                 <tr><td style="color:var(--gl);">Due Date</td><td><?= e(fmt_date($inv['due_date'])) ?></td></tr>
