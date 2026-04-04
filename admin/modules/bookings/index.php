@@ -51,40 +51,20 @@ $total_row = db_fetch(
 $total = (int)($total_row['cnt'] ?? 0);
 $pager = paginate($total, $page, $per_page);
 
-// ── Fetch rows (wrap in try/catch for graceful fallback if workers table missing) ─
-try {
-    $bookings = db_fetchall(
-        "SELECT b.id, b.booking_number, b.customer_name, b.customer_email,
-                b.unit_code, b.unit_type, b.unit_size,
-                b.rental_start, b.rental_end, b.rental_days,
-                b.total_amount, b.payment_method, b.payment_status, b.booking_status,
-                b.stripe_payment_id, b.stripe_session_id,
-                b.worker_id, w.name AS worker_name,
-                b.created_at
-         FROM bookings b
-         LEFT JOIN workers w ON w.id = b.worker_id
-         WHERE $where
-         ORDER BY b.created_at DESC
-         LIMIT ? OFFSET ?",
-        array_merge($params, [$pager['per_page'], $pager['offset']])
-    );
-} catch (\Throwable $e) {
-    // Fallback without worker JOIN
-    $bookings = db_fetchall(
-        "SELECT b.id, b.booking_number, b.customer_name, b.customer_email,
-                b.unit_code, b.unit_type, b.unit_size,
-                b.rental_start, b.rental_end, b.rental_days,
-                b.total_amount, b.payment_method, b.payment_status, b.booking_status,
-                b.stripe_payment_id, b.stripe_session_id,
-                NULL AS worker_id, NULL AS worker_name,
-                b.created_at
-         FROM bookings b
-         WHERE $where
-         ORDER BY b.created_at DESC
-         LIMIT ? OFFSET ?",
-        array_merge($params, [$pager['per_page'], $pager['offset']])
-    );
-}
+// ── Fetch rows ───────────────────────────────────────────────────────────────────
+$bookings = db_fetchall(
+    "SELECT b.id, b.booking_number, b.customer_name, b.customer_email,
+            b.unit_code, b.unit_type, b.unit_size,
+            b.rental_start, b.rental_end, b.rental_days,
+            b.total_amount, b.payment_method, b.payment_status, b.booking_status,
+            b.stripe_payment_id, b.stripe_session_id,
+            b.created_at
+     FROM bookings b
+     WHERE $where
+     ORDER BY b.created_at DESC
+     LIMIT ? OFFSET ?",
+    array_merge($params, [$pager['per_page'], $pager['offset']])
+);
 
 layout_start('Bookings', 'bookings');
 ?>

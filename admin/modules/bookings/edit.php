@@ -293,20 +293,7 @@ layout_start('Edit Booking', 'bookings');
                     <option value="check"  <?= $booking['payment_method'] === 'check'  ? 'selected' : '' ?>>Check</option>
                 </select>
             </div>
-            <?php if (!empty($workers)): ?>
-            <div class="col-md-6">
-                <label class="form-label" for="worker_id">Assigned Worker <small class="text-muted">optional</small></label>
-                <select id="worker_id" name="worker_id" class="form-select">
-                    <option value="">— Unassigned —</option>
-                    <?php foreach ($workers as $w): ?>
-                    <option value="<?= (int)$w['id'] ?>"
-                            <?= (int)($booking['worker_id'] ?? 0) === (int)$w['id'] ? 'selected' : '' ?>>
-                        <?= e($w['name']) ?>
-                    </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <?php endif; ?>
+
             <div class="col-12">
                 <label class="form-label" for="notes">Notes</label>
                 <textarea id="notes" name="notes" class="form-control" rows="3"><?= e($booking['notes'] ?? '') ?></textarea>

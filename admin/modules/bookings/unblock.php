@@ -22,7 +22,7 @@ if (!$block) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
-    db_query('DELETE FROM inventory_blocks WHERE id = ?', [$id]);
+    db_execute('DELETE FROM inventory_blocks WHERE id = ?', [$id]);
     log_activity('delete', "Removed inventory block #$id for dumpster #{$block['dumpster_id']} ({$block['block_start']} – {$block['block_end']})", 'inventory_block', $id);
     flash_success('Inventory block removed.');
     redirect(APP_URL . '/modules/calendar/index.php');

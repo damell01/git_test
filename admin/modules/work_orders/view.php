@@ -342,12 +342,7 @@ layout_start('WO: ' . $wo['wo_number'], 'work_orders');
                             <dt class="col-sm-6 text-muted small">Amount</dt>
                             <dd class="col-sm-6 fw-semibold">$<?= number_format((float)$wo['amount'], 2) ?></dd>
                             <?php endif; ?>
-                            <?php if (!empty($wo['quote_id'])): ?>
-                            <dt class="col-sm-6 text-muted small">From Quote</dt>
-                            <dd class="col-sm-6">
-                                <a href="../quotes/view.php?id=<?= (int)$wo['quote_id'] ?>">View Quote</a>
-                            </dd>
-                            <?php endif; ?>
+
                         </dl>
                     </div>
                 </div>
@@ -513,11 +508,7 @@ layout_start('WO: ' . $wo['wo_number'], 'work_orders');
                     <i class="fas fa-user-plus me-1"></i>Convert to Customer
                 </a>
                 <?php endif; ?>
-                <?php if (!empty($wo['quote_id'])): ?>
-                <a href="../quotes/view.php?id=<?= (int)$wo['quote_id'] ?>" class="btn btn-outline-info">
-                    <i class="fas fa-file-invoice me-1"></i>View Source Quote
-                </a>
-                <?php endif; ?>
+
                 <a href="delete.php?id=<?= $id ?>" class="btn btn-outline-danger"
                    onclick="return confirm('Delete this work order? This cannot be undone.')">
                     <i class="fas fa-trash me-1"></i>Delete Work Order
