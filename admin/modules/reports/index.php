@@ -1,6 +1,6 @@
 <?php
 /**
- * Reports – Dashboard
+ * Reports – Revenue & Payments
  * Trash Panda Roll-Offs
  */
 
@@ -8,215 +8,215 @@ require_once dirname(__DIR__, 2) . '/includes/bootstrap.php';
 require_once TMPL_PATH . '/layout.php';
 require_login();
 
-// ── Date range filter ─────────────────────────────────────────────────────────
-$date_from = trim($_GET['date_from'] ?? '');
-$date_to   = trim($_GET['date_to']   ?? '');
+// ── Filters ───────────────────────────────────────────────────────────────────
+$date_from  = trim($_GET['date_from']  ?? '');
+$date_to    = trim($_GET['date_to']    ?? '');
+$pay_method = trim($_GET['pay_method'] ?? 'all');
+$pay_status = trim($_GET['pay_status'] ?? 'all');
+$all_time   = isset($_GET['all_time']) && $_GET['all_time'] === '1';
 
-// Default: first day of current month → today
-if ($date_from === '' || !strtotime($date_from)) {
-    $date_from = date('Y-m-01');
+$valid_methods  = ['all', 'stripe', 'cash', 'check'];
+$valid_statuses = ['all', 'paid', 'pending'];
+if (!in_array($pay_method, $valid_methods, true))  $pay_method = 'all';
+if (!in_array($pay_status, $valid_statuses, true)) $pay_status = 'all';
+
+if ($all_time) {
+    $date_from = '2000-01-01';
+    $date_to   = date('Y-m-d');
+} else {
+    if ($date_from === '' || !strtotime($date_from)) $date_from = date('Y-m-01');
+    if ($date_to   === '' || !strtotime($date_to))   $date_to   = date('Y-m-d');
+    $date_from = date('Y-m-d', strtotime($date_from));
+    $date_to   = date('Y-m-d', strtotime($date_to));
 }
-if ($date_to === '' || !strtotime($date_to)) {
-    $date_to = date('Y-m-d');
-}
-$date_from = date('Y-m-d', strtotime($date_from));
-$date_to   = date('Y-m-d', strtotime($date_to));
+$dt_from = $date_from . ' 00:00:00';
+$dt_to   = $date_to   . ' 23:59:59';
 
-// ── Section 1: Leads by Status ────────────────────────────────────────────────
-$lead_status_rows = db_fetchall(
-    "SELECT status, COUNT(*) AS cnt
-     FROM leads
-     WHERE archived = 0
-     GROUP BY status
-     ORDER BY FIELD(status,'new','contacted','quoted','won','lost')"
-);
+// ── Resolve booking payment_status array from filters ─────────────────────────
+function booking_status_filter(string $method, string $status): array
+{
+    $paid_all    = ['paid','paid_cash','paid_check'];
+    $pending_all = ['pending','pending_cash','pending_check','unpaid'];
 
-// ── Section 2: Work Orders by Status ─────────────────────────────────────────
-$wo_status_rows = db_fetchall(
-    "SELECT status, COUNT(*) AS cnt
-     FROM work_orders
-     WHERE created_at BETWEEN ? AND ?
-     GROUP BY status",
-    [$date_from . ' 00:00:00', $date_to . ' 23:59:59']
-);
-
-// ── Section 3: Revenue Summary ────────────────────────────────────────────────
-$revenue_row = db_fetch(
-    "SELECT COUNT(*) AS wo_count,
-            COALESCE(SUM(amount), 0) AS total
-     FROM work_orders
-     WHERE status = 'completed'
-       AND updated_at BETWEEN ? AND ?",
-    [$date_from . ' 00:00:00', $date_to . ' 23:59:59']
-);
-
-// Revenue from paid bookings in the selected date range
-$booking_revenue_row = ['total' => 0, 'count' => 0];
-try {
-    $booking_revenue_row = db_fetch(
-        "SELECT COUNT(*) AS count, COALESCE(SUM(total_amount), 0) AS total
-         FROM bookings
-         WHERE payment_status IN ('paid','paid_cash','paid_check')
-           AND booking_status != 'canceled'
-           AND updated_at BETWEEN ? AND ?",
-        [$date_from . ' 00:00:00', $date_to . ' 23:59:59']
-    ) ?: ['total' => 0, 'count' => 0];
-} catch (\Throwable $e) {
-    // bookings table not yet installed
-}
-
-// Revenue from paid invoices in the selected date range
-$invoice_revenue_row = ['total' => 0, 'count' => 0];
-try {
-    $invoice_revenue_row = db_fetch(
-        "SELECT COUNT(*) AS count, COALESCE(SUM(total), 0) AS total
-         FROM invoices
-         WHERE status = 'paid'
-           AND updated_at BETWEEN ? AND ?",
-        [$date_from . ' 00:00:00', $date_to . ' 23:59:59']
-    ) ?: ['total' => 0, 'count' => 0];
-} catch (\Throwable $e) {
-    // invoices table not yet installed
-}
-
-$total_revenue = (float)($revenue_row['total'] ?? 0)
-               + (float)($booking_revenue_row['total'] ?? 0)
-               + (float)($invoice_revenue_row['total'] ?? 0);
-
-// ── Section 4: Upcoming Deliveries (next 7 days) ──────────────────────────────
-$today         = date('Y-m-d');
-$in_7_days     = date('Y-m-d', strtotime('+7 days'));
-
-$upcoming_deliveries = db_fetchall(
-    "SELECT wo.id, wo.wo_number, wo.cust_name, wo.service_address,
-            wo.delivery_date, wo.size, wo.status
-     FROM work_orders wo
-     WHERE wo.delivery_date BETWEEN ? AND ?
-       AND wo.status NOT IN ('completed','canceled','picked_up')
-     ORDER BY wo.delivery_date ASC",
-    [$today, $in_7_days]
-);
-
-// ── Section 5: Upcoming Pickups (next 7 days) ─────────────────────────────────
-$upcoming_pickups = db_fetchall(
-    "SELECT wo.id, wo.wo_number, wo.cust_name, wo.service_address,
-            wo.pickup_date, wo.size, wo.status
-     FROM work_orders wo
-     WHERE wo.pickup_date BETWEEN ? AND ?
-       AND wo.status NOT IN ('completed','canceled','picked_up')
-     ORDER BY wo.pickup_date ASC",
-    [$today, $in_7_days]
-);
-
-// ── Section 6: Overdue Pickups ────────────────────────────────────────────────
-$overdue_pickups = db_fetchall(
-    "SELECT wo.id, wo.wo_number, wo.cust_name, wo.service_address,
-            wo.pickup_date, wo.size, wo.status,
-            DATEDIFF(CURDATE(), wo.pickup_date) AS days_overdue
-     FROM work_orders wo
-     WHERE wo.pickup_date < CURDATE()
-       AND wo.status NOT IN ('picked_up','completed','canceled')
-     ORDER BY wo.pickup_date ASC"
-);
-
-// ── Section 7: WO Count by Month (last 6 months) ─────────────────────────────
-$monthly_counts = db_fetchall(
-    "SELECT DATE_FORMAT(created_at, '%Y-%m') AS month,
-            COUNT(*) AS cnt
-     FROM work_orders
-     WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-     GROUP BY month
-     ORDER BY month ASC"
-);
-$max_count = 0;
-foreach ($monthly_counts as $mc) {
-    if ((int)$mc['cnt'] > $max_count) {
-        $max_count = (int)$mc['cnt'];
+    if ($method === 'stripe') {
+        if ($status === 'paid')    return ['paid'];
+        if ($status === 'pending') return ['pending','unpaid'];
+        return array_merge(['paid'], ['pending','unpaid']);
     }
+    if ($method === 'cash') {
+        if ($status === 'paid')    return ['paid_cash'];
+        if ($status === 'pending') return ['pending_cash'];
+        return ['paid_cash','pending_cash'];
+    }
+    if ($method === 'check') {
+        if ($status === 'paid')    return ['paid_check'];
+        if ($status === 'pending') return ['pending_check'];
+        return ['paid_check','pending_check'];
+    }
+    // all methods
+    if ($status === 'paid')    return $paid_all;
+    if ($status === 'pending') return $pending_all;
+    return array_merge($paid_all, $pending_all);
+}
+
+$bk_statuses = booking_status_filter($pay_method, $pay_status);
+$bk_ph       = implode(',', array_fill(0, count($bk_statuses), '?'));
+
+// ── All-time booking totals by payment method ─────────────────────────────────
+$all_time_stripe  = 0.0;
+$all_time_cash    = 0.0;
+$all_time_check   = 0.0;
+$all_time_pending = 0.0;
+try {
+    $r = db_fetch(
+        "SELECT
+            COALESCE(SUM(CASE WHEN payment_status = 'paid'       THEN total_amount ELSE 0 END),0) AS stripe_total,
+            COALESCE(SUM(CASE WHEN payment_status = 'paid_cash'  THEN total_amount ELSE 0 END),0) AS cash_total,
+            COALESCE(SUM(CASE WHEN payment_status = 'paid_check' THEN total_amount ELSE 0 END),0) AS check_total,
+            COALESCE(SUM(CASE WHEN payment_status IN ('pending','pending_cash','pending_check','unpaid') THEN total_amount ELSE 0 END),0) AS pending_total
+         FROM bookings WHERE booking_status != 'canceled'"
+    );
+    $all_time_stripe  = (float)($r['stripe_total']  ?? 0);
+    $all_time_cash    = (float)($r['cash_total']     ?? 0);
+    $all_time_check   = (float)($r['check_total']    ?? 0);
+    $all_time_pending = (float)($r['pending_total']  ?? 0);
+} catch (\Throwable $e) {}
+
+// ── Period booking revenue by method ─────────────────────────────────────────
+$period_stripe = 0.0;
+$period_cash   = 0.0;
+$period_check  = 0.0;
+try {
+    $pr = db_fetch(
+        "SELECT
+            COALESCE(SUM(CASE WHEN payment_status = 'paid'       THEN total_amount ELSE 0 END),0) AS stripe_total,
+            COALESCE(SUM(CASE WHEN payment_status = 'paid_cash'  THEN total_amount ELSE 0 END),0) AS cash_total,
+            COALESCE(SUM(CASE WHEN payment_status = 'paid_check' THEN total_amount ELSE 0 END),0) AS check_total
+         FROM bookings
+         WHERE booking_status != 'canceled' AND updated_at BETWEEN ? AND ?",
+        [$dt_from, $dt_to]
+    );
+    $period_stripe = (float)($pr['stripe_total'] ?? 0);
+    $period_cash   = (float)($pr['cash_total']   ?? 0);
+    $period_check  = (float)($pr['check_total']  ?? 0);
+} catch (\Throwable $e) {}
+$period_booking = $period_stripe + $period_cash + $period_check;
+
+$inv_period = 0.0;
+try {
+    $ir = db_fetch(
+        "SELECT COALESCE(SUM(total),0) AS total FROM invoices WHERE status='paid' AND updated_at BETWEEN ? AND ?",
+        [$dt_from, $dt_to]
+    );
+    $inv_period = (float)($ir['total'] ?? 0);
+} catch (\Throwable $e) {}
+
+$wo_period = (float)(db_fetch(
+    "SELECT COALESCE(SUM(amount),0) AS total FROM work_orders WHERE status='completed' AND updated_at BETWEEN ? AND ?",
+    [$dt_from, $dt_to]
+)['total'] ?? 0);
+
+$grand_total = $period_booking + $inv_period + $wo_period;
+
+// ── Filtered booking rows ─────────────────────────────────────────────────────
+$filtered_bookings = [];
+try {
+    $bk_params = [$dt_from, $dt_to];
+    $bk_where  = ["b.booking_status != 'canceled'", "b.updated_at BETWEEN ? AND ?",
+                  "b.payment_status IN ($bk_ph)"];
+    $bk_params = array_merge($bk_params, $bk_statuses);
+    $filtered_bookings = db_fetchall(
+        "SELECT b.id, b.booking_number, b.customer_name, b.customer_email,
+                b.rental_start, b.rental_end, b.total_amount,
+                b.payment_method, b.payment_status, b.booking_status, b.updated_at
+         FROM bookings b
+         WHERE " . implode(' AND ', $bk_where) . "
+         ORDER BY b.updated_at DESC LIMIT 200",
+        $bk_params
+    );
+} catch (\Throwable $e) {}
+
+// ── Work Orders by Status ─────────────────────────────────────────────────────
+$wo_status_rows = db_fetchall(
+    "SELECT status, COUNT(*) AS cnt FROM work_orders WHERE created_at BETWEEN ? AND ?
+     GROUP BY status ORDER BY FIELD(status,'scheduled','delivered','active','pickup_requested','picked_up','completed','canceled')",
+    [$dt_from, $dt_to]
+);
+
+// ── Monthly revenue bar chart (last 6 months) ─────────────────────────────────
+$monthly_revenue = [];
+try {
+    $monthly_revenue = db_fetchall(
+        "SELECT DATE_FORMAT(updated_at,'%Y-%m') AS month,
+                COALESCE(SUM(CASE WHEN payment_status='paid'       THEN total_amount ELSE 0 END),0) AS stripe,
+                COALESCE(SUM(CASE WHEN payment_status='paid_cash'  THEN total_amount ELSE 0 END),0) AS cash,
+                COALESCE(SUM(CASE WHEN payment_status='paid_check' THEN total_amount ELSE 0 END),0) AS chk
+         FROM bookings WHERE booking_status!='canceled' AND updated_at >= DATE_SUB(NOW(),INTERVAL 6 MONTH)
+         GROUP BY month ORDER BY month ASC"
+    );
+} catch (\Throwable $e) {}
+$max_bar = 0;
+foreach ($monthly_revenue as $mr) {
+    $t = (float)$mr['stripe'] + (float)$mr['cash'] + (float)$mr['chk'];
+    if ($t > $max_bar) $max_bar = $t;
 }
 
 layout_start('Reports', 'reports');
 ?>
 
 <style>
-/* ── KPI cards ── */
-.kpi-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 1.5rem;
-}
+.kpi-row { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:1.5rem; }
 .kpi-card {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-    padding: 16px 20px;
-    min-width: 140px;
-    flex: 1 1 140px;
+    background:#fff; border:1px solid var(--st,#e5e7eb); border-radius:8px;
+    padding:16px 20px; flex:1; min-width:150px;
 }
-.kpi-card .kpi-value {
-    font-size: 1.8rem;
-    font-weight: 700;
-    line-height: 1.1;
-    color: #111827;
-}
-.kpi-card .kpi-label {
-    font-size: .75rem;
-    color: #6b7280;
-    margin-top: 4px;
-    text-transform: uppercase;
-    letter-spacing: .05em;
-}
-
-/* ── Bar chart ── */
-.bar-chart {
-    display: flex;
-    align-items: flex-end;
-    gap: 10px;
-    height: 160px;
-    padding: 0 4px;
-}
-.bar-col {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    flex: 1;
-}
-.bar-count {
-    font-size: .72rem;
-    font-weight: 700;
-    color: #374151;
-    margin-bottom: 3px;
-}
-.bar-fill {
-    background: #16a34a;
-    border-radius: 4px 4px 0 0;
-    width: 100%;
-    min-height: 4px;
-    transition: height .3s;
-}
-.bar-label {
-    font-size: .68rem;
-    color: #6b7280;
-    margin-top: 5px;
-    text-align: center;
-}
+.kpi-card .kpi-label { font-size:.75rem; text-transform:uppercase; letter-spacing:.04em; color:#888; margin-bottom:4px; }
+.kpi-card .kpi-value { font-size:1.6rem; font-weight:700; color:#222; line-height:1; }
+.kpi-card .kpi-sub   { font-size:.75rem; color:#aaa; margin-top:4px; }
+.bar-chart { display:flex; align-items:flex-end; gap:8px; height:140px; padding:0 4px; }
+.bar-col { display:flex; flex-direction:column; align-items:center; flex:1; }
+.bar-count { font-size:.7rem; font-weight:700; color:#374151; margin-bottom:2px; }
+.bar-seg { width:100%; }
+.bar-label { font-size:.65rem; color:#6b7280; margin-top:4px; text-align:center; }
+.filter-active { font-weight:700; color:var(--or,#f97316) !important; border-color:var(--or,#f97316) !important; }
 </style>
 
-<!-- Date range filter -->
+<!-- Filter Bar -->
 <div class="tp-card mb-4">
     <form method="GET" action="index.php" class="row g-2 align-items-end">
         <div class="col-auto">
             <label class="form-label mb-1" for="date_from">From</label>
-            <input type="date" id="date_from" name="date_from"
-                   class="form-control form-control-sm"
-                   value="<?= e($date_from) ?>">
+            <input type="date" id="date_from" name="date_from" class="form-control form-control-sm"
+                   value="<?= e($all_time ? '' : $date_from) ?>" <?= $all_time ? 'disabled' : '' ?>>
         </div>
         <div class="col-auto">
             <label class="form-label mb-1" for="date_to">To</label>
-            <input type="date" id="date_to" name="date_to"
-                   class="form-control form-control-sm"
-                   value="<?= e($date_to) ?>">
+            <input type="date" id="date_to" name="date_to" class="form-control form-control-sm"
+                   value="<?= e($all_time ? '' : $date_to) ?>" <?= $all_time ? 'disabled' : '' ?>>
+        </div>
+        <div class="col-auto">
+            <label class="form-label mb-1" for="pay_method">Payment Method</label>
+            <select id="pay_method" name="pay_method" class="form-select form-select-sm">
+                <option value="all"    <?= $pay_method==='all'    ? 'selected':'' ?>>All Methods</option>
+                <option value="stripe" <?= $pay_method==='stripe' ? 'selected':'' ?>>Stripe (Card)</option>
+                <option value="cash"   <?= $pay_method==='cash'   ? 'selected':'' ?>>Cash</option>
+                <option value="check"  <?= $pay_method==='check'  ? 'selected':'' ?>>Check</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <label class="form-label mb-1" for="pay_status">Status</label>
+            <select id="pay_status" name="pay_status" class="form-select form-select-sm">
+                <option value="all"     <?= $pay_status==='all'     ? 'selected':'' ?>>All Statuses</option>
+                <option value="paid"    <?= $pay_status==='paid'    ? 'selected':'' ?>>Paid</option>
+                <option value="pending" <?= $pay_status==='pending' ? 'selected':'' ?>>Pending</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <div class="form-check mt-3 mb-1">
+                <input type="checkbox" id="all_time" name="all_time" value="1" class="form-check-input"
+                       <?= $all_time ? 'checked' : '' ?> onchange="this.form.submit()">
+                <label for="all_time" class="form-check-label" style="font-size:.85rem;">All Time</label>
+            </div>
         </div>
         <div class="col-auto">
             <button type="submit" class="btn-tp-primary btn-tp-sm">
@@ -227,222 +227,223 @@ layout_start('Reports', 'reports');
     </form>
 </div>
 
-<!-- ── Section 1: Leads by Status ────────────────────────────────────────── -->
+<!-- All-Time Totals -->
 <h6 class="section-heading mb-2">
-    <i class="fa-solid fa-funnel me-1"></i> Leads by Status
-</h6>
-<div class="kpi-row mb-4">
-    <?php if (empty($lead_status_rows)): ?>
-        <p class="text-muted">No lead data available.</p>
-    <?php else: ?>
-        <?php foreach ($lead_status_rows as $row): ?>
-        <div class="kpi-card">
-            <div class="kpi-value"><?= (int)$row['cnt'] ?></div>
-            <div class="kpi-label"><?= status_badge($row['status']) ?></div>
-        </div>
-        <?php endforeach; ?>
-    <?php endif; ?>
-</div>
-
-<!-- ── Section 2: Work Orders by Status ──────────────────────────────────── -->
-<h6 class="section-heading mb-2">
-    <i class="fa-solid fa-clipboard-list me-1"></i> Work Orders by Status
-    <small class="text-muted ms-1">(<?= e(fmt_date($date_from)) ?> – <?= e(fmt_date($date_to)) ?>)</small>
-</h6>
-<div class="kpi-row mb-4">
-    <?php if (empty($wo_status_rows)): ?>
-        <p class="text-muted">No work order data for this period.</p>
-    <?php else: ?>
-        <?php foreach ($wo_status_rows as $row): ?>
-        <div class="kpi-card">
-            <div class="kpi-value"><?= (int)$row['cnt'] ?></div>
-            <div class="kpi-label"><?= status_badge($row['status']) ?></div>
-        </div>
-        <?php endforeach; ?>
-    <?php endif; ?>
-</div>
-
-<!-- ── Section 3: Revenue Summary ────────────────────────────────────────── -->
-<h6 class="section-heading mb-2">
-    <i class="fa-solid fa-dollar-sign me-1"></i> Revenue Summary
-    <small class="text-muted ms-1">(<?= e(fmt_date($date_from)) ?> – <?= e(fmt_date($date_to)) ?>)</small>
+    <i class="fa-solid fa-infinity me-1"></i> All-Time Revenue (Bookings)
 </h6>
 <div class="kpi-row mb-4">
     <div class="kpi-card" style="border-left:4px solid #16a34a;">
-        <div class="kpi-value"><?= e(fmt_money($total_revenue)) ?></div>
-        <div class="kpi-label">Total Revenue</div>
+        <div class="kpi-label">Total All-Time Paid</div>
+        <div class="kpi-value"><?= e(fmt_money($all_time_stripe + $all_time_cash + $all_time_check)) ?></div>
+        <div class="kpi-sub">All paid bookings</div>
     </div>
-    <div class="kpi-card" style="border-left:4px solid #2563eb;">
-        <div class="kpi-value"><?= (int)($revenue_row['wo_count'] ?? 0) ?></div>
-        <div class="kpi-label">Completed Work Orders</div>
+    <div class="kpi-card" style="border-left:4px solid #6366f1;">
+        <div class="kpi-label">Stripe — All Time</div>
+        <div class="kpi-value"><?= e(fmt_money($all_time_stripe)) ?></div>
+        <div class="kpi-sub">Card payments</div>
+    </div>
+    <div class="kpi-card" style="border-left:4px solid #16a34a;">
+        <div class="kpi-label">Cash — All Time</div>
+        <div class="kpi-value"><?= e(fmt_money($all_time_cash)) ?></div>
+        <div class="kpi-sub">Cash payments</div>
+    </div>
+    <div class="kpi-card" style="border-left:4px solid #d97706;">
+        <div class="kpi-label">Check — All Time</div>
+        <div class="kpi-value"><?= e(fmt_money($all_time_check)) ?></div>
+        <div class="kpi-sub">Check payments</div>
+    </div>
+    <div class="kpi-card" style="border-left:4px solid #ef4444;">
+        <div class="kpi-label">Pending — All Time</div>
+        <div class="kpi-value"><?= e(fmt_money($all_time_pending)) ?></div>
+        <div class="kpi-sub">Awaiting payment</div>
+    </div>
+</div>
+
+<!-- Period Revenue Summary -->
+<h6 class="section-heading mb-2">
+    <i class="fa-solid fa-dollar-sign me-1"></i> Revenue Summary
+    <small class="text-muted ms-1">(<?= $all_time ? 'All Time' : e(fmt_date($date_from)).' – '.e(fmt_date($date_to)) ?>)</small>
+</h6>
+<div class="kpi-row mb-4">
+    <div class="kpi-card" style="border-left:4px solid #16a34a;">
+        <div class="kpi-label">Grand Total</div>
+        <div class="kpi-value" style="color:var(--or,#f60);"><?= e(fmt_money($grand_total)) ?></div>
+        <div class="kpi-sub">Bookings + Invoices + WOs</div>
+    </div>
+    <div class="kpi-card" style="border-left:4px solid #6366f1;">
+        <div class="kpi-label">Stripe Revenue</div>
+        <div class="kpi-value"><?= e(fmt_money($period_stripe)) ?></div>
+    </div>
+    <div class="kpi-card" style="border-left:4px solid #16a34a;">
+        <div class="kpi-label">Cash Revenue</div>
+        <div class="kpi-value"><?= e(fmt_money($period_cash)) ?></div>
+    </div>
+    <div class="kpi-card" style="border-left:4px solid #d97706;">
+        <div class="kpi-label">Check Revenue</div>
+        <div class="kpi-value"><?= e(fmt_money($period_check)) ?></div>
     </div>
     <div class="kpi-card" style="border-left:4px solid #7c3aed;">
-        <div class="kpi-value"><?= e(fmt_money($revenue_row['total'] ?? 0)) ?></div>
-        <div class="kpi-label">WO Revenue</div>
+        <div class="kpi-label">Invoice Revenue</div>
+        <div class="kpi-value"><?= e(fmt_money($inv_period)) ?></div>
     </div>
-    <div class="kpi-card" style="border-left:4px solid #f59e0b;">
-        <div class="kpi-value"><?= e(fmt_money($booking_revenue_row['total'] ?? 0)) ?></div>
-        <div class="kpi-label">Booking Revenue <small style="font-size:.65rem;opacity:.7;">(<?= (int)($booking_revenue_row['count'] ?? 0) ?> paid)</small></div>
-    </div>
-    <div class="kpi-card" style="border-left:4px solid #f97316;">
-        <div class="kpi-value"><?= e(fmt_money($invoice_revenue_row['total'] ?? 0)) ?></div>
-        <div class="kpi-label">Invoice Revenue <small style="font-size:.65rem;opacity:.7;">(<?= (int)($invoice_revenue_row['count'] ?? 0) ?> paid)</small></div>
+    <div class="kpi-card" style="border-left:4px solid #2563eb;">
+        <div class="kpi-label">Work Order Revenue</div>
+        <div class="kpi-value"><?= e(fmt_money($wo_period)) ?></div>
     </div>
 </div>
 
-<!-- ── Section 4: Upcoming Deliveries ────────────────────────────────────── -->
+<!-- Monthly Bar Chart -->
+<?php if (!empty($monthly_revenue)): ?>
 <h6 class="section-heading mb-2">
-    <i class="fa-solid fa-truck-arrow-right text-success me-1"></i>
-    Upcoming Deliveries <small class="text-muted">(next 7 days)</small>
+    <i class="fa-solid fa-chart-bar me-1"></i> Monthly Booking Revenue (last 6 months)
 </h6>
 <div class="tp-card mb-4">
-    <?php if (empty($upcoming_deliveries)): ?>
-        <p style="color:#e5e7eb;" class="mb-0">No deliveries in the next 7 days.</p>
-    <?php else: ?>
-    <div class="table-responsive">
-        <table class="table tp-table table-sm mb-0">
-            <thead>
-                <tr>
-                    <th>WO#</th>
-                    <th>Customer</th>
-                    <th>Address</th>
-                    <th>Delivery Date</th>
-                    <th>Size</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($upcoming_deliveries as $wo): ?>
-                <tr>
-                    <td>
-                        <a href="<?= e(APP_URL) ?>/modules/work_orders/view.php?id=<?= (int)$wo['id'] ?>">
-                            <?= e($wo['wo_number']) ?>
-                        </a>
-                    </td>
-                    <td><?= e($wo['cust_name']) ?></td>
-                    <td><?= e($wo['service_address'] ?? '—') ?></td>
-                    <td><?= e(fmt_date($wo['delivery_date'])) ?></td>
-                    <td><?= e($wo['size'] ?? '—') ?></td>
-                    <td><?= status_badge($wo['status']) ?></td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-    <?php endif; ?>
-</div>
-
-<!-- ── Section 5: Upcoming Pickups ───────────────────────────────────────── -->
-<h6 class="section-heading mb-2">
-    <i class="fa-solid fa-dumpster me-1" style="color:#7c3aed;"></i>
-    Upcoming Pickups <small class="text-muted">(next 7 days)</small>
-</h6>
-<div class="tp-card mb-4">
-    <?php if (empty($upcoming_pickups)): ?>
-        <p style="color:#e5e7eb;" class="mb-0">No pickups in the next 7 days.</p>
-    <?php else: ?>
-    <div class="table-responsive">
-        <table class="table tp-table table-sm mb-0">
-            <thead>
-                <tr>
-                    <th>WO#</th>
-                    <th>Customer</th>
-                    <th>Address</th>
-                    <th>Pickup Date</th>
-                    <th>Size</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($upcoming_pickups as $wo): ?>
-                <tr>
-                    <td>
-                        <a href="<?= e(APP_URL) ?>/modules/work_orders/view.php?id=<?= (int)$wo['id'] ?>">
-                            <?= e($wo['wo_number']) ?>
-                        </a>
-                    </td>
-                    <td><?= e($wo['cust_name']) ?></td>
-                    <td><?= e($wo['service_address'] ?? '—') ?></td>
-                    <td><?= e(fmt_date($wo['pickup_date'])) ?></td>
-                    <td><?= e($wo['size'] ?? '—') ?></td>
-                    <td><?= status_badge($wo['status']) ?></td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-    <?php endif; ?>
-</div>
-
-<!-- ── Section 6: Overdue Pickups ────────────────────────────────────────── -->
-<h6 class="section-heading mb-2">
-    <i class="fa-solid fa-triangle-exclamation text-danger me-1"></i>
-    Overdue Pickups
-</h6>
-<div class="tp-card mb-4">
-    <?php if (empty($overdue_pickups)): ?>
-        <p style="color:#e5e7eb;" class="mb-0">No overdue pickups. </p>
-    <?php else: ?>
-    <div class="table-responsive">
-        <table class="table tp-table table-sm mb-0">
-            <thead>
-                <tr>
-                    <th>WO#</th>
-                    <th>Customer</th>
-                    <th>Address</th>
-                    <th>Pickup Date</th>
-                    <th>Days Overdue</th>
-                    <th>Size</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-            <?php foreach ($overdue_pickups as $wo): ?>
-                <tr style="background:#fef2f2;">
-                    <td>
-                        <a href="<?= e(APP_URL) ?>/modules/work_orders/view.php?id=<?= (int)$wo['id'] ?>">
-                            <?= e($wo['wo_number']) ?>
-                        </a>
-                    </td>
-                    <td><?= e($wo['cust_name']) ?></td>
-                    <td><?= e($wo['service_address'] ?? '—') ?></td>
-                    <td><?= e(fmt_date($wo['pickup_date'])) ?></td>
-                    <td>
-                        <span class="text-danger fw-semibold">
-                            <?= (int)$wo['days_overdue'] ?> day<?= (int)$wo['days_overdue'] !== 1 ? 's' : '' ?>
-                        </span>
-                    </td>
-                    <td><?= e($wo['size'] ?? '—') ?></td>
-                    <td><?= status_badge($wo['status']) ?></td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-    <?php endif; ?>
-</div>
-
-<!-- ── Section 7: WO Count by Month ──────────────────────────────────────── -->
-<h6 class="section-heading mb-2">
-    <i class="fa-solid fa-chart-bar me-1"></i>
-    Work Orders by Month <small class="text-muted">(last 6 months)</small>
-</h6>
-<div class="tp-card mb-4">
-    <?php if (empty($monthly_counts)): ?>
-        <p style="color:#e5e7eb;" class="mb-0">No data available.</p>
-    <?php else: ?>
     <div class="bar-chart">
-        <?php foreach ($monthly_counts as $mc):
-            $pct    = $max_count > 0 ? round(((int)$mc['cnt'] / $max_count) * 140) : 4;
-            $pct    = max($pct, 4);
-            $label  = date('M \'y', strtotime($mc['month'] . '-01'));
+        <?php foreach ($monthly_revenue as $mr):
+            $st = (float)$mr['stripe']; $ca = (float)$mr['cash']; $ch = (float)$mr['chk'];
+            $rt = $st + $ca + $ch;
+            $total_px  = $max_bar > 0 ? max(4, round(($rt / $max_bar) * 120)) : 4;
+            $stripe_px = $rt > 0 ? round(($st / $rt) * $total_px) : 0;
+            $cash_px   = $rt > 0 ? round(($ca / $rt) * $total_px) : 0;
+            $check_px  = $total_px - $stripe_px - $cash_px;
+            $label     = date("M 'y", strtotime($mr['month'].'-01'));
         ?>
         <div class="bar-col">
-            <div class="bar-count"><?= (int)$mc['cnt'] ?></div>
-            <div class="bar-fill" style="height:<?= $pct ?>px;"></div>
+            <div class="bar-count">$<?= number_format($rt,0) ?></div>
+            <div style="display:flex;flex-direction:column-reverse;align-items:center;width:100%;height:120px;justify-content:flex-start;">
+                <?php if ($stripe_px>0): ?><div class="bar-seg" style="height:<?=$stripe_px?>px;background:#6366f1;" title="Stripe: $<?=number_format($st,2)?>"></div><?php endif;?>
+                <?php if ($cash_px>0):   ?><div class="bar-seg" style="height:<?=$cash_px?>px;background:#16a34a;" title="Cash: $<?=number_format($ca,2)?>"></div><?php endif;?>
+                <?php if ($check_px>0):  ?><div class="bar-seg" style="height:<?=$check_px?>px;background:#d97706;" title="Check: $<?=number_format($ch,2)?>"></div><?php endif;?>
+            </div>
             <div class="bar-label"><?= e($label) ?></div>
         </div>
         <?php endforeach; ?>
+    </div>
+    <div class="d-flex gap-3 mt-2" style="font-size:.75rem;">
+        <span><span style="display:inline-block;width:10px;height:10px;background:#6366f1;margin-right:4px;border-radius:2px;"></span>Stripe</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:#16a34a;margin-right:4px;border-radius:2px;"></span>Cash</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:#d97706;margin-right:4px;border-radius:2px;"></span>Check</span>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Work Orders by Status -->
+<?php if (!empty($wo_status_rows)): ?>
+<h6 class="section-heading mb-2">
+    <i class="fa-solid fa-clipboard-list me-1"></i> Work Orders by Status
+    <small class="text-muted ms-1">(<?= $all_time ? 'All Time' : e(fmt_date($date_from)).' – '.e(fmt_date($date_to)) ?>)</small>
+</h6>
+<div class="kpi-row mb-4">
+    <?php foreach ($wo_status_rows as $row): ?>
+    <div class="kpi-card">
+        <div class="kpi-value"><?= (int)$row['cnt'] ?></div>
+        <div class="kpi-label"><?= status_badge($row['status']) ?></div>
+    </div>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>
+
+<!-- Quick Filter Shortcuts -->
+<h6 class="section-heading mb-2">
+    <i class="fa-solid fa-list me-1"></i> Payment Transactions
+</h6>
+<div class="d-flex gap-2 mb-3 flex-wrap">
+    <a href="?all_time=1"
+       class="btn-tp-ghost btn-tp-sm <?= ($all_time && $pay_method==='all' && $pay_status==='all') ? 'filter-active' : '' ?>">
+        All Time
+    </a>
+    <a href="?all_time=1&pay_method=cash&pay_status=paid"
+       class="btn-tp-ghost btn-tp-sm <?= ($all_time && $pay_method==='cash' && $pay_status==='paid') ? 'filter-active' : '' ?>">
+        <i class="fa-solid fa-money-bill-wave me-1" style="color:#16a34a;"></i>All Cash Payments
+    </a>
+    <a href="?all_time=1&pay_method=check&pay_status=paid"
+       class="btn-tp-ghost btn-tp-sm <?= ($all_time && $pay_method==='check' && $pay_status==='paid') ? 'filter-active' : '' ?>">
+        <i class="fa-solid fa-money-check me-1" style="color:#d97706;"></i>All Check Payments
+    </a>
+    <a href="?all_time=1&pay_method=stripe&pay_status=paid"
+       class="btn-tp-ghost btn-tp-sm <?= ($all_time && $pay_method==='stripe' && $pay_status==='paid') ? 'filter-active' : '' ?>">
+        <i class="fa-brands fa-stripe me-1" style="color:#6366f1;"></i>All Stripe Payments
+    </a>
+    <a href="?pay_status=pending"
+       class="btn-tp-ghost btn-tp-sm <?= (!$all_time && $pay_status==='pending' && $pay_method==='all') ? 'filter-active' : '' ?>">
+        Pending Payments
+    </a>
+</div>
+
+<div class="tp-card p-0 mb-4">
+    <?php if (empty($filtered_bookings)): ?>
+    <p class="text-muted p-4 mb-0 text-center">No transactions found for these filters.</p>
+    <?php else: ?>
+    <div class="table-responsive">
+        <table class="table tp-table mb-0">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Booking #</th>
+                    <th>Customer</th>
+                    <th>Rental Period</th>
+                    <th class="text-end">Amount</th>
+                    <th>Method</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php
+            $filtered_total = 0.0;
+            foreach ($filtered_bookings as $row):
+                if (in_array($row['payment_status'], ['paid','paid_cash','paid_check'], true)) {
+                    $filtered_total += (float)$row['total_amount'];
+                }
+                $m_label = match ($row['payment_status']) {
+                    'paid'                    => 'Stripe',
+                    'paid_cash','pending_cash' => 'Cash',
+                    'paid_check','pending_check' => 'Check',
+                    default => ucfirst($row['payment_method'] ?? 'Unknown'),
+                };
+                $m_color = match ($row['payment_status']) {
+                    'paid'                      => '#6366f1',
+                    'paid_cash','pending_cash'   => '#16a34a',
+                    'paid_check','pending_check' => '#d97706',
+                    default                      => '#6b7280',
+                };
+            ?>
+            <tr>
+                <td class="text-nowrap"><?= e(fmt_date($row['updated_at'])) ?></td>
+                <td>
+                    <a href="<?= e(APP_URL) ?>/modules/bookings/view.php?id=<?= (int)$row['id'] ?>" class="fw-semibold">
+                        <?= e($row['booking_number']) ?>
+                    </a>
+                </td>
+                <td>
+                    <div><?= e($row['customer_name']) ?></div>
+                    <?php if ($row['customer_email']): ?>
+                    <div style="font-size:.78rem;color:#6b7280;"><?= e($row['customer_email']) ?></div>
+                    <?php endif; ?>
+                </td>
+                <td style="font-size:.82rem;">
+                    <?= e(fmt_date($row['rental_start'])) ?> → <?= e(fmt_date($row['rental_end'])) ?>
+                </td>
+                <td class="text-end fw-semibold"><?= e(fmt_money($row['total_amount'])) ?></td>
+                <td>
+                    <span style="color:<?= $m_color ?>;font-weight:600;font-size:.82rem;"><?= e($m_label) ?></span>
+                </td>
+                <td><?= payment_badge($row['payment_status']) ?></td>
+                <td>
+                    <a href="<?= e(APP_URL) ?>/modules/bookings/view.php?id=<?= (int)$row['id'] ?>"
+                       class="btn-tp-ghost btn-tp-xs">View</a>
+                </td>
+            </tr>
+            <?php endforeach; ?>
+            </tbody>
+            <tfoot>
+                <tr style="background:#f9fafb;border-top:2px solid #e5e7eb;">
+                    <td colspan="4" class="fw-semibold text-end pe-3" style="font-size:.85rem;">Filtered Paid Total:</td>
+                    <td class="text-end fw-bold pe-3" style="font-size:1rem;color:#16a34a;"><?= e(fmt_money($filtered_total)) ?></td>
+                    <td colspan="3"></td>
+                </tr>
+            </tfoot>
+        </table>
     </div>
     <?php endif; ?>
 </div>

@@ -10,10 +10,6 @@ require_login();
 
 // ── KPI Queries ──────────────────────────────────────────────────────────────
 
-$leads_new = (int)(db_fetch(
-    "SELECT COUNT(*) AS cnt FROM leads WHERE status IN ('new','contacted') AND archived = 0"
-)['cnt'] ?? 0);
-
 $wo_active = (int)(db_fetch(
     "SELECT COUNT(*) AS cnt FROM work_orders WHERE status IN ('scheduled','delivered','active','pickup_requested')"
 )['cnt'] ?? 0);
@@ -213,11 +209,11 @@ layout_start('Dashboard', 'dashboard');
         <span id="dash-last-updated" style="font-size:.75rem;color:#6b7280;" title="Auto-refreshes every 60 seconds">
             <i class="fa-solid fa-rotate me-1" style="color:#f97316;"></i>Live
         </span>
+        <a href="<?= e(APP_URL) ?>/modules/bookings/create.php" class="btn-tp-ghost btn-tp-sm">
+            <i class="fa-solid fa-plus"></i> New Booking
+        </a>
         <a href="<?= e(APP_URL) ?>/modules/work_orders/create.php" class="btn-tp-primary btn-tp-sm">
             <i class="fa-solid fa-plus"></i> New Work Order
-        </a>
-        <a href="<?= e(APP_URL) ?>/modules/leads/create.php" class="btn-tp-ghost btn-tp-sm">
-            <i class="fa-solid fa-plus"></i> New Lead
         </a>
     </div>
 </div>
@@ -225,12 +221,12 @@ layout_start('Dashboard', 'dashboard');
 <!-- ── KPI Cards ──────────────────────────────────────────────────────────── -->
 <div class="row g-3 mb-4">
 
-    <!-- Open Leads -->
+    <!-- Upcoming Bookings -->
     <div class="col-6 col-md-4 col-xl-2">
-        <a href="<?= e(APP_URL) ?>/modules/leads/index.php" class="tp-kpi-card tp-kpi-orange text-decoration-none d-block">
-            <div class="kpi-icon"><i class="fa-solid fa-funnel"></i></div>
-            <div class="kpi-value" data-metric="kpis.leads_new"><?= $leads_new ?></div>
-            <div class="kpi-label">Open Leads</div>
+        <a href="<?= e(APP_URL) ?>/modules/bookings/index.php?filter=upcoming" class="tp-kpi-card tp-kpi-orange text-decoration-none d-block">
+            <div class="kpi-icon"><i class="fa-solid fa-calendar-check"></i></div>
+            <div class="kpi-value"><?= $bookings_upcoming ?></div>
+            <div class="kpi-label">Upcoming Bookings</div>
         </a>
     </div>
 
@@ -245,7 +241,7 @@ layout_start('Dashboard', 'dashboard');
 
     <!-- Today's Deliveries -->
     <div class="col-6 col-md-4 col-xl-2">
-        <a href="<?= e(APP_URL) ?>/modules/scheduling/index.php" class="tp-kpi-card tp-kpi-green text-decoration-none d-block">
+        <a href="<?= e(APP_URL) ?>/modules/calendar/index.php" class="tp-kpi-card tp-kpi-green text-decoration-none d-block">
             <div class="kpi-icon"><i class="fa-solid fa-truck"></i></div>
             <div class="kpi-value" data-metric="kpis.wo_today_deliveries"><?= $wo_today_deliveries ?></div>
             <div class="kpi-label">Today Deliveries</div>
@@ -254,7 +250,7 @@ layout_start('Dashboard', 'dashboard');
 
     <!-- Today's Pickups -->
     <div class="col-6 col-md-4 col-xl-2">
-        <a href="<?= e(APP_URL) ?>/modules/scheduling/index.php" class="tp-kpi-card tp-kpi-amber text-decoration-none d-block">
+        <a href="<?= e(APP_URL) ?>/modules/calendar/index.php" class="tp-kpi-card tp-kpi-amber text-decoration-none d-block">
             <div class="kpi-icon"><i class="fa-solid fa-truck-ramp-box"></i></div>
             <div class="kpi-value" data-metric="kpis.wo_today_pickups"><?= $wo_today_pickups ?></div>
             <div class="kpi-label">Today Pickups</div>
@@ -263,7 +259,7 @@ layout_start('Dashboard', 'dashboard');
 
     <!-- Month Revenue — shows Stripe revenue when available, falls back to DB -->
     <div class="col-6 col-md-4 col-xl-2">
-        <a href="<?= e(APP_URL) ?>/modules/work_orders/index.php" class="tp-kpi-card tp-kpi-green text-decoration-none d-block">
+        <a href="<?= e(APP_URL) ?>/modules/reports/index.php" class="tp-kpi-card tp-kpi-green text-decoration-none d-block">
             <div class="kpi-icon"><i class="fa-solid fa-dollar-sign"></i></div>
             <div class="kpi-value" data-metric="kpis.revenue_month" data-metric-format="money" style="font-size:1.1rem;">
                 <?= $stripe_available ? fmt_money($stripe_revenue_month) : fmt_money($revenue_payments_month) ?>
@@ -499,7 +495,7 @@ layout_start('Dashboard', 'dashboard');
                             <div style="font-size:1.4rem;font-weight:700;color:#e5e7eb;" data-metric="kpis.wo_today_deliveries"><?= $wo_today_deliveries ?></div>
                         </div>
                     </div>
-                    <a href="<?= e(APP_URL) ?>/modules/scheduling/index.php" class="btn-tp-ghost btn-tp-xs">View</a>
+                    <a href="<?= e(APP_URL) ?>/modules/calendar/index.php" class="btn-tp-ghost btn-tp-xs">View</a>
                 </div>
 
                 <div class="d-flex align-items-center justify-content-between p-3 mb-3"
@@ -511,7 +507,7 @@ layout_start('Dashboard', 'dashboard');
                             <div style="font-size:1.4rem;font-weight:700;color:#e5e7eb;" data-metric="kpis.wo_today_pickups"><?= $wo_today_pickups ?></div>
                         </div>
                     </div>
-                    <a href="<?= e(APP_URL) ?>/modules/scheduling/index.php" class="btn-tp-ghost btn-tp-xs">View</a>
+                    <a href="<?= e(APP_URL) ?>/modules/calendar/index.php" class="btn-tp-ghost btn-tp-xs">View</a>
                 </div>
 
                 <hr style="border-color:#2a2d3e;margin:1rem 0;">

@@ -30,14 +30,6 @@ $units = db_fetchall(
      ORDER BY size, unit_code"
 );
 
-// Fetch active workers for assignment
-$workers = [];
-try {
-    $workers = db_fetchall("SELECT id, name FROM workers WHERE active = 1 ORDER BY name ASC");
-} catch (\Throwable $e) {
-    // workers table may not exist yet
-}
-
 // ── POST handler ──────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();

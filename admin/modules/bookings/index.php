@@ -10,7 +10,6 @@ require_login();
 
 // ── Filters ───────────────────────────────────────────────────────────────────
 $filter    = trim($_GET['filter']    ?? 'all');
-$worker_id = (int)($_GET['worker_id'] ?? 0);
 $page      = max(1, (int)($_GET['page'] ?? 1));
 $per_page  = 25;
 
@@ -42,12 +41,6 @@ switch ($filter) {
     case 'upcoming':
         $where  = "b.rental_start >= CURDATE() AND b.booking_status NOT IN ('canceled','completed')";
         break;
-}
-
-// Worker filter
-if ($worker_id > 0) {
-    $where  .= ' AND b.worker_id = ?';
-    $params[] = $worker_id;
 }
 
 // ── Count ─────────────────────────────────────────────────────────────────────
@@ -160,11 +153,7 @@ layout_start('Bookings', 'bookings');
                     <?php if ($b['customer_email']): ?>
                     <div style="font-size:.8rem;color:var(--gy);"><?= e($b['customer_email']) ?></div>
                     <?php endif; ?>
-                    <?php if (!empty($b['worker_name'])): ?>
-                    <div style="font-size:.78rem;color:var(--or);" title="Assigned worker">
-                        <i class="fa-solid fa-hard-hat" style="font-size:.72rem;"></i> <?= e($b['worker_name']) ?>
-                    </div>
-                    <?php endif; ?>
+
                 </td>
                 <td>
                     <?php if ($b['unit_code']): ?>
