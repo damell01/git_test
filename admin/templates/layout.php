@@ -97,6 +97,14 @@ function layout_start(string $page_title, string $active_nav = ''): void
             'badge' => null,
         ],
         [
+            'key'   => 'payments',
+            'label' => 'Payments',
+            'icon'  => 'fa-money-bill-wave',
+            'href'  => APP_URL . '/modules/payments/index.php',
+            'roles' => ['admin', 'office'],
+            'badge' => null,
+        ],
+        [
             'key'   => 'notifications',
             'label' => 'Notifications',
             'icon'  => 'fa-bell',

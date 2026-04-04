@@ -161,3 +161,72 @@ function stripe_verify_webhook(string $payload, string $sig_header): \Stripe\Eve
     $secret = get_setting('stripe_webhook_secret', '');
     return \Stripe\Webhook::constructEvent($payload, $sig_header, $secret);
 }
+
+/**
+ * Issue a full or partial refund for a Stripe Payment Intent or Charge.
+ *
+ * @param string   $payment_id  Stripe payment intent ID (pi_…) or charge ID (ch_…)
+ * @param int|null $amount_cents Amount to refund in cents; null = full refund
+ * @param string   $reason      Stripe refund reason: 'duplicate', 'fraudulent', or 'requested_by_customer'
+ * @return \Stripe\Refund
+ */
+function stripe_issue_refund(string $payment_id, ?int $amount_cents = null, string $reason = 'requested_by_customer'): \Stripe\Refund
+{
+    $params = ['reason' => $reason];
+
+    if (str_starts_with($payment_id, 'pi_')) {
+        $params['payment_intent'] = $payment_id;
+    } else {
+        $params['charge'] = $payment_id;
+    }
+
+    if ($amount_cents !== null && $amount_cents > 0) {
+        $params['amount'] = $amount_cents;
+    }
+
+    return stripe_client()->refunds->create($params);
+}
+
+/**
+ * Retrieve the current Stripe account balance (available + pending).
+ *
+ * @return \Stripe\Balance
+ */
+function stripe_get_balance(): \Stripe\Balance
+{
+    return stripe_client()->balance->retrieve();
+}
+
+/**
+ * List recent Stripe payouts.
+ *
+ * @param int $limit  Number of payouts to return (max 100)
+ * @return \Stripe\Collection
+ */
+function stripe_list_payouts(int $limit = 20): \Stripe\Collection
+{
+    return stripe_client()->payouts->all(['limit' => $limit]);
+}
+
+/**
+ * List recent Stripe charges.
+ *
+ * @param int         $limit
+ * @param int|null    $created_gte  Unix timestamp — return charges on/after this time
+ * @param int|null    $created_lte  Unix timestamp — return charges on/before this time
+ * @return \Stripe\Collection
+ */
+function stripe_list_charges(int $limit = 50, ?int $created_gte = null, ?int $created_lte = null): \Stripe\Collection
+{
+    $params = ['limit' => $limit];
+    if ($created_gte !== null || $created_lte !== null) {
+        $params['created'] = [];
+        if ($created_gte !== null) {
+            $params['created']['gte'] = $created_gte;
+        }
+        if ($created_lte !== null) {
+            $params['created']['lte'] = $created_lte;
+        }
+    }
+    return stripe_client()->charges->all($params);
+}
