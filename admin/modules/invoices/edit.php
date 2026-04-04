@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stripe_payment_link = $inv['stripe_payment_link']; // keep existing by default
         $stripe_session_id   = $inv['stripe_session_id'] ?? null;
         $stripe_key = trim(get_setting('stripe_secret_key', ''));
-        if ($stripe_key !== '' && $total > 0 && (!empty($upd['regen_stripe']) || empty($stripe_payment_link))) {
+        if ($stripe_key !== '' && str_starts_with($stripe_key, 'sk_') && $total > 0 && (!empty($upd['regen_stripe']) || empty($stripe_payment_link))) {
             $autoload = dirname(__DIR__, 2) . '/vendor/autoload.php';
             if (file_exists($autoload)) {
                 require_once $autoload;
