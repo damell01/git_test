@@ -201,14 +201,18 @@ layout_start('Customers', 'customers');
                                 <i class="fa-solid fa-eye"></i> View
                             </a>
                             <?php if (has_role('admin', 'office')): ?>
+                            <a href="<?= APP_URL ?>/modules/bookings/create.php?customer_id=<?= (int)$cust['id'] ?>"
+                               class="btn-tp-primary btn-tp-sm" title="New Booking">
+                                <i class="fa-solid fa-calendar-plus"></i> Book
+                            </a>
                             <a href="<?= APP_URL ?>/modules/customers/edit.php?id=<?= (int)$cust['id'] ?>"
                                class="btn-tp-ghost btn-tp-sm" title="Edit">
-                                <i class="fa-solid fa-pencil"></i> Edit
+                                <i class="fa-solid fa-pencil"></i>
                             </a>
                             <a href="<?= APP_URL ?>/modules/customers/delete.php?id=<?= (int)$cust['id'] ?>"
                                class="btn-tp-ghost btn-tp-sm text-danger" title="Delete"
                                onclick="return confirm('Delete customer <?= e(addslashes($cust['name'])) ?>? This cannot be undone.')">
-                                <i class="fa-solid fa-trash"></i> Delete
+                                <i class="fa-solid fa-trash"></i>
                             </a>
                             <?php endif; ?>
                         </div>

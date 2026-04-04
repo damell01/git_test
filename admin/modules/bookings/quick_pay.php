@@ -64,4 +64,11 @@ $status_label = [
 
 log_activity('update', "Quick pay: booking {$booking['booking_number']} → $status_label", 'booking', $id);
 flash_success("Payment status updated: $status_label.");
+
+// Allow the caller to specify a safe relative redirect target within the bookings module
+$redirect_to = trim($_POST['redirect_to'] ?? '');
+// Only allow redirect to the bookings index (relative path, no host/scheme)
+if ($redirect_to !== '' && preg_match('/^index\.php(?:\?[a-zA-Z0-9_.=&%+-]*)?$/', $redirect_to)) {
+    redirect(APP_URL . '/modules/bookings/' . $redirect_to);
+}
 redirect('view.php?id=' . $id);

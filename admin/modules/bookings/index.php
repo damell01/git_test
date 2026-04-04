@@ -10,6 +10,8 @@ require_login();
 
 // ── Filters ───────────────────────────────────────────────────────────────────
 $filter    = trim($_GET['filter']    ?? 'all');
+$q         = trim($_GET['q']         ?? '');
+$date_qs   = trim($_GET['date_qs']   ?? '');  // today|week|month
 $page      = max(1, (int)($_GET['page'] ?? 1));
 $per_page  = 25;
 
@@ -18,34 +20,60 @@ if (!in_array($filter, $allowed_filters, true)) {
     $filter = 'all';
 }
 
+$allowed_date_qs = ['', 'today', 'week', 'month'];
+if (!in_array($date_qs, $allowed_date_qs, true)) {
+    $date_qs = '';
+}
+
 // ── Build WHERE clause ────────────────────────────────────────────────────────
-$where  = '1=1';
+$where  = ['1=1'];
 $params = [];
 
 switch ($filter) {
     case 'pending':
-        $where  = 'b.booking_status = ?';
-        $params = ['pending'];
+        $where[]  = 'b.booking_status = ?';
+        $params[] = 'pending';
         break;
     case 'confirmed':
-        $where  = 'b.booking_status = ?';
-        $params = ['confirmed'];
+        $where[]  = 'b.booking_status = ?';
+        $params[] = 'confirmed';
         break;
     case 'paid':
-        $where  = "b.booking_status = 'paid' OR b.payment_status = 'paid'";
+        $where[] = "(b.booking_status = 'paid' OR b.payment_status IN ('paid','paid_cash','paid_check'))";
         break;
     case 'canceled':
-        $where  = 'b.booking_status = ?';
-        $params = ['canceled'];
+        $where[]  = 'b.booking_status = ?';
+        $params[] = 'canceled';
         break;
     case 'upcoming':
-        $where  = "b.rental_start >= CURDATE() AND b.booking_status NOT IN ('canceled','completed')";
+        $where[] = "b.rental_start >= CURDATE() AND b.booking_status NOT IN ('canceled','completed')";
         break;
 }
 
+// Date quick-select
+if ($date_qs === 'today') {
+    $where[] = 'DATE(b.created_at) = CURDATE()';
+} elseif ($date_qs === 'week') {
+    $where[] = 'b.created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)';
+} elseif ($date_qs === 'month') {
+    $where[] = "MONTH(b.created_at) = MONTH(NOW()) AND YEAR(b.created_at) = YEAR(NOW())";
+}
+
+// Search
+if ($q !== '') {
+    $like     = '%' . $q . '%';
+    $where[]  = '(b.booking_number LIKE ? OR b.customer_name LIKE ? OR b.customer_email LIKE ? OR b.unit_code LIKE ?)';
+    $params[] = $like;
+    $params[] = $like;
+    $params[] = $like;
+    $params[] = $like;
+}
+
+$where_sql = implode(' AND ', $where);
+
 // ── Count ─────────────────────────────────────────────────────────────────────
 $total_row = db_fetch(
-    "SELECT COUNT(*) AS cnt FROM bookings b WHERE $where",
+    "SELECT COUNT(*) AS cnt FROM bookings b WHERE $where_sql",
     $params
 );
 $total = (int)($total_row['cnt'] ?? 0);
@@ -60,20 +88,67 @@ $bookings = db_fetchall(
             b.stripe_payment_id, b.stripe_session_id,
             b.created_at
      FROM bookings b
-     WHERE $where
+     WHERE $where_sql
      ORDER BY b.created_at DESC
      LIMIT ? OFFSET ?",
     array_merge($params, [$pager['per_page'], $pager['offset']])
 );
 
+// Helper to build URL preserving current filters
+function bk_url(array $overrides = []): string {
+    global $filter, $q, $date_qs;
+    $base = array_filter([
+        'filter'  => $filter,
+        'q'       => $q,
+        'date_qs' => $date_qs,
+    ], fn($v) => $v !== '');
+    $merged = array_merge($base, $overrides);
+    return '?' . http_build_query($merged);
+}
+
 layout_start('Bookings', 'bookings');
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="mb-0">Bookings</h5>
+    <h5 class="mb-0">Bookings
+        <?php if ($total > 0): ?>
+        <small class="text-muted fw-normal ms-2" style="font-size:.75rem;"><?= number_format($total) ?> total</small>
+        <?php endif; ?>
+    </h5>
     <a href="create.php" class="btn-tp-primary btn-tp-sm">
         <i class="fa-solid fa-plus"></i> New Booking
     </a>
+</div>
+
+<!-- Search + Date Quick Filters -->
+<div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
+    <form method="get" action="" class="d-flex gap-2 flex-wrap align-items-center">
+        <input type="hidden" name="filter" value="<?= e($filter) ?>">
+        <?php if ($date_qs): ?><input type="hidden" name="date_qs" value="<?= e($date_qs) ?>"><?php endif; ?>
+        <input type="text" name="q" value="<?= e($q) ?>"
+               placeholder="Search booking #, customer, email, unit…"
+               class="tp-search form-control form-control-sm"
+               style="min-width:220px;max-width:320px;">
+        <button type="submit" class="btn-tp-primary btn-tp-sm">
+            <i class="fa-solid fa-magnifying-glass"></i>
+        </button>
+        <?php if ($q !== ''): ?>
+        <a href="<?= e(bk_url(['q' => '', 'page' => 1])) ?>" class="btn-tp-ghost btn-tp-sm">
+            <i class="fa-solid fa-xmark"></i> Clear
+        </a>
+        <?php endif; ?>
+    </form>
+
+    <div class="tp-date-qs ms-auto">
+        <a href="<?= e(bk_url(['date_qs' => '', 'page' => 1])) ?>"
+           class="<?= $date_qs === '' ? 'active' : '' ?>">All Time</a>
+        <a href="<?= e(bk_url(['date_qs' => 'today', 'page' => 1])) ?>"
+           class="<?= $date_qs === 'today' ? 'active' : '' ?>">Today</a>
+        <a href="<?= e(bk_url(['date_qs' => 'week', 'page' => 1])) ?>"
+           class="<?= $date_qs === 'week' ? 'active' : '' ?>">This Week</a>
+        <a href="<?= e(bk_url(['date_qs' => 'month', 'page' => 1])) ?>"
+           class="<?= $date_qs === 'month' ? 'active' : '' ?>">This Month</a>
+    </div>
 </div>
 
 <!-- Filter Tabs -->
@@ -90,7 +165,8 @@ layout_start('Bookings', 'bookings');
     foreach ($tabs as $key => $label):
         $active_class = $filter === $key ? ' active' : '';
     ?>
-    <a href="?filter=<?= e($key) ?>" class="tp-filter-tab<?= $active_class ?>"><?= e($label) ?></a>
+    <a href="<?= e(bk_url(['filter' => $key, 'page' => 1])) ?>"
+       class="tp-filter-tab<?= $active_class ?>"><?= e($label) ?></a>
     <?php endforeach; ?>
 </div>
 
@@ -121,6 +197,7 @@ layout_start('Bookings', 'bookings');
                 if ($stripeLink === null) {
                     $stripeLink = stripe_dashboard_url($b['stripe_session_id'] ?? '');
                 }
+                $is_unpaid = in_array($b['payment_status'], ['unpaid','pending','pending_cash','pending_check'], true);
             ?>
             <tr>
                 <td>
@@ -133,7 +210,6 @@ layout_start('Bookings', 'bookings');
                     <?php if ($b['customer_email']): ?>
                     <div style="font-size:.8rem;color:var(--gy);"><?= e($b['customer_email']) ?></div>
                     <?php endif; ?>
-
                 </td>
                 <td>
                     <?php if ($b['unit_code']): ?>
@@ -166,12 +242,42 @@ layout_start('Bookings', 'bookings');
                 </td>
                 <td><?= status_badge($b['booking_status']) ?></td>
                 <td class="text-end">
-                    <a href="view.php?id=<?= (int)$b['id'] ?>" class="btn-tp-ghost btn-tp-xs">View</a>
-                    <a href="edit.php?id=<?= (int)$b['id'] ?>" class="btn-tp-ghost btn-tp-xs">Edit</a>
-                    <?php if (has_role('admin')): ?>
-                    <a href="delete.php?id=<?= (int)$b['id'] ?>" class="btn-tp-ghost btn-tp-xs text-danger"
-                       onclick="return confirm('Permanently delete booking <?= e($b['booking_number']) ?>? This cannot be undone.')">Delete</a>
-                    <?php endif; ?>
+                    <div class="d-flex gap-1 flex-wrap justify-content-end">
+                        <a href="view.php?id=<?= (int)$b['id'] ?>" class="btn-tp-ghost btn-tp-xs">
+                            <i class="fa-solid fa-eye"></i> View
+                        </a>
+                        <a href="edit.php?id=<?= (int)$b['id'] ?>" class="btn-tp-ghost btn-tp-xs">
+                            <i class="fa-solid fa-pencil"></i> Edit
+                        </a>
+                        <?php if ($is_unpaid && has_role('admin', 'office')): ?>
+                        <form method="post" action="quick_pay.php" style="display:inline;">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="id" value="<?= (int)$b['id'] ?>">
+                            <input type="hidden" name="action" value="mark_paid_cash">
+                            <input type="hidden" name="redirect_to" value="index.php<?= e('?' . http_build_query(array_filter(['filter' => $filter, 'q' => $q, 'date_qs' => $date_qs, 'page' => $page]))) ?>">
+                            <button type="submit" class="btn-tp-ghost btn-tp-xs" title="Mark paid — cash"
+                                    onclick="return confirm('Mark booking <?= e($b['booking_number']) ?> as paid (cash)?')">
+                                <i class="fa-solid fa-money-bill"></i> Cash
+                            </button>
+                        </form>
+                        <form method="post" action="quick_pay.php" style="display:inline;">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="id" value="<?= (int)$b['id'] ?>">
+                            <input type="hidden" name="action" value="mark_paid_check">
+                            <input type="hidden" name="redirect_to" value="index.php<?= e('?' . http_build_query(array_filter(['filter' => $filter, 'q' => $q, 'date_qs' => $date_qs, 'page' => $page]))) ?>">
+                            <button type="submit" class="btn-tp-ghost btn-tp-xs" title="Mark paid — check"
+                                    onclick="return confirm('Mark booking <?= e($b['booking_number']) ?> as paid (check)?')">
+                                <i class="fa-solid fa-money-check"></i> Check
+                            </button>
+                        </form>
+                        <?php endif; ?>
+                        <?php if (has_role('admin')): ?>
+                        <a href="delete.php?id=<?= (int)$b['id'] ?>" class="btn-tp-ghost btn-tp-xs text-danger"
+                           onclick="return confirm('Permanently delete booking <?= e($b['booking_number']) ?>? This cannot be undone.')">
+                            <i class="fa-solid fa-trash"></i>
+                        </a>
+                        <?php endif; ?>
+                    </div>
                 </td>
             </tr>
             <?php endforeach; ?>
@@ -186,18 +292,18 @@ layout_start('Bookings', 'bookings');
         </small>
         <div class="d-flex gap-1">
             <?php if ($pager['page'] > 1): ?>
-            <a href="?filter=<?= e($filter) ?>&page=<?= $pager['page'] - 1 ?>" class="btn-tp-ghost btn-tp-xs">
+            <a href="<?= e(bk_url(['page' => $pager['page'] - 1])) ?>" class="btn-tp-ghost btn-tp-xs">
                 <i class="fa-solid fa-chevron-left"></i>
             </a>
             <?php endif; ?>
             <?php for ($p = max(1, $pager['page'] - 2); $p <= min($pager['pages'], $pager['page'] + 2); $p++): ?>
-            <a href="?filter=<?= e($filter) ?>&page=<?= $p ?>"
+            <a href="<?= e(bk_url(['page' => $p])) ?>"
                class="btn-tp-ghost btn-tp-xs<?= $p === $pager['page'] ? ' active' : '' ?>">
                 <?= $p ?>
             </a>
             <?php endfor; ?>
             <?php if ($pager['page'] < $pager['pages']): ?>
-            <a href="?filter=<?= e($filter) ?>&page=<?= $pager['page'] + 1 ?>" class="btn-tp-ghost btn-tp-xs">
+            <a href="<?= e(bk_url(['page' => $pager['page'] + 1])) ?>" class="btn-tp-ghost btn-tp-xs">
                 <i class="fa-solid fa-chevron-right"></i>
             </a>
             <?php endif; ?>
