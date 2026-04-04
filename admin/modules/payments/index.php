@@ -365,29 +365,26 @@ layout_start('Payments', 'payments');
         $month_start_s  = date('Y-m-01');
         $month_end_s    = date('Y-m-t');
 
-        function pay_qs_url(string $from, string $to, string $method, string $status, string $src): string {
-            return 'index.php?' . http_build_query(array_filter([
-                'date_from'  => $from,
-                'date_to'    => $to,
-                'pay_method' => $method !== 'all' ? $method : '',
-                'pay_status' => $status !== 'all' ? $status : '',
-                'source'     => $src !== 'all' ? $src : '',
-            ]));
-        }
-
         $is_today  = ($date_from === $today_str && $date_to === $today_str);
         $is_week   = ($date_from === $week_start && $date_to === $today_str);
         $is_month  = ($date_from === $month_start_s && $date_to === $month_end_s);
         $is_all    = ($date_from === '' && $date_to === '');
+
+        // Preserve method/status/source filters in quick-date links
+        $qs_base = array_filter([
+            'pay_method' => $pay_method !== 'all' ? $pay_method : '',
+            'pay_status' => $pay_status !== 'all' ? $pay_status : '',
+            'source'     => $source !== 'all' ? $source : '',
+        ]);
+        $all_href   = 'index.php' . ($qs_base ? '?' . http_build_query($qs_base) : '');
+        $today_href = 'index.php?' . http_build_query(array_merge($qs_base, ['date_from' => $today_str,    'date_to' => $today_str]));
+        $week_href  = 'index.php?' . http_build_query(array_merge($qs_base, ['date_from' => $week_start,   'date_to' => $today_str]));
+        $month_href = 'index.php?' . http_build_query(array_merge($qs_base, ['date_from' => $month_start_s,'date_to' => $month_end_s]));
         ?>
-        <a href="index.php?pay_method=<?= e($pay_method !== 'all' ? $pay_method : '') ?>&pay_status=<?= e($pay_status !== 'all' ? $pay_status : '') ?>&source=<?= e($source !== 'all' ? $source : '') ?>"
-           class="<?= $is_all ? 'active' : '' ?>">All Time</a>
-        <a href="index.php?date_from=<?= $today_str ?>&date_to=<?= $today_str ?>&pay_method=<?= e($pay_method !== 'all' ? $pay_method : '') ?>&pay_status=<?= e($pay_status !== 'all' ? $pay_status : '') ?>&source=<?= e($source !== 'all' ? $source : '') ?>"
-           class="<?= $is_today ? 'active' : '' ?>">Today</a>
-        <a href="index.php?date_from=<?= $week_start ?>&date_to=<?= $today_str ?>&pay_method=<?= e($pay_method !== 'all' ? $pay_method : '') ?>&pay_status=<?= e($pay_status !== 'all' ? $pay_status : '') ?>&source=<?= e($source !== 'all' ? $source : '') ?>"
-           class="<?= $is_week ? 'active' : '' ?>">This Week</a>
-        <a href="index.php?date_from=<?= $month_start_s ?>&date_to=<?= $month_end_s ?>&pay_method=<?= e($pay_method !== 'all' ? $pay_method : '') ?>&pay_status=<?= e($pay_status !== 'all' ? $pay_status : '') ?>&source=<?= e($source !== 'all' ? $source : '') ?>"
-           class="<?= $is_month ? 'active' : '' ?>">This Month</a>
+        <a href="<?= e($all_href) ?>"   class="<?= $is_all   ? 'active' : '' ?>">All Time</a>
+        <a href="<?= e($today_href) ?>" class="<?= $is_today ? 'active' : '' ?>">Today</a>
+        <a href="<?= e($week_href) ?>"  class="<?= $is_week  ? 'active' : '' ?>">This Week</a>
+        <a href="<?= e($month_href) ?>" class="<?= $is_month ? 'active' : '' ?>">This Month</a>
     </div>
 
     <form method="GET" action="index.php" class="row g-2 align-items-end">

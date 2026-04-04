@@ -269,7 +269,12 @@ layout_start('Calendar', 'calendar');
     <div class="<?= $cell_class ?>">
         <div class="cal-day-num"><?= $day ?></div>
         <?php foreach ($day_bks as $bk):
-            $bk_css = $bk['booking_status'] === 'completed' ? 'bk-completed' : 'bk';
+            if ($bk['booking_status'] === 'completed') {
+                $bk_css = 'bk-completed';
+            } else {
+                // pending, confirmed, paid, etc. all use the standard blue booking style
+                $bk_css = 'bk';
+            }
         ?>
         <a href="<?= e(APP_URL) ?>/modules/bookings/view.php?id=<?= (int)$bk['id'] ?>"
            class="cal-ev <?= $bk_css ?>"
