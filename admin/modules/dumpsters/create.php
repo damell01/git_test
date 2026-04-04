@@ -31,7 +31,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pickup_fee     = (float)($_POST['pickup_fee']    ?? 0.00);
     $mileage_fee_raw = trim($_POST['mileage_fee'] ?? '');
     $mileage_fee    = $mileage_fee_raw !== '' ? (float)$mileage_fee_raw : null;
-    $tax_rate       = (float)($_POST['tax_rate']      ?? 0.00);
     $active    = isset($_POST['active']) ? 1 : 0;
     $status    = trim($_POST['status']    ?? 'available');
     $condition = trim($_POST['condition'] ?? 'good');
@@ -106,7 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'delivery_fee'    => $delivery_fee,
             'pickup_fee'      => $pickup_fee,
             'mileage_fee'     => $mileage_fee,
-            'tax_rate'        => $tax_rate,
+            'tax_rate'        => 0,
             'active'          => $active,
             'status'          => $status,
             'condition'       => $condition,
@@ -141,7 +140,6 @@ $f = [
     'delivery_fee'    => $_POST['delivery_fee']     ?? '0.00',
     'pickup_fee'      => $_POST['pickup_fee']       ?? '0.00',
     'mileage_fee'     => $_POST['mileage_fee']      ?? '',
-    'tax_rate'        => $_POST['tax_rate']         ?? '0.00',
     'active'          => isset($_POST['active']) ? 1 : (isset($_POST['unit_code']) ? 0 : 1),
     'status'          => $_POST['status']           ?? 'available',
     'condition'       => $_POST['condition']        ?? 'good',
@@ -325,19 +323,6 @@ layout_start('Add Dumpster', 'inventory');
                        step="0.01"
                        min="0"
                        value="<?= $f['mileage_fee'] !== '' ? e(number_format((float)$f['mileage_fee'], 2, '.', '')) : '' ?>"
-                       placeholder="0.00">
-            </div>
-
-            <div class="col-md-3">
-                <label class="form-label" for="tax_rate">Tax Rate (%)</label>
-                <input type="number"
-                       id="tax_rate"
-                       name="tax_rate"
-                       class="form-control"
-                       step="0.01"
-                       min="0"
-                       max="100"
-                       value="<?= e(number_format((float)$f['tax_rate'], 2, '.', '')) ?>"
                        placeholder="0.00">
             </div>
 

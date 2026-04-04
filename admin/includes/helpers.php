@@ -246,6 +246,16 @@ function flash_info(string $msg): void
 }
 
 /**
+ * Queue a warning flash message.
+ *
+ * @param string $msg
+ */
+function flash_warning(string $msg): void
+{
+    $_SESSION['flash'][] = ['type' => 'warning', 'msg' => $msg];
+}
+
+/**
  * Output Bootstrap dismissible alerts for queued flash messages, then clear them.
  */
 function render_flash(): void
@@ -258,6 +268,7 @@ function render_flash(): void
         'success' => 'alert-success',
         'error'   => 'alert-danger',
         'info'    => 'alert-info',
+        'warning' => 'alert-warning',
     ];
 
     foreach ($_SESSION['flash'] as $flash) {

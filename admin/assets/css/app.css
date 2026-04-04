@@ -743,6 +743,7 @@ a:hover {
     background-color: var(--dk2) !important;
     border-color: var(--st2) !important;
     color: var(--wh) !important;
+    color-scheme: dark; /* date/time pickers use dark chrome */
 }
 .form-control:focus, .form-select:focus {
     background-color: var(--dk2) !important;
@@ -1664,6 +1665,7 @@ hr {
     font-family: var(--font-body);
     font-size: .9rem;
     transition: border-color .2s, box-shadow .2s;
+    color-scheme: dark; /* ensures browser chrome (date picker, etc.) uses dark colours */
 }
 
 .form-control:focus,

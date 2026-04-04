@@ -151,18 +151,13 @@ layout_start('Settings', 'settings');
 
         <div class="row g-3 mb-4">
 
-            <!-- Tax Rate -->
-            <div class="col-md-4">
-                <label class="form-label" for="tax_rate">Tax Rate (%)</label>
-                <input type="number"
-                       id="tax_rate"
-                       name="tax_rate"
-                       class="form-control"
-                       step="0.01"
-                       min="0"
-                       max="100"
-                       value="<?= e(get_setting('tax_rate', '0.00')) ?>">
-                <div class="form-text">Enter as a percentage, e.g. 8.5 for 8.5%</div>
+            <!-- Tax note -->
+            <div class="col-12">
+                <div class="alert alert-info" style="font-size:.85rem;padding:.6rem 1rem;">
+                    <i class="fa-brands fa-stripe me-1"></i>
+                    <strong>Tax:</strong> Tax is handled automatically by Stripe based on your Stripe account and product settings.
+                    No tax rate needs to be configured here.
+                </div>
             </div>
 
         </div>
@@ -326,15 +321,19 @@ layout_start('Settings', 'settings');
                 <i class="fa-solid fa-floppy-disk"></i> Save Email Settings
             </button>
 
-            <form method="POST" action="index.php" class="d-inline">
-                <?= csrf_field() ?>
-                <input type="hidden" name="action" value="test_email">
-                <button type="submit" class="btn-tp-ghost btn-tp-sm">
-                    <i class="fa-solid fa-paper-plane"></i> Send Test Email
-                </button>
-            </form>
+            <button type="submit" form="testEmailForm" class="btn-tp-ghost btn-tp-sm">
+                <i class="fa-solid fa-paper-plane"></i> Send Test Email
+            </button>
         </div>
 
+    </form>
+
+    <!-- Standalone test-email form — kept outside the email-settings form to
+         avoid the nested-form HTML violation that caused every settings save
+         to trigger the test-email handler instead. -->
+    <form id="testEmailForm" method="POST" action="index.php" style="display:none;">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="test_email">
     </form>
 </div>
 
