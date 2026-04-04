@@ -139,7 +139,7 @@ if ($source === 'all' || $source === 'booking') {
          FROM bookings b
          $b_where_sql
          ORDER BY b.updated_at DESC
-         LIMIT 100",
+         LIMIT 200",
         $b_params
     ) ?: [];
 }
@@ -186,7 +186,7 @@ if ($source === 'all' || $source === 'invoice') {
          FROM invoices i
          $inv_where_sql
          ORDER BY i.updated_at DESC
-         LIMIT 100",
+         LIMIT 200",
         $inv_params
     ) ?: [];
 }
@@ -406,7 +406,7 @@ layout_start('Payments', 'payments');
 <div class="tp-card mb-4">
     <div class="tp-card-header d-flex justify-content-between align-items-center">
         <span><i class="fa-solid fa-list me-2 text-muted"></i> Payment Records</span>
-        <small class="text-muted"><?= count($all_records) ?> records (max 100 per source)</small>
+        <small class="text-muted"><?= count($all_records) ?> records shown (most recent 100 combined)</small>
     </div>
     <div class="tp-card-body p-0">
         <?php if (empty($all_records)): ?>

@@ -246,7 +246,7 @@ layout_start('Edit Dumpster', 'inventory');
                        class="form-control"
                        value="<?= e($dumpster['product_name'] ?? '') ?>"
                        placeholder="e.g. 10 Yard Residential Dumpster">
-                <div class="form-text">Display name in Stripe and customer-facing views</div>
+                <div class="form-text">Display name for Stripe and customer-facing views (used when syncing to Stripe)</div>
             </div>
 
             <!-- Size -->
