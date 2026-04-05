@@ -286,23 +286,28 @@ $ids_str = implode(',', $new_ids);
 $token   = hash_hmac('sha256', $ids_str, get_setting('stripe_secret_key', 'booking-token-secret'));
 $first_id = $new_ids[0];
 
+// Roll back newly created bookings and restore dumpster status on Stripe failure.
+function rollback_stripe_bookings(array $new_ids): void {
+    foreach ($new_ids as $bid) {
+        $booking = db_fetch('SELECT dumpster_id FROM bookings WHERE id = ? LIMIT 1', [$bid]);
+        if ($booking && !empty($booking['dumpster_id'])) {
+            // Only restore to available if the dumpster is in the 'reserved' state set by this booking
+            db_execute(
+                "UPDATE dumpsters SET status = 'available', updated_at = ? WHERE id = ? AND status = 'reserved'",
+                [date('Y-m-d H:i:s'), (int)$booking['dumpster_id']]
+            );
+        }
+        db_execute('DELETE FROM bookings WHERE id = ?', [$bid]);
+    }
+}
+
 // Stripe checkout
 if ($payment_method === 'stripe') {
     $autoload = $_admin_root . '/vendor/autoload.php';
     if (!file_exists($autoload)) {
-        // Stripe SDK not installed — fall back to cash confirmation
-        error_log('[Booking ' . $ids_str . '] Stripe SDK not found. Falling back to cash payment. Run `composer install` in the admin directory.');
-        foreach ($new_ids as $bid) {
-            db_update('bookings', [
-                'payment_method' => 'cash',
-                'payment_status' => 'pending_cash',
-                'booking_status' => 'confirmed',
-                'updated_at'     => date('Y-m-d H:i:s'),
-            ], 'id', $bid);
-        }
-        http_response_code(200);
-        echo json_encode(['success' => true, 'redirect' => '/book-success.php?ids=' . urlencode($ids_str) . '&token=' . urlencode($token)]);
-        exit;
+        error_log('[Booking] Stripe SDK not found. Run `composer install` in the admin directory.');
+        rollback_stripe_bookings($new_ids);
+        api_error('Card payment is currently unavailable. Please select a different payment method.', 503);
     }
 
     require_once $autoload;
@@ -340,13 +345,9 @@ if ($payment_method === 'stripe') {
         exit;
 
     } catch (\Throwable $e) {
-        error_log('[Booking ' . $ids_str . '] Stripe Checkout error: ' . $e->getMessage());
-        http_response_code(200);
-        echo json_encode([
-            'success'  => true,
-            'redirect' => '/book-success.php?ids=' . urlencode($ids_str) . '&token=' . urlencode($token),
-        ]);
-        exit;
+        error_log('[Booking] Stripe Checkout error: ' . $e->getMessage());
+        rollback_stripe_bookings($new_ids);
+        api_error('Card payment could not be initiated. Please try again or select a different payment method.', 503);
     }
 }
 
