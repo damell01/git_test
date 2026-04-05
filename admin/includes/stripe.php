@@ -39,7 +39,7 @@ function stripe_client(): \Stripe\StripeClient
  */
 function stripe_create_checkout(array $booking, string $success_url, string $cancel_url): \Stripe\Checkout\Session
 {
-    $currency     = get_setting('currency', 'usd');
+    $currency     = strtolower(get_setting('currency', 'usd') ?: 'usd');
     $company      = get_setting('company_name', 'Trash Panda Roll-Offs');
     $amount_cents = (int)round((float)$booking['total_amount'] * 100);
 
@@ -104,7 +104,7 @@ function stripe_create_checkout(array $booking, string $success_url, string $can
  */
 function stripe_create_multi_checkout(array $bookings, string $success_url, string $cancel_url): \Stripe\Checkout\Session
 {
-    $currency = get_setting('currency', 'usd');
+    $currency = strtolower(get_setting('currency', 'usd') ?: 'usd');
     $company  = get_setting('company_name', 'Trash Panda Roll-Offs');
 
     $line_items    = [];
@@ -293,7 +293,7 @@ function stripe_sync_dumpster_product(array $dumpster): array
 
     // ── Price ─────────────────────────────────────────────────────────────────
     $base_price_cents = (int)round((float)($dumpster['base_price'] ?? 0) * 100);
-    $currency         = strtolower(get_setting('currency', 'usd'));
+    $currency         = strtolower(get_setting('currency', 'usd') ?: 'usd');
 
     // Always create a new price (Stripe prices are immutable); archive the old one if needed
     $existing_price_id = trim($dumpster['stripe_price_id'] ?? '');
@@ -339,7 +339,7 @@ function stripe_sync_dumpster_product(array $dumpster): array
  */
 function stripe_create_invoice_checkout(array $invoice, string $success_url, string $cancel_url): \Stripe\Checkout\Session
 {
-    $currency     = strtolower(get_setting('currency', 'usd'));
+    $currency     = strtolower(get_setting('currency', 'usd') ?: 'usd');
     $company      = get_setting('company_name', 'Trash Panda Roll-Offs');
     $amount_cents = (int)round((float)($invoice['total'] ?? 0) * 100);
 

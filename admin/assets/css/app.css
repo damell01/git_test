@@ -492,6 +492,27 @@ a:hover { color: var(--or-d); }
     margin-top: .25rem;
 }
 
+/* .kpi-value — used by payments and other modules (alias of .kpi-val) */
+.kpi-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--wh);
+    line-height: 1.1;
+}
+
+/* .kpi-sub — small sub-label beneath kpi-value */
+.kpi-sub {
+    font-size: .75rem;
+    color: var(--gy);
+    margin-top: 4px;
+}
+
+/* Stripe charge status colors */
+.charge-status-succeeded { color: var(--gr); }
+.charge-status-failed    { color: var(--rd); }
+.charge-status-refunded  { color: var(--am); }
+.charge-status-pending   { color: var(--gy); }
+
 /* --------------------------------------------------------------------------
    Card
    -------------------------------------------------------------------------- */
@@ -686,7 +707,7 @@ tr.table-primary > *, tr.table-secondary > * {
 /* --------------------------------------------------------------------------
    Filter bar / tabs
    -------------------------------------------------------------------------- */
-.filter-bar { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.filter-bar { display: flex; flex-direction: column; gap: .75rem; margin-bottom: 1rem; background: var(--dk2); border: 1px solid var(--st2); border-radius: var(--radius); padding: .75rem 1rem; }
 
 .filter-tab {
     display: inline-flex;
@@ -709,6 +730,7 @@ tr.table-primary > *, tr.table-secondary > * {
 .filter-tab:hover { color: var(--wh); border-color: var(--st2); background-color: var(--dk2); text-decoration: none; }
 .filter-tab.active { color: var(--or); border-color: var(--or); background-color: rgba(249,115,22,.08); }
 
+.tp-filter-bar { background: var(--dk2); border: 1px solid var(--st2); border-radius: var(--radius); padding: .75rem 1rem; margin-bottom: 1rem; }
 .tp-filter-tabs { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
 .filter-tabs { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
 
@@ -749,6 +771,7 @@ tr.table-primary > *, tr.table-secondary > * {
 
 .tp-filter-tab:hover { color: var(--wh); border-color: var(--st2); background-color: var(--dk2); text-decoration: none; }
 .tp-filter-tab.active { color: var(--or); border-color: var(--or); background-color: rgba(249,115,22,.08); }
+.tp-filter-tab.active .tab-count { background-color: rgba(249,115,22,.15); color: var(--or); }
 
 .tp-search {
     background-color: var(--dk1);
@@ -990,22 +1013,6 @@ tr.table-primary > *, tr.table-secondary > * {
 .qa-icon { font-size: 1.1rem; }
 
 /* --------------------------------------------------------------------------
-   Calendar
-   -------------------------------------------------------------------------- */
-.cal-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background-color: var(--st); margin-bottom: 1px; }
-.cal-dow { background-color: var(--dk2); padding: .375rem .5rem; font-family: var(--font-cond); font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--gy); text-align: center; }
-.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background-color: var(--st); }
-.cal-day { background-color: var(--dk1); padding: .5rem; min-height: 80px; }
-.cal-day.today { background-color: rgba(249,115,22,.06); outline: 1px solid var(--or); }
-.cal-day.other-month .cal-day-num { opacity: .35; }
-.cal-day-num { font-family: var(--font-cond); font-size: .85rem; color: var(--wh); }
-
-.cal-ev { display: block; font-size: .7rem; padding: 1px 4px; border-radius: 3px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; }
-.cal-ev:hover { text-decoration: none; opacity: .85; }
-.cal-ev.del { background-color: rgba(16,185,129,.15); color: #065f46; }
-.cal-ev.pck { background-color: rgba(139,92,246,.15); color: #5b21b6; }
-
-/* --------------------------------------------------------------------------
    Flash / Alert
    -------------------------------------------------------------------------- */
 .alert { border-radius: 8px; font-family: var(--font-body); font-size: .9rem; border-width: 1px; }
@@ -1066,6 +1073,9 @@ hr { border-color: var(--st); opacity: 1; }
    -------------------------------------------------------------------------- */
 .text-muted { color: var(--gy) !important; }
 
+/* Tooltip text cursor helper */
+.tp-text-tooltip { cursor: help; border-bottom: 1px dashed var(--st2); }
+
 .section-heading {
     color: var(--wh);
     font-family: var(--font-cond);
@@ -1084,6 +1094,31 @@ hr { border-color: var(--st); opacity: 1; }
 .bar-count { color: var(--wh) !important; }
 .bar-label  { color: var(--gy) !important; }
 .bar-fill   { background: var(--or) !important; }
+
+/* Bar chart component */
+.bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 140px; padding: 0 4px; }
+.bar-col   { display: flex; flex-direction: column; align-items: center; flex: 1; }
+.bar-count { font-size: .7rem; font-weight: 700; margin-bottom: 2px; }
+.bar-seg   { width: 100%; }
+.bar-label { font-size: .65rem; margin-top: 4px; text-align: center; }
+
+/* Filter active state */
+.filter-active { font-weight: 700; color: var(--or) !important; border-color: var(--or) !important; }
+
+/* Unit checkbox card (booking create) */
+.unit-checkbox-card {
+    display: block;
+    padding: 10px 12px;
+    background: var(--dk2);
+    border: 1px solid var(--st2);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+    font-size: .88rem;
+    color: var(--wh);
+}
+.unit-checkbox-card:hover { border-color: var(--or); }
+.unit-checkbox-card.selected { border-color: var(--or); background: rgba(249,115,22,.1); }
 
 .page-link { background-color: var(--dk1) !important; border-color: var(--st2) !important; color: var(--or) !important; }
 .page-item.active .page-link { background-color: var(--or) !important; border-color: var(--or) !important; color: #fff !important; }
@@ -1183,6 +1218,90 @@ hr { border-color: var(--st); opacity: 1; }
     .tp-sidebar.open ~ .tp-sidebar-overlay,
     body.sidebar-open .tp-sidebar-overlay { display: block; }
 }
+
+/* --------------------------------------------------------------------------
+   Calendar
+   -------------------------------------------------------------------------- */
+.cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    background: var(--st);
+    border: 1px solid var(--st);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+.cal-header {
+    background: var(--navy);
+    color: #fff;
+    text-align: center;
+    padding: 8px 4px;
+    font-size: .75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+.cal-day {
+    background: var(--dk1);
+    min-height: 90px;
+    padding: 4px 5px;
+    vertical-align: top;
+    font-size: .8rem;
+}
+.cal-day.today    { background: rgba(16,185,129,.06); }
+.cal-day.empty    { background: var(--dk2); }
+.cal-day.has-blocks { background: rgba(245,158,11,.06); }
+.cal-day-num {
+    display: inline-block;
+    font-weight: 600;
+    font-size: .8rem;
+    line-height: 1.6;
+    min-width: 22px;
+    text-align: center;
+    border-radius: 50%;
+    color: var(--wh);
+}
+.cal-day.today .cal-day-num { background: var(--gr); color: #fff; }
+.cal-day-num a { color: inherit; text-decoration: none; }
+.cal-ev {
+    display: block;
+    margin-top: 2px;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-size: .68rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-decoration: none;
+    font-weight: 500;
+}
+.cal-ev.bk {
+    background: #dbeafe;
+    color: #1e40af;
+    border-left: 3px solid var(--bl);
+}
+.cal-ev.bk-completed {
+    background: #e0e7ff;
+    color: #3730a3;
+    border-left: 3px solid #6366f1;
+    opacity: .8;
+}
+.cal-ev.blk {
+    background: #fee2e2;
+    color: #b91c1c;
+    border-left: 3px solid var(--rd);
+}
+.unit-avail-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-weight: 600;
+    margin: 2px;
+}
+.unit-avail-chip.available { background: #dcfce7; color: #15803d; }
+.unit-avail-chip.booked    { background: #dbeafe; color: #1e40af; }
+.unit-avail-chip.blocked   { background: #fee2e2; color: #b91c1c; }
 
 /* --------------------------------------------------------------------------
    Print

@@ -380,27 +380,6 @@ layout_start('New Booking', 'bookings');
     </form>
 </div>
 
-<style>
-.unit-checkbox-card {
-    display: block;
-    padding: 10px 12px;
-    background: var(--dk2);
-    border: 1px solid var(--st2);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: border-color .2s, background .2s;
-    font-size: .88rem;
-    color: var(--wh);
-}
-.unit-checkbox-card:hover {
-    border-color: var(--or);
-}
-.unit-checkbox-card.selected {
-    border-color: var(--or);
-    background: rgba(249,115,22,.1);
-}
-</style>
-
 <script>
 function calcDays() {
     var start = document.getElementById('rental_start').value;
