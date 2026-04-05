@@ -489,7 +489,7 @@ layout_start('Dashboard', 'dashboard');
                 <div class="d-flex align-items-center justify-content-between p-3 mb-2"
                      style="background:var(--dk2);border-radius:8px;border:1px solid var(--st);">
                     <div class="d-flex align-items-center gap-3">
-                        <span style="font-size:1.6rem;color:#16a34a;"><i class="fa-solid fa-truck"></i></span>
+                        <span style="font-size:1.6rem;color:var(--gr);"><i class="fa-solid fa-truck"></i></span>
                         <div>
                             <div style="font-size:.8rem;color:var(--gy);">Deliveries Today</div>
                             <div style="font-size:1.4rem;font-weight:700;color:var(--wh);" data-metric="kpis.wo_today_deliveries"><?= $wo_today_deliveries ?></div>
