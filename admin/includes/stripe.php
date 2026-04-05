@@ -5,10 +5,26 @@
  * SECRET KEY IS NEVER EXPOSED TO FRONTEND.
  */
 
+/**
+ * Returns true when the Stripe PHP SDK is available (Composer autoloader loaded).
+ * Use this to guard SDK calls gracefully instead of triggering a fatal error.
+ */
+function stripe_sdk_available(): bool
+{
+    // Allow the autoloader to attempt loading the class so this returns true
+    // whenever the Stripe SDK is properly installed via Composer.
+    return class_exists(\Stripe\StripeClient::class);
+}
+
 function stripe_client(): \Stripe\StripeClient
 {
     static $client = null;
     if ($client === null) {
+        if (!stripe_sdk_available()) {
+            throw new \RuntimeException(
+                'Stripe PHP SDK not found. Run `composer install` inside the /admin directory, then reload.'
+            );
+        }
         $secret = get_setting('stripe_secret_key', '');
         if (empty($secret)) {
             throw new \RuntimeException('Stripe secret key is not configured.');
