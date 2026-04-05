@@ -206,8 +206,8 @@ layout_start('Dashboard', 'dashboard');
         <p class="tp-page-sub mb-0"><?= e(date('l, F j, Y')) ?></p>
     </div>
     <div class="d-flex gap-2 align-items-center no-print">
-        <span id="dash-last-updated" style="font-size:.75rem;color:#6b7280;" title="Auto-refreshes every 60 seconds">
-            <i class="fa-solid fa-rotate me-1" style="color:#f97316;"></i>Live
+        <span id="dash-last-updated" class="text-gy" style="font-size:.75rem;" title="Auto-refreshes every 60 seconds">
+            <i class="fa-solid fa-rotate me-1 text-or"></i>Live
         </span>
         <a href="<?= e(APP_URL) ?>/modules/bookings/create.php" class="btn-tp-ghost btn-tp-sm">
             <i class="fa-solid fa-plus"></i> New Booking
@@ -280,10 +280,10 @@ layout_start('Dashboard', 'dashboard');
     <!-- Overdue Pickups -->
     <?php $overdue_count_num = count($overdue_pickups); ?>
     <div class="col-6 col-md-4 col-xl-2" id="kpi-overdue-wrap">
-        <a href="<?= e(APP_URL) ?>/modules/work_orders/index.php?status=overdue" class="tp-kpi-card text-decoration-none d-block"
-           style="background:<?= $overdue_count_num > 0 ? 'rgba(239,68,68,.12);border-color:rgba(239,68,68,.4);' : '' ?>">
-            <div class="kpi-icon"><i class="fa-solid fa-circle-exclamation" style="<?= $overdue_count_num > 0 ? 'color:#ef4444;' : '' ?>"></i></div>
-            <div class="kpi-value" data-metric="kpis.overdue_pickups" style="<?= $overdue_count_num > 0 ? 'color:#ef4444;' : '' ?>"><?= $overdue_count_num ?></div>
+        <a href="<?= e(APP_URL) ?>/modules/work_orders/index.php?status=overdue"
+           class="tp-kpi-card <?= $overdue_count_num > 0 ? 'tp-kpi-red' : 'tp-kpi-gray' ?> text-decoration-none d-block">
+            <div class="kpi-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
+            <div class="kpi-value" data-metric="kpis.overdue_pickups" <?= $overdue_count_num > 0 ? 'style="color:var(--rd);"' : '' ?>><?= $overdue_count_num ?></div>
             <div class="kpi-label">Overdue Pickups</div>
         </a>
     </div>
@@ -296,9 +296,9 @@ layout_start('Dashboard', 'dashboard');
 
     <!-- Stripe Revenue Today -->
     <div class="col-6 col-md-3">
-        <div class="tp-kpi-card" style="border-color:rgba(249,115,22,.35);background:rgba(249,115,22,.07);">
-            <div class="kpi-icon"><i class="fa-brands fa-stripe" style="color:#f97316;"></i></div>
-            <div class="kpi-value" data-metric="stripe.revenue_today" data-metric-format="money" style="font-size:1.05rem;color:#fb923c;">
+        <div class="tp-kpi-card tp-kpi-stripe">
+            <div class="kpi-icon"><i class="fa-brands fa-stripe" style="color:var(--or);"></i></div>
+            <div class="kpi-value" data-metric="stripe.revenue_today" data-metric-format="money">
                 <?= fmt_money($stripe_revenue_today) ?>
             </div>
             <div class="kpi-label">Stripe Revenue Today</div>
@@ -307,9 +307,9 @@ layout_start('Dashboard', 'dashboard');
 
     <!-- Stripe Revenue This Month -->
     <div class="col-6 col-md-3">
-        <div class="tp-kpi-card" style="border-color:rgba(249,115,22,.35);background:rgba(249,115,22,.07);">
-            <div class="kpi-icon"><i class="fa-brands fa-stripe" style="color:#f97316;"></i></div>
-            <div class="kpi-value" data-metric="stripe.revenue_month" data-metric-format="money" style="font-size:1.05rem;color:#fb923c;">
+        <div class="tp-kpi-card tp-kpi-stripe">
+            <div class="kpi-icon"><i class="fa-brands fa-stripe" style="color:var(--or);"></i></div>
+            <div class="kpi-value" data-metric="stripe.revenue_month" data-metric-format="money">
                 <?= fmt_money($stripe_revenue_month) ?>
             </div>
             <div class="kpi-label">Stripe Revenue (Month)</div>
@@ -318,9 +318,9 @@ layout_start('Dashboard', 'dashboard');
 
     <!-- Stripe Payments Count -->
     <div class="col-6 col-md-3">
-        <div class="tp-kpi-card" style="border-color:rgba(249,115,22,.35);background:rgba(249,115,22,.07);">
-            <div class="kpi-icon"><i class="fa-solid fa-credit-card" style="color:#f97316;"></i></div>
-            <div class="kpi-value" data-metric="stripe.charges_month_count" style="color:#fb923c;">
+        <div class="tp-kpi-card tp-kpi-stripe">
+            <div class="kpi-icon"><i class="fa-solid fa-credit-card" style="color:var(--or);"></i></div>
+            <div class="kpi-value" data-metric="stripe.charges_month_count">
                 <?= (int)$stripe_charges_count ?>
             </div>
             <div class="kpi-label">Payments This Month</div>
@@ -329,9 +329,10 @@ layout_start('Dashboard', 'dashboard');
 
     <!-- Failed Payments -->
     <div class="col-6 col-md-3">
-        <div class="tp-kpi-card" style="border-color:<?= $stripe_failed_count > 0 ? 'rgba(239,68,68,.4)' : 'rgba(249,115,22,.35)' ?>;background:<?= $stripe_failed_count > 0 ? 'rgba(239,68,68,.08)' : 'rgba(249,115,22,.07)' ?>;">
-            <div class="kpi-icon"><i class="fa-solid fa-triangle-exclamation" style="color:<?= $stripe_failed_count > 0 ? '#ef4444' : '#f97316' ?>;"></i></div>
-            <div class="kpi-value" data-metric="stripe.failed_month_count" style="color:<?= $stripe_failed_count > 0 ? '#ef4444' : '#fb923c' ?>;">
+        <?php $is_failed = $stripe_failed_count > 0; ?>
+        <div class="tp-kpi-card <?= $is_failed ? 'tp-kpi-red' : 'tp-kpi-stripe' ?>">
+            <div class="kpi-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div class="kpi-value" data-metric="stripe.failed_month_count" <?= $is_failed ? 'style="color:var(--rd);"' : '' ?>>
                 <?= (int)$stripe_failed_count ?>
             </div>
             <div class="kpi-label">Failed Payments</div>
@@ -412,7 +413,7 @@ layout_start('Dashboard', 'dashboard');
                             <span class="text-muted">→</span>
                             <?= e(fmt_date($b['rental_end'])) ?>
                         </td>
-                        <td class="text-end" style="color:#22c55e;font-weight:600;">
+                                <td class="text-end text-gr fw-semibold">
                             <?= e(fmt_money($b['total_amount'])) ?>
                         </td>
                         <td><?= status_badge($b['booking_status']) ?></td>
@@ -486,26 +487,20 @@ layout_start('Dashboard', 'dashboard');
             </div>
             <div class="tp-card-body">
 
-                <div class="d-flex align-items-center justify-content-between p-3 mb-2"
-                     style="background:var(--dk2);border-radius:8px;border:1px solid var(--st);">
-                    <div class="d-flex align-items-center gap-3">
-                        <span style="font-size:1.6rem;color:var(--gr);"><i class="fa-solid fa-truck"></i></span>
-                        <div>
-                            <div style="font-size:.8rem;color:var(--gy);">Deliveries Today</div>
-                            <div style="font-size:1.4rem;font-weight:700;color:var(--wh);" data-metric="kpis.wo_today_deliveries"><?= $wo_today_deliveries ?></div>
-                        </div>
+                <div class="tp-stat-item mb-2">
+                    <span class="tp-stat-icon" style="color:var(--gr);"><i class="fa-solid fa-truck"></i></span>
+                    <div class="tp-stat-info">
+                        <div class="tp-stat-label">Deliveries Today</div>
+                        <div class="tp-stat-value" data-metric="kpis.wo_today_deliveries"><?= $wo_today_deliveries ?></div>
                     </div>
                     <a href="<?= e(APP_URL) ?>/modules/calendar/index.php" class="btn-tp-ghost btn-tp-xs">View</a>
                 </div>
 
-                <div class="d-flex align-items-center justify-content-between p-3 mb-3"
-                     style="background:var(--dk2);border-radius:8px;border:1px solid var(--st);">
-                    <div class="d-flex align-items-center gap-3">
-                        <span style="font-size:1.6rem;color:var(--am);"><i class="fa-solid fa-truck-ramp-box"></i></span>
-                        <div>
-                            <div style="font-size:.8rem;color:var(--gy);">Pickups Today</div>
-                            <div style="font-size:1.4rem;font-weight:700;color:var(--wh);" data-metric="kpis.wo_today_pickups"><?= $wo_today_pickups ?></div>
-                        </div>
+                <div class="tp-stat-item mb-3">
+                    <span class="tp-stat-icon" style="color:var(--am);"><i class="fa-solid fa-truck-ramp-box"></i></span>
+                    <div class="tp-stat-info">
+                        <div class="tp-stat-label">Pickups Today</div>
+                        <div class="tp-stat-value" data-metric="kpis.wo_today_pickups"><?= $wo_today_pickups ?></div>
                     </div>
                     <a href="<?= e(APP_URL) ?>/modules/calendar/index.php" class="btn-tp-ghost btn-tp-xs">View</a>
                 </div>
@@ -540,7 +535,7 @@ layout_start('Dashboard', 'dashboard');
 <!-- ── Upcoming Deliveries Table ─────────────────────────────────────────── -->
 <div class="tp-card mb-4">
     <div class="tp-card-header d-flex align-items-center justify-content-between">
-        <span><i class="fa-solid fa-truck me-2" style="color:#22c55e;"></i>Upcoming Deliveries — Next 7 Days</span>
+        <span class="tp-card-title"><i class="fa-solid fa-truck me-2 text-gr"></i>Upcoming Deliveries — Next 7 Days</span>
         <span class="tp-badge badge-delivered"><?= count($upcoming_deliveries) ?></span>
     </div>
     <div class="tp-card-body p-0">
@@ -563,7 +558,7 @@ layout_start('Dashboard', 'dashboard');
                 </thead>
                 <tbody>
                 <?php foreach ($upcoming_deliveries as $wo): ?>
-                    <tr <?= $wo['delivery_date'] === date('Y-m-d') ? 'style="background:rgba(34,197,94,.06);"' : '' ?>>
+                    <tr <?= $wo['delivery_date'] === date('Y-m-d') ? 'class="tp-row-today-delivery"' : '' ?>>
                         <td>
                             <a href="<?= e(APP_URL) ?>/modules/work_orders/view.php?id=<?= (int)$wo['id'] ?>"
                                class="tp-link fw-semibold">
@@ -580,7 +575,7 @@ layout_start('Dashboard', 'dashboard');
                         <td><?= e($wo['size'] ?: '—') ?></td>
                         <td>
                             <?php if ($wo['delivery_date'] === date('Y-m-d')): ?>
-                                <span style="color:#22c55e;font-weight:600;">Today</span>
+                                <span class="tp-today-delivery">Today</span>
                             <?php else: ?>
                                 <?= e(fmt_date($wo['delivery_date'])) ?>
                             <?php endif; ?>
@@ -598,7 +593,7 @@ layout_start('Dashboard', 'dashboard');
 <!-- ── Upcoming Pickups Table ────────────────────────────────────────────── -->
 <div class="tp-card mb-4">
     <div class="tp-card-header d-flex align-items-center justify-content-between">
-        <span><i class="fa-solid fa-truck-ramp-box me-2" style="color:#f59e0b;"></i>Upcoming Pickups — Next 7 Days</span>
+        <span class="tp-card-title"><i class="fa-solid fa-truck-ramp-box me-2 text-am"></i>Upcoming Pickups — Next 7 Days</span>
         <span class="tp-badge badge-pickup-requested"><?= count($upcoming_pickups) ?></span>
     </div>
     <div class="tp-card-body p-0">
@@ -621,7 +616,7 @@ layout_start('Dashboard', 'dashboard');
                 </thead>
                 <tbody>
                 <?php foreach ($upcoming_pickups as $wo): ?>
-                    <tr <?= $wo['pickup_date'] === date('Y-m-d') ? 'style="background:rgba(245,158,11,.06);"' : '' ?>>
+                    <tr <?= $wo['pickup_date'] === date('Y-m-d') ? 'class="tp-row-today-pickup"' : '' ?>>
                         <td>
                             <a href="<?= e(APP_URL) ?>/modules/work_orders/view.php?id=<?= (int)$wo['id'] ?>"
                                class="tp-link fw-semibold">
@@ -638,7 +633,7 @@ layout_start('Dashboard', 'dashboard');
                         <td><?= e($wo['size'] ?: '—') ?></td>
                         <td>
                             <?php if ($wo['pickup_date'] === date('Y-m-d')): ?>
-                                <span style="color:#f59e0b;font-weight:600;">Today</span>
+                                <span class="tp-today-pickup">Today</span>
                             <?php else: ?>
                                 <?= e(fmt_date($wo['pickup_date'])) ?>
                             <?php endif; ?>
@@ -655,10 +650,9 @@ layout_start('Dashboard', 'dashboard');
 
 <!-- ── Overdue Pickups Table ─────────────────────────────────────────────── -->
 <?php if (!empty($overdue_pickups)): ?>
-<div class="tp-card mb-4" style="border-color:rgba(239,68,68,.35);">
-    <div class="tp-card-header d-flex align-items-center justify-content-between"
-         style="background:rgba(239,68,68,.08);border-bottom-color:rgba(239,68,68,.25);">
-        <span style="color:#f87171;">
+<div class="tp-card mb-4 tp-card-danger">
+    <div class="tp-card-header d-flex align-items-center justify-content-between tp-card-header-danger">
+        <span class="tp-card-title">
             <i class="fa-solid fa-triangle-exclamation me-2"></i>Overdue Pickups
         </span>
         <span class="tp-badge badge-canceled"><?= count($overdue_pickups) ?></span>
@@ -682,10 +676,10 @@ layout_start('Dashboard', 'dashboard');
                     <?php
                         $overdue_days = (int)floor((time() - strtotime($wo['pickup_date'])) / 86400);
                     ?>
-                    <tr style="background:rgba(239,68,68,.04);">
+                    <tr class="tp-row-overdue">
                         <td>
                             <a href="<?= e(APP_URL) ?>/modules/work_orders/view.php?id=<?= (int)$wo['id'] ?>"
-                               class="tp-link fw-semibold" style="color:#f87171;">
+                               class="tp-link fw-semibold tp-overdue-link">
                                 <?= e($wo['wo_number']) ?>
                             </a>
                         </td>
@@ -697,9 +691,9 @@ layout_start('Dashboard', 'dashboard');
                             <?php endif; ?>
                         </td>
                         <td><?= e($wo['size'] ?: '—') ?></td>
-                        <td style="color:#f87171;"><?= e(fmt_date($wo['pickup_date'])) ?></td>
+                        <td class="tp-overdue-text"><?= e(fmt_date($wo['pickup_date'])) ?></td>
                         <td>
-                            <span style="color:#ef4444;font-weight:700;">
+                            <span class="tp-overdue-days">
                                 <?= $overdue_days ?> day<?= $overdue_days !== 1 ? 's' : '' ?>
                             </span>
                         </td>
@@ -718,8 +712,8 @@ layout_start('Dashboard', 'dashboard');
     <div class="col-12 col-lg-6">
         <div class="tp-card h-100">
             <div class="tp-card-header d-flex align-items-center justify-content-between">
-                <span><i class="fa-solid fa-bolt me-2" style="color:#f97316;"></i>Recent Activity</span>
-                <span id="activity-refresh-badge" class="tp-badge" style="background:rgba(249,115,22,.15);color:#fb923c;display:none;">
+                <span class="tp-card-title"><i class="fa-solid fa-bolt me-2 text-or"></i>Recent Activity</span>
+                <span id="activity-refresh-badge" class="tp-badge tp-kpi-stripe" style="display:none;">
                     <i class="fa-solid fa-rotate fa-spin me-1"></i>Refreshing…
                 </span>
             </div>
@@ -779,25 +773,18 @@ layout_start('Dashboard', 'dashboard');
                 <?php else: ?>
                 <ul class="list-unstyled mb-0" style="max-height:360px;overflow-y:auto;">
                     <?php foreach ($init_activity as $ev): ?>
-                    <li class="d-flex gap-3 p-3" style="border-bottom:1px solid var(--st);">
-                        <div style="width:32px;height:32px;border-radius:50%;background:var(--dk2);
-                                    display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                            <i class="fa-solid <?= e($ev['icon']) ?>" style="color:<?= e($ev['color']) ?>;font-size:.8rem;"></i>
+                    <li class="tp-activity-item">
+                        <div class="tp-activity-icon">
+                            <i class="fa-solid <?= e($ev['icon']) ?>" style="color:<?= e($ev['color']) ?>;"></i>
                         </div>
-                        <div style="min-width:0;">
-                            <div style="font-size:.82rem;font-weight:600;color:var(--wh);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                                <?= e($ev['title']) ?>
-                            </div>
-                            <div style="font-size:.78rem;color:var(--gy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                                <?= e($ev['detail']) ?>
-                            </div>
+                        <div class="tp-activity-body">
+                            <div class="tp-activity-title"><?= e($ev['title']) ?></div>
+                            <div class="tp-activity-detail"><?= e($ev['detail']) ?></div>
                             <?php if (!empty($ev['sub'])): ?>
-                            <div style="font-size:.72rem;color:var(--gy);"><?= e($ev['sub']) ?></div>
+                            <div class="tp-activity-time"><?= e($ev['sub']) ?></div>
                             <?php endif; ?>
                         </div>
-                        <div style="margin-left:auto;font-size:.72rem;color:var(--gy);white-space:nowrap;flex-shrink:0;">
-                            <?= e(fmt_datetime($ev['timestamp'])) ?>
-                        </div>
+                        <div class="tp-activity-time ms-auto"><?= e(fmt_datetime($ev['timestamp'])) ?></div>
                     </li>
                     <?php endforeach; ?>
                 </ul>
@@ -811,7 +798,7 @@ layout_start('Dashboard', 'dashboard');
     <div class="col-12 col-lg-6">
         <div class="tp-card h-100">
             <div class="tp-card-header">
-                <i class="fa-brands fa-stripe me-2" style="color:#f97316;"></i>Recent Stripe Payments
+                <i class="fa-brands fa-stripe me-2 text-or"></i>Recent Stripe Payments
             </div>
             <div class="tp-card-body p-0" id="stripe-recent-charges">
                 <div class="table-responsive">
@@ -833,7 +820,7 @@ layout_start('Dashboard', 'dashboard');
                                 <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                                     <?= e($ch['description'] ?: $ch['id']) ?>
                                 </td>
-                                <td class="text-end" style="color:#22c55e;font-weight:600;">
+                                <td class="text-end text-gr fw-semibold">
                                     <?= fmt_money($ch['amount']) ?>
                                 </td>
                                 <td style="white-space:nowrap;"><?= e(fmt_datetime($ch['created'])) ?></td>
@@ -921,19 +908,18 @@ layout_start('Dashboard', 'dashboard');
             var escapedDetail = escHtml(ev.detail || '');
             var escapedSub    = ev.sub ? escHtml(ev.sub) : '';
             var escapedTs     = escHtml(ev.timestamp || '');
-            html += '<li class="d-flex gap-3 p-3" style="border-bottom:1px solid #1e2237;">';
-            html += '<div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.06);';
-            html += 'display:flex;align-items:center;justify-content:center;flex-shrink:0;">';
-            html += '<i class="fa-solid ' + escHtml(ev.icon || 'fa-circle') + '" style="color:' + escHtml(ev.color || '#6b7280') + ';font-size:.8rem;"></i>';
+            html += '<li class="tp-activity-item">';
+            html += '<div class="tp-activity-icon">';
+            html += '<i class="fa-solid ' + escHtml(ev.icon || 'fa-circle') + '" style="color:' + escHtml(ev.color || 'var(--gy)') + ';"></i>';
             html += '</div>';
-            html += '<div style="min-width:0;">';
-            html += '<div style="font-size:.82rem;font-weight:600;color:#e5e7eb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapedTitle + '</div>';
-            html += '<div style="font-size:.78rem;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapedDetail + '</div>';
+            html += '<div class="tp-activity-body">';
+            html += '<div class="tp-activity-title">' + escapedTitle + '</div>';
+            html += '<div class="tp-activity-detail">' + escapedDetail + '</div>';
             if (escapedSub) {
-                html += '<div style="font-size:.72rem;color:#6b7280;">' + escapedSub + '</div>';
+                html += '<div class="tp-activity-time">' + escapedSub + '</div>';
             }
             html += '</div>';
-            html += '<div style="margin-left:auto;font-size:.72rem;color:#6b7280;white-space:nowrap;flex-shrink:0;">' + escapedTs + '</div>';
+            html += '<div class="tp-activity-time ms-auto">' + escapedTs + '</div>';
             html += '</li>';
         });
         html += '</ul>';
@@ -964,7 +950,7 @@ layout_start('Dashboard', 'dashboard');
     function setLastUpdated(ts) {
         var el = document.getElementById('dash-last-updated');
         if (!el) return;
-        el.innerHTML = '<i class="fa-solid fa-rotate me-1" style="color:#f97316;"></i>Updated ' + escHtml(ts);
+        el.innerHTML = '<i class="fa-solid fa-rotate me-1 text-or"></i>Updated ' + escHtml(ts);
     }
 
     /**

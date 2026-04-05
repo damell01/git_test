@@ -118,9 +118,10 @@ $asset_path = defined('ASSET_PATH') ? ASSET_PATH : '';
     <link rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap">
 
-    <!-- App styles -->
+    <!-- App styles (cache-busted) -->
     <?php if ($asset_path): ?>
-    <link rel="stylesheet" href="<?= e($asset_path) ?>/css/app.css">
+    <?php $css_ver = file_exists(ROOT_PATH . '/assets/css/app.css') ? filemtime(ROOT_PATH . '/assets/css/app.css') : APP_VERSION; ?>
+    <link rel="stylesheet" href="<?= e($asset_path) ?>/css/app.css?v=<?= $css_ver ?>">
     <?php endif; ?>
 
     <!-- PWA -->
