@@ -164,23 +164,6 @@ foreach ($monthly_revenue as $mr) {
 layout_start('Reports', 'reports');
 ?>
 
-<style>
-.kpi-row { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:1.5rem; }
-.kpi-card {
-    background:#fff; border:1px solid var(--st,#e5e7eb); border-radius:8px;
-    padding:16px 20px; flex:1; min-width:150px;
-}
-.kpi-card .kpi-label { font-size:.75rem; text-transform:uppercase; letter-spacing:.04em; color:#888; margin-bottom:4px; }
-.kpi-card .kpi-value { font-size:1.6rem; font-weight:700; color:#222; line-height:1; }
-.kpi-card .kpi-sub   { font-size:.75rem; color:#aaa; margin-top:4px; }
-.bar-chart { display:flex; align-items:flex-end; gap:8px; height:140px; padding:0 4px; }
-.bar-col { display:flex; flex-direction:column; align-items:center; flex:1; }
-.bar-count { font-size:.7rem; font-weight:700; color:#374151; margin-bottom:2px; }
-.bar-seg { width:100%; }
-.bar-label { font-size:.65rem; color:#6b7280; margin-top:4px; text-align:center; }
-.filter-active { font-weight:700; color:var(--or,#f97316) !important; border-color:var(--or,#f97316) !important; }
-</style>
-
 <!-- Filter Bar -->
 <div class="tp-card mb-4">
     <form method="GET" action="index.php" class="row g-2 align-items-end">
