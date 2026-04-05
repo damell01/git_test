@@ -184,8 +184,12 @@ function layout_start(string $page_title, string $active_nav = ''): void
     <link rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Barlow+Condensed:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,700&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap">
 
-    <!-- App styles -->
-    <link rel="stylesheet" href="<?= htmlspecialchars($asset_path, ENT_QUOTES, 'UTF-8') ?>/css/app.css">
+    <!-- App styles (cache-busted by file mtime) -->
+    <?php
+    $css_file = defined('ROOT_PATH') ? ROOT_PATH . '/assets/css/app.css' : '';
+    $css_ver  = ($css_file && file_exists($css_file)) ? filemtime($css_file) : (defined('APP_VERSION') ? APP_VERSION : '1');
+    ?>
+    <link rel="stylesheet" href="<?= htmlspecialchars($asset_path, ENT_QUOTES, 'UTF-8') ?>/css/app.css?v=<?= $css_ver ?>">
 
     <!-- PWA -->
     <link rel="manifest" href="<?= htmlspecialchars($app_url, ENT_QUOTES, 'UTF-8') ?>/manifest.json">
@@ -355,8 +359,12 @@ function layout_end(): void
         integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
         crossorigin="anonymous"></script>
 
-<!-- App scripts -->
-<script src="<?= htmlspecialchars($asset_path, ENT_QUOTES, 'UTF-8') ?>/js/app.js"></script>
+<!-- App scripts (cache-busted by file mtime) -->
+<?php
+$js_file = defined('ROOT_PATH') ? ROOT_PATH . '/assets/js/app.js' : '';
+$js_ver  = ($js_file && file_exists($js_file)) ? filemtime($js_file) : (defined('APP_VERSION') ? APP_VERSION : '1');
+?>
+<script src="<?= htmlspecialchars($asset_path, ENT_QUOTES, 'UTF-8') ?>/js/app.js?v=<?= $js_ver ?>"></script>
 
 <!-- Service Worker registration -->
 <script>
