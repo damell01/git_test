@@ -249,22 +249,6 @@ foreach ($stripe_charges as $ch) {
 layout_start('Payments', 'payments');
 ?>
 
-<style>
-.kpi-row { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:1.5rem; }
-.kpi-card {
-    background:var(--dk1); border:1px solid var(--st); border-radius:8px;
-    padding:16px 20px; flex:1; min-width:160px;
-}
-.kpi-card .kpi-label { font-size:.75rem; text-transform:uppercase; letter-spacing:.04em; color:var(--gy); margin-bottom:4px; }
-.kpi-card .kpi-value { font-size:1.6rem; font-weight:700; color:var(--wh); line-height:1; }
-.kpi-card .kpi-sub   { font-size:.75rem; color:var(--gy); margin-top:4px; }
-.charge-status-succeeded { color:#28a745; }
-.charge-status-failed    { color:#dc3545; }
-.charge-status-refunded  { color:#fd7e14; }
-.charge-status-pending   { color:var(--gy); }
-.filter-bar { background:var(--dk2); border:1px solid var(--st2); border-radius:8px; padding:12px 16px; margin-bottom:1.25rem; }
-</style>
-
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <div>
         <h5 class="mb-0">Payments &amp; Revenue</h5>
@@ -469,7 +453,7 @@ layout_start('Payments', 'payments');
         <p class="text-muted p-3 mb-0">No payment records match the current filters.</p>
         <?php else: ?>
         <div class="table-responsive">
-            <table class="table table-sm mb-0" style="font-size:.85rem;">
+            <table class="table tp-table mb-0">
                 <thead>
                     <tr>
                         <th>Date</th>
@@ -560,7 +544,7 @@ layout_start('Payments', 'payments');
             </div>
             <div class="tp-card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-sm mb-0" style="font-size:.85rem;">
+                    <table class="table tp-table mb-0">
                         <thead>
                             <tr>
                                 <th>Date</th>
@@ -618,7 +602,7 @@ layout_start('Payments', 'payments');
                 <p class="text-muted p-3 mb-0">No payouts found.</p>
                 <?php else: ?>
                 <div class="table-responsive">
-                    <table class="table table-sm mb-0" style="font-size:.85rem;">
+                    <table class="table tp-table mb-0">
                         <thead>
                             <tr>
                                 <th>Date</th>

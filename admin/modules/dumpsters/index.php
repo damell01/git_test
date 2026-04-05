@@ -66,17 +66,15 @@ layout_start('Inventory', 'inventory');
 </div>
 
 <!-- Status filter tabs -->
-<ul class="nav nav-tabs mb-3">
+<div class="tp-filter-tabs mb-3">
     <?php foreach ($tabs as $key => $tab): ?>
-    <li class="nav-item">
-        <a class="nav-link <?= $status_filter === $key ? 'active' : '' ?>"
-           href="?status=<?= urlencode($key) ?>">
-            <?= e($tab['label']) ?>
-            <span class="badge bg-secondary ms-1"><?= $tab['count'] ?></span>
-        </a>
-    </li>
+    <a class="tp-filter-tab <?= $status_filter === $key ? 'active' : '' ?>"
+       href="?status=<?= urlencode($key) ?>">
+        <?= e($tab['label']) ?>
+        <span class="tab-count"><?= $tab['count'] ?></span>
+    </a>
     <?php endforeach; ?>
-</ul>
+</div>
 
 <!-- Dumpsters table -->
 <div class="tp-card">
@@ -134,8 +132,7 @@ layout_start('Inventory', 'inventory');
                     </td>
                     <td>
                         <?php if (!empty($d['notes'])): ?>
-                            <span title="<?= e($d['notes']) ?>"
-                                  style="cursor:help;">
+                            <span class="tp-text-tooltip" title="<?= e($d['notes']) ?>">
                                 <?= e(mb_strimwidth($d['notes'], 0, 40, '…')) ?>
                             </span>
                         <?php else: ?>

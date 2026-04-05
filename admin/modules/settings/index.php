@@ -399,7 +399,7 @@ layout_start('Settings', 'settings');
                 <label class="form-label" for="currency">Currency</label>
                 <select id="currency" name="currency" class="form-select">
                     <?php
-                    $cur = get_setting('currency', 'usd');
+                    $cur = get_setting('currency', 'usd') ?: 'usd';
                     foreach (['usd' => 'USD ($)', 'cad' => 'CAD (CA$)', 'eur' => 'EUR (€)', 'gbp' => 'GBP (£)', 'aud' => 'AUD (A$)'] as $val => $lbl):
                     ?>
                     <option value="<?= e($val) ?>" <?= $cur === $val ? 'selected' : '' ?>><?= e($lbl) ?></option>
