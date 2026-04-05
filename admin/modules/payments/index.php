@@ -218,8 +218,9 @@ $stripe_payouts    = [];
 $stripe_charges    = [];
 $stripe_error      = null;
 $stripe_configured = trim(get_setting('stripe_secret_key', '')) !== '';
+$stripe_sdk_ready  = stripe_sdk_available();
 
-if ($stripe_configured) {
+if ($stripe_configured && $stripe_sdk_ready) {
     try {
         $stripe_balance = stripe_get_balance();
 
@@ -231,6 +232,8 @@ if ($stripe_configured) {
     } catch (\Throwable $e) {
         $stripe_error = $e->getMessage();
     }
+} elseif ($stripe_configured && !$stripe_sdk_ready) {
+    $stripe_error = 'Stripe PHP SDK not installed on this server.';
 }
 
 $stripe_month_revenue = 0.0;
@@ -293,8 +296,11 @@ layout_start('Payments', 'payments');
 <?php if ($stripe_error): ?>
 <div class="alert alert-warning" style="font-size:.88rem;">
     <i class="fa-solid fa-triangle-exclamation me-1"></i>
-    Stripe data unavailable: <?= e($stripe_error) ?>
-    — Showing local database totals only.
+    <strong>Stripe data unavailable</strong> — Showing local database totals only.<br>
+    <span style="opacity:.85;"><?= e($stripe_error) ?></span>
+    <?php if (!$stripe_sdk_ready): ?>
+    <br><small>To enable live Stripe data, run <code>composer install</code> inside the <code>/admin</code> directory on your server.</small>
+    <?php endif; ?>
 </div>
 <?php endif; ?>
 

@@ -110,6 +110,15 @@ header("Content-Security-Policy: default-src 'self'; script-src 'self' https://c
 // ── 1. Configuration ────────────────────────────────────────────────────────
 require_once __DIR__ . '/../config/config.php';
 
+// ── 1b. Composer autoloader (installed via `composer install` in /admin/) ───
+// Loaded here once so all Composer packages (Stripe SDK, PHPMailer, etc.)
+// are available throughout the application without repeating require_once.
+$_composer_autoload = __DIR__ . '/../vendor/autoload.php';
+if (file_exists($_composer_autoload)) {
+    require_once $_composer_autoload;
+}
+unset($_composer_autoload);
+
 // ── 2. Core includes (order matters: db first, then auth which calls db helpers,
 //        then helpers which may call db helpers too) ──────────────────────────
 require_once INC_PATH . '/db.php';
