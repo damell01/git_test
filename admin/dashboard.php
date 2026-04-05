@@ -283,7 +283,7 @@ layout_start('Dashboard', 'dashboard');
         <a href="<?= e(APP_URL) ?>/modules/work_orders/index.php?status=overdue"
            class="tp-kpi-card <?= $overdue_count_num > 0 ? 'tp-kpi-red' : 'tp-kpi-gray' ?> text-decoration-none d-block">
             <div class="kpi-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
-            <div class="kpi-value" data-metric="kpis.overdue_pickups" <?= $overdue_count_num > 0 ? 'style="color:var(--rd);"' : '' ?>><?= $overdue_count_num ?></div>
+            <div class="kpi-value <?= $overdue_count_num > 0 ? 'kpi-value-danger' : '' ?>" data-metric="kpis.overdue_pickups"><?= $overdue_count_num ?></div>
             <div class="kpi-label">Overdue Pickups</div>
         </a>
     </div>
@@ -332,7 +332,7 @@ layout_start('Dashboard', 'dashboard');
         <?php $is_failed = $stripe_failed_count > 0; ?>
         <div class="tp-kpi-card <?= $is_failed ? 'tp-kpi-red' : 'tp-kpi-stripe' ?>">
             <div class="kpi-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-            <div class="kpi-value" data-metric="stripe.failed_month_count" <?= $is_failed ? 'style="color:var(--rd);"' : '' ?>>
+            <div class="kpi-value <?= $is_failed ? 'kpi-value-danger' : '' ?>" data-metric="stripe.failed_month_count">
                 <?= (int)$stripe_failed_count ?>
             </div>
             <div class="kpi-label">Failed Payments</div>
@@ -508,20 +508,16 @@ layout_start('Dashboard', 'dashboard');
                 <hr style="border-color:var(--st);margin:1rem 0;">
 
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span style="font-size:.85rem;color:var(--gy);">Upcoming Deliveries (7 days)</span>
+                    <span class="text-gy" style="font-size:.85rem;">Upcoming Deliveries (7 days)</span>
                     <span class="tp-badge badge-delivered" data-metric="kpis.upcoming_deliveries_7d"><?= count($upcoming_deliveries) ?></span>
                 </div>
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span style="font-size:.85rem;color:var(--gy);">Upcoming Pickups (7 days)</span>
+                    <span class="text-gy" style="font-size:.85rem;">Upcoming Pickups (7 days)</span>
                     <span class="tp-badge badge-pickup-requested" data-metric="kpis.upcoming_pickups_7d"><?= count($upcoming_pickups) ?></span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span style="font-size:.85rem;color:var(--gy);">Open Leads</span>
-                    <span class="tp-badge badge-new" data-metric="kpis.leads_new"><?= $leads_new ?></span>
                 </div>
                 <?php if (count($overdue_pickups) > 0): ?>
                 <div class="d-flex justify-content-between align-items-center">
-                    <span style="font-size:.85rem;color:var(--rd);">Overdue Pickups</span>
+                    <span class="tp-overdue-text" style="font-size:.85rem;">Overdue Pickups</span>
                     <span class="tp-badge badge-canceled" data-metric="kpis.overdue_pickups"><?= count($overdue_pickups) ?></span>
                 </div>
                 <?php endif; ?>

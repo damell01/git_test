@@ -23,9 +23,10 @@
     --gl:    #9CA3AF;
 
     /* Sidebar */
-    --navy:   #0F2A44;
-    --navy-d: #0A1F33;
-    --navy-l: #1A3A5C;
+    --navy:        #0F2A44;
+    --navy-d:      #0A1F33;
+    --navy-l:      #1A3A5C;
+    --navy-darker: #0d2840;
 
     /* Accent */
     --or:    #F97316;
@@ -84,7 +85,7 @@ a:hover { color: var(--or-d); }
     top: 0;
     width: 260px;
     height: 100vh;
-    background: linear-gradient(180deg, var(--navy-d) 0%, var(--navy) 60%, #0d2840 100%);
+    background: linear-gradient(180deg, var(--navy-d) 0%, var(--navy) 60%, var(--navy-darker) 100%);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -1136,7 +1137,11 @@ hr { border-color: var(--st); opacity: 1; }
     border-color: rgba(249,115,22,.3) !important;
     background: rgba(249,115,22,.05) !important;
 }
-.tp-kpi-stripe .kpi-value { color: #fb923c !important; font-size: 1.6rem !important; }
+.tp-kpi-stripe .kpi-value,
+.tp-kpi-stripe.tp-kpi-card .kpi-value { color: #fb923c; font-size: 1.6rem; }
+
+/* Danger KPI value (overdue/failed) */
+.kpi-value-danger { color: var(--rd) !important; }
 
 /* Activity feed items */
 .tp-activity-item {
