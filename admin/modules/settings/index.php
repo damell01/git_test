@@ -437,6 +437,27 @@ layout_start('Settings', 'settings');
     </a>
 </div>
 
+<!-- ── Database Maintenance ──────────────────────────────────────────────── -->
+<div class="tp-card mt-4" style="max-width:780px;">
+    <h6 class="mb-2" style="font-weight:600;">
+        <i class="fa-solid fa-database" style="color:#f97316;"></i> Database Maintenance
+    </h6>
+    <p style="font-size:.9rem;color:var(--gy);">
+        Apply any pending database schema upgrades. All steps are idempotent — it is
+        safe to run more than once. Run this after pulling new code that adds tables
+        or columns.
+    </p>
+    <button type="button" id="btnRunUpgrade" class="btn-tp-ghost btn-tp-sm" onclick="runUpgrade()">
+        <i class="fa-solid fa-rotate" id="upgradeIcon"></i> Run Database Upgrade
+    </button>
+    <div id="upgradeOutput" style="display:none;margin-top:1rem;">
+        <pre id="upgradeOutputText"
+             style="background:#111827;color:#d1fae5;padding:1rem;border-radius:6px;
+                    font-size:.78rem;line-height:1.5;max-height:420px;overflow-y:auto;
+                    white-space:pre-wrap;word-break:break-word;border:1px solid #1f2937;"></pre>
+    </div>
+</div>
+
 <script>
 function toggleField(id) {
     var inp  = document.getElementById(id);
@@ -448,6 +469,62 @@ function toggleField(id) {
         inp.type = 'password';
         icon.classList.replace('fa-eye-slash', 'fa-eye');
     }
+}
+
+function runUpgrade() {
+    var btn    = document.getElementById('btnRunUpgrade');
+    var icon   = document.getElementById('upgradeIcon');
+    var output = document.getElementById('upgradeOutput');
+    var text   = document.getElementById('upgradeOutputText');
+
+    btn.disabled = true;
+    icon.classList.add('fa-spin');
+    text.textContent = 'Running upgrade…';
+    output.style.display = 'block';
+
+    // Grab the CSRF token from any of the forms on this page.
+    var csrfInput = document.querySelector('input[name="<?= CSRF_TOKEN_NAME ?>"]');
+    if (!csrfInput) {
+        text.textContent = 'Security token not found. Please refresh the page and try again.';
+        text.style.color = '#fca5a5';
+        btn.disabled = false;
+        icon.classList.remove('fa-spin');
+        return;
+    }
+    var csrfToken = csrfInput.value;
+
+    var body = new URLSearchParams();
+    body.append('<?= CSRF_TOKEN_NAME ?>', csrfToken);
+
+    fetch('run_upgrade.php', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body:    body.toString()
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        btn.disabled = false;
+        icon.classList.remove('fa-spin');
+
+        var out = data.output || '';
+        if (data.errors && data.errors.length > 0) {
+            out += '\n\nFailed steps:\n' + data.errors.join('\n');
+        }
+        text.textContent = out || 'No output returned.';
+
+        if (data.success) {
+            text.style.color = '#d1fae5'; // green
+        } else {
+            text.style.color = '#fca5a5'; // red
+        }
+    })
+    .catch(function(err) {
+        btn.disabled = false;
+        icon.classList.remove('fa-spin');
+        text.textContent = 'Unable to run database upgrade. Please try again or contact support.';
+        text.style.color = '#fca5a5';
+        console.error('Upgrade request failed:', err);
+    });
 }
 </script>
 
