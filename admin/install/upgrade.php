@@ -16,9 +16,10 @@
 // ─── Security ────────────────────────────────────────────────────────────────
 define('UPGRADE_SECRET', 'change-this-to-a-random-string-before-use');
 
-$isCli = (PHP_SAPI === 'cli');
+$isCli        = (PHP_SAPI === 'cli');
+$isAdminCall  = defined('RUNNING_FROM_ADMIN') && RUNNING_FROM_ADMIN === true;
 
-if (!$isCli) {
+if (!$isCli && !$isAdminCall) {
     $provided = $_GET['secret'] ?? '';
     if ($provided !== UPGRADE_SECRET || UPGRADE_SECRET === 'change-this-to-a-random-string-before-use') {
         http_response_code(403);
