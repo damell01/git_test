@@ -487,46 +487,46 @@ layout_start('Dashboard', 'dashboard');
             <div class="tp-card-body">
 
                 <div class="d-flex align-items-center justify-content-between p-3 mb-2"
-                     style="background:#1a2235;border-radius:8px;">
+                     style="background:var(--dk2);border-radius:8px;border:1px solid var(--st);">
                     <div class="d-flex align-items-center gap-3">
-                        <span style="font-size:1.6rem;color:#22c55e;"><i class="fa-solid fa-truck"></i></span>
+                        <span style="font-size:1.6rem;color:#16a34a;"><i class="fa-solid fa-truck"></i></span>
                         <div>
-                            <div style="font-size:.8rem;color:#9ca3af;">Deliveries Today</div>
-                            <div style="font-size:1.4rem;font-weight:700;color:#e5e7eb;" data-metric="kpis.wo_today_deliveries"><?= $wo_today_deliveries ?></div>
+                            <div style="font-size:.8rem;color:var(--gy);">Deliveries Today</div>
+                            <div style="font-size:1.4rem;font-weight:700;color:var(--wh);" data-metric="kpis.wo_today_deliveries"><?= $wo_today_deliveries ?></div>
                         </div>
                     </div>
                     <a href="<?= e(APP_URL) ?>/modules/calendar/index.php" class="btn-tp-ghost btn-tp-xs">View</a>
                 </div>
 
                 <div class="d-flex align-items-center justify-content-between p-3 mb-3"
-                     style="background:#1a2235;border-radius:8px;">
+                     style="background:var(--dk2);border-radius:8px;border:1px solid var(--st);">
                     <div class="d-flex align-items-center gap-3">
-                        <span style="font-size:1.6rem;color:#f59e0b;"><i class="fa-solid fa-truck-ramp-box"></i></span>
+                        <span style="font-size:1.6rem;color:var(--am);"><i class="fa-solid fa-truck-ramp-box"></i></span>
                         <div>
-                            <div style="font-size:.8rem;color:#9ca3af;">Pickups Today</div>
-                            <div style="font-size:1.4rem;font-weight:700;color:#e5e7eb;" data-metric="kpis.wo_today_pickups"><?= $wo_today_pickups ?></div>
+                            <div style="font-size:.8rem;color:var(--gy);">Pickups Today</div>
+                            <div style="font-size:1.4rem;font-weight:700;color:var(--wh);" data-metric="kpis.wo_today_pickups"><?= $wo_today_pickups ?></div>
                         </div>
                     </div>
                     <a href="<?= e(APP_URL) ?>/modules/calendar/index.php" class="btn-tp-ghost btn-tp-xs">View</a>
                 </div>
 
-                <hr style="border-color:#2a2d3e;margin:1rem 0;">
+                <hr style="border-color:var(--st);margin:1rem 0;">
 
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span style="font-size:.85rem;color:#9ca3af;">Upcoming Deliveries (7 days)</span>
+                    <span style="font-size:.85rem;color:var(--gy);">Upcoming Deliveries (7 days)</span>
                     <span class="tp-badge badge-delivered" data-metric="kpis.upcoming_deliveries_7d"><?= count($upcoming_deliveries) ?></span>
                 </div>
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span style="font-size:.85rem;color:#9ca3af;">Upcoming Pickups (7 days)</span>
+                    <span style="font-size:.85rem;color:var(--gy);">Upcoming Pickups (7 days)</span>
                     <span class="tp-badge badge-pickup-requested" data-metric="kpis.upcoming_pickups_7d"><?= count($upcoming_pickups) ?></span>
                 </div>
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span style="font-size:.85rem;color:#9ca3af;">Open Leads</span>
+                    <span style="font-size:.85rem;color:var(--gy);">Open Leads</span>
                     <span class="tp-badge badge-new" data-metric="kpis.leads_new"><?= $leads_new ?></span>
                 </div>
                 <?php if (count($overdue_pickups) > 0): ?>
                 <div class="d-flex justify-content-between align-items-center">
-                    <span style="font-size:.85rem;color:#f87171;">Overdue Pickups</span>
+                    <span style="font-size:.85rem;color:var(--rd);">Overdue Pickups</span>
                     <span class="tp-badge badge-canceled" data-metric="kpis.overdue_pickups"><?= count($overdue_pickups) ?></span>
                 </div>
                 <?php endif; ?>
@@ -779,23 +779,23 @@ layout_start('Dashboard', 'dashboard');
                 <?php else: ?>
                 <ul class="list-unstyled mb-0" style="max-height:360px;overflow-y:auto;">
                     <?php foreach ($init_activity as $ev): ?>
-                    <li class="d-flex gap-3 p-3" style="border-bottom:1px solid #1e2237;">
-                        <div style="width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.06);
+                    <li class="d-flex gap-3 p-3" style="border-bottom:1px solid var(--st);">
+                        <div style="width:32px;height:32px;border-radius:50%;background:var(--dk2);
                                     display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                             <i class="fa-solid <?= e($ev['icon']) ?>" style="color:<?= e($ev['color']) ?>;font-size:.8rem;"></i>
                         </div>
                         <div style="min-width:0;">
-                            <div style="font-size:.82rem;font-weight:600;color:#e5e7eb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            <div style="font-size:.82rem;font-weight:600;color:var(--wh);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                                 <?= e($ev['title']) ?>
                             </div>
-                            <div style="font-size:.78rem;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            <div style="font-size:.78rem;color:var(--gy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                                 <?= e($ev['detail']) ?>
                             </div>
                             <?php if (!empty($ev['sub'])): ?>
-                            <div style="font-size:.72rem;color:#6b7280;"><?= e($ev['sub']) ?></div>
+                            <div style="font-size:.72rem;color:var(--gy);"><?= e($ev['sub']) ?></div>
                             <?php endif; ?>
                         </div>
-                        <div style="margin-left:auto;font-size:.72rem;color:#6b7280;white-space:nowrap;flex-shrink:0;">
+                        <div style="margin-left:auto;font-size:.72rem;color:var(--gy);white-space:nowrap;flex-shrink:0;">
                             <?= e(fmt_datetime($ev['timestamp'])) ?>
                         </div>
                     </li>

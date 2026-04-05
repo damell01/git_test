@@ -136,7 +136,7 @@ $asset_path = defined('ASSET_PATH') ? ASSET_PATH : '';
 
     <style>
         body {
-            background: #0f1117;
+            background: #F7F7F7;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -145,13 +145,13 @@ $asset_path = defined('ASSET_PATH') ? ASSET_PATH : '';
         }
 
         .login-card {
-            background: #1a1d27;
-            border: 1px solid #2a2d3e;
-            border-radius: 12px;
+            background: #FFFFFF;
+            border: 1px solid #E5E7EB;
+            border-radius: 14px;
             padding: 2.5rem 2rem;
             width: 100%;
             max-width: 420px;
-            box-shadow: 0 8px 32px rgba(0,0,0,.45);
+            box-shadow: 0 4px 24px rgba(0,0,0,.08);
         }
 
         .login-logo {
@@ -174,8 +174,8 @@ $asset_path = defined('ASSET_PATH') ? ASSET_PATH : '';
         .tp-label {
             display: block;
             font-size: .8rem;
-            font-weight: 600;
-            color: #9ca3af;
+            font-weight: 700;
+            color: #111827;
             text-transform: uppercase;
             letter-spacing: .06em;
             margin-bottom: .35rem;
@@ -183,14 +183,14 @@ $asset_path = defined('ASSET_PATH') ? ASSET_PATH : '';
 
         .tp-input {
             width: 100%;
-            background: #0f1117;
-            border: 1px solid #2a2d3e;
+            background: #FFFFFF;
+            border: 1px solid #D1D5DB;
             border-radius: 6px;
-            color: #e5e7eb;
+            color: #111827;
             padding: .55rem .75rem;
             font-size: .95rem;
             font-family: 'Barlow', sans-serif;
-            transition: border-color .15s;
+            transition: border-color .15s, box-shadow .15s;
             box-sizing: border-box;
         }
 
@@ -201,7 +201,7 @@ $asset_path = defined('ASSET_PATH') ? ASSET_PATH : '';
         }
 
         .tp-input::placeholder {
-            color: #4b5563;
+            color: #9CA3AF;
         }
 
         .form-group {
@@ -220,12 +220,13 @@ $asset_path = defined('ASSET_PATH') ? ASSET_PATH : '';
             font-family: 'Barlow Condensed', sans-serif;
             letter-spacing: .05em;
             cursor: pointer;
-            transition: background .15s, transform .1s;
+            transition: background .15s, transform .1s, box-shadow .15s;
             margin-top: .5rem;
         }
 
         .btn-login:hover {
             background: #ea6c0e;
+            box-shadow: 0 4px 16px rgba(249,115,22,.3);
         }
 
         .btn-login:active {
@@ -233,9 +234,9 @@ $asset_path = defined('ASSET_PATH') ? ASSET_PATH : '';
         }
 
         .alert-danger-dark {
-            background: rgba(239,68,68,.12);
-            border: 1px solid rgba(239,68,68,.3);
-            color: #fca5a5;
+            background: rgba(239,68,68,.08);
+            border: 1px solid rgba(239,68,68,.25);
+            color: #991b1b;
             border-radius: 6px;
             padding: .65rem .85rem;
             font-size: .875rem;
@@ -258,7 +259,7 @@ $asset_path = defined('ASSET_PATH') ? ASSET_PATH : '';
             left: .75rem;
             top: 50%;
             transform: translateY(-50%);
-            color: #4b5563;
+            color: #9CA3AF;
             font-size: .9rem;
             pointer-events: none;
         }
@@ -283,7 +284,7 @@ $asset_path = defined('ASSET_PATH') ? ASSET_PATH : '';
             <?= e($flash['msg']) ?>
         </div>
         <?php elseif ($flash['type'] === 'success'): ?>
-        <div style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:#86efac;border-radius:6px;padding:.65rem .85rem;font-size:.875rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.5rem;">
+        <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.25);color:#065f46;border-radius:6px;padding:.65rem .85rem;font-size:.875rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:.5rem;">
             <i class="fa-solid fa-circle-check"></i>
             <?= e($flash['msg']) ?>
         </div>

@@ -269,11 +269,11 @@ function layout_start(string $page_title, string $active_nav = ''): void
         <?php if ($current_user_name): ?>
         <div class="sb-user d-flex align-items-center gap-2 mb-2">
             <div class="flex-grow-1 overflow-hidden">
-                <div class="text-truncate" style="color:var(--wh);font-size:.85rem;font-weight:500;">
+                <div class="text-truncate sb-user-name">
                     <?= $current_user_name ?>
                 </div>
                 <?php if ($current_user_role): ?>
-                <div style="font-size:.7rem;color:var(--gy);"><?= $current_user_role ?></div>
+                <div class="sb-user-role"><?= $current_user_role ?></div>
                 <?php endif; ?>
             </div>
             <?php if ($current_user_role): ?>
