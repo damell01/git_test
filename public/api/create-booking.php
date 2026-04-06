@@ -31,6 +31,7 @@ set_exception_handler(function (\Throwable $e) {
 require_once $_admin_root . '/config/config.php';
 require_once INC_PATH . '/db.php';
 require_once INC_PATH . '/helpers.php';
+require_once INC_PATH . '/mailer.php';
 
 function api_error(string $message, int $status = 400): void
 {
@@ -351,7 +352,19 @@ if ($payment_method === 'stripe') {
     }
 }
 
-// Cash / check — all dumpsters already marked reserved above
+// Cash / check — all dumpsters already marked reserved above.
+// Send booking confirmation emails (best-effort, non-blocking).
+foreach ($new_ids as $bid) {
+    try {
+        $confirmed_booking = db_fetch('SELECT * FROM bookings WHERE id = ? LIMIT 1', [$bid]);
+        if ($confirmed_booking) {
+            notify_booking_confirmed($confirmed_booking);
+        }
+    } catch (\Throwable $e) {
+        error_log('[Booking] notify_booking_confirmed failed for booking ' . $bid . ': ' . $e->getMessage());
+    }
+}
+
 http_response_code(200);
 echo json_encode([
     'success'  => true,

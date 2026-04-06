@@ -2,7 +2,8 @@
 /**
  * Stripe Webhook Handler — Trash Panda Roll-Offs
  * POST /api/stripe-webhook.php
- * Verifies Stripe signature, handles checkout.session.completed.
+ * Verifies Stripe signature, handles checkout.session.completed and
+ * checkout.session.expired events.
  * No session, no output buffering.
  */
 
@@ -19,6 +20,12 @@ if (!file_exists($autoload)) {
 }
 require_once $autoload;
 require_once INC_PATH . '/stripe.php';
+require_once INC_PATH . '/mailer.php';
+
+// Load push helper (best-effort)
+if (file_exists(INC_PATH . '/push.php')) {
+    require_once INC_PATH . '/push.php';
+}
 
 header('Content-Type: application/json');
 
@@ -43,6 +50,7 @@ try {
     exit;
 }
 
+// ── checkout.session.completed ────────────────────────────────────────────────
 if ($event->type === 'checkout.session.completed') {
     $session    = $event->data->object;
     $session_id = $session->id ?? '';
@@ -76,14 +84,20 @@ if ($event->type === 'checkout.session.completed') {
                 $total_paid += (float)$booking['total_amount'];
             }
 
-            // Push notification to admins
-            $autoload_push = $_admin_root . '/vendor/autoload.php';
-            if (file_exists($autoload_push)) {
-                require_once $autoload_push;
+            // Send booking confirmation emails (customer + admin)
+            foreach ($bookings as $booking) {
+                try {
+                    $full_booking = db_fetch('SELECT * FROM bookings WHERE id = ? LIMIT 1', [(int)$booking['id']]);
+                    if ($full_booking) {
+                        notify_booking_confirmed($full_booking);
+                    }
+                } catch (\Throwable $e) {
+                    error_log('[Webhook] notify_booking_confirmed failed for booking ' . $booking['id'] . ': ' . $e->getMessage());
+                }
             }
-            if (file_exists(INC_PATH . '/push.php')) {
-                require_once INC_PATH . '/push.php';
 
+            // Push notification to admins
+            if (function_exists('push_notify_admins')) {
                 $first    = $bookings[0];
                 $cust     = $first['customer_name'] ?? 'Customer';
                 $total    = '$' . number_format($total_paid, 2);
@@ -112,6 +126,44 @@ if ($event->type === 'checkout.session.completed') {
                     );
                 }
             }
+        }
+    }
+}
+
+// ── checkout.session.expired ──────────────────────────────────────────────────
+// When a customer abandons the Stripe checkout and the session expires,
+// cancel the pending bookings and release the reserved dumpsters so
+// they are available for other customers.
+if ($event->type === 'checkout.session.expired') {
+    $session    = $event->data->object;
+    $session_id = $session->id ?? '';
+
+    if (!empty($session_id)) {
+        $bookings = db_fetchall(
+            "SELECT id, booking_number, dumpster_id
+               FROM bookings
+              WHERE stripe_session_id = ?
+                AND booking_status IN ('pending','confirmed')
+                AND payment_status IN ('pending','unpaid')",
+            [$session_id]
+        );
+
+        foreach ($bookings as $booking) {
+            db_update('bookings', [
+                'booking_status' => 'canceled',
+                'payment_status' => 'canceled',
+                'updated_at'     => date('Y-m-d H:i:s'),
+            ], 'id', (int)$booking['id']);
+
+            if (!empty($booking['dumpster_id'])) {
+                // Only restore to available if still in the 'reserved' state we set
+                db_execute(
+                    "UPDATE dumpsters SET status = 'available', updated_at = ? WHERE id = ? AND status = 'reserved'",
+                    [date('Y-m-d H:i:s'), (int)$booking['dumpster_id']]
+                );
+            }
+
+            error_log('[Webhook] Canceled expired Stripe session booking: ' . ($booking['booking_number'] ?? $booking['id']));
         }
     }
 }

@@ -166,10 +166,51 @@ try {
     $log[] = '  → ERROR: ' . $e->getMessage();
 }
 
-// ── Task 6: Log completion ────────────────────────────────────────────────────
+// ── Task 6: Cancel stale pending-Stripe bookings (missed webhook safety-net) ──
+$log[] = '';
+$log[] = '[Task 6] Cancel Stale Pending-Stripe Bookings';
+try {
+    // A Stripe Checkout Session is valid for 24 hours by default.
+    // Any booking still in 'pending' / payment_method='stripe' state more than
+    // 26 hours after creation almost certainly had its session expire without
+    // a webhook being delivered.  Cancel the booking and release the dumpster.
+    $cutoff = date('Y-m-d H:i:s', strtotime('-26 hours'));
+    $stale  = db_fetchall(
+        "SELECT id, booking_number, dumpster_id
+           FROM bookings
+          WHERE payment_method  = 'stripe'
+            AND booking_status  = 'pending'
+            AND payment_status  = 'pending'
+            AND created_at     <= ?",
+        [$cutoff]
+    );
+
+    $count = 0;
+    foreach ($stale as $bk) {
+        db_update('bookings', [
+            'booking_status' => 'canceled',
+            'payment_status' => 'canceled',
+            'updated_at'     => date('Y-m-d H:i:s'),
+        ], 'id', (int)$bk['id']);
+
+        if (!empty($bk['dumpster_id'])) {
+            db_execute(
+                "UPDATE dumpsters SET status = 'available', updated_at = ? WHERE id = ? AND status = 'reserved'",
+                [date('Y-m-d H:i:s'), (int)$bk['dumpster_id']]
+            );
+        }
+        $count++;
+    }
+
+    $log[] = '  → Canceled ' . $count . ' stale pending-Stripe booking(s)';
+} catch (\Throwable $e) {
+    $log[] = '  → ERROR: ' . $e->getMessage();
+}
+
+// ── Task 7: Log completion ────────────────────────────────────────────────────
 $elapsed = round(microtime(true) - $start, 2);
 $log[]   = '';
-$log[]   = '[Task 4] Logging to activity_log';
+$log[]   = '[Task 7] Logging to activity_log';
 try {
     db_execute(
         "INSERT INTO activity_log (user_id, action, description, entity_type, entity_id, ip_address, created_at)
