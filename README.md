@@ -26,22 +26,102 @@ A root-level `.htaccess` file ensures that visiting the bare domain URL (e.g. `h
 - Shared navigation and footer injected via `shared-components.js`
 
 ### Admin Panel (`/admin/`)
-- **Bookings Management** — full booking list, detail view, payment status updates, cancellation
-- **Stripe Checkout Integration** — server-side checkout session creation + webhook handler
-- **Cash / Check payments** — manual payment recording with pending/paid statuses
-- **Inventory Blocks** — admin can block any unit from being booked for specific date ranges
-- **Leads Management** — contact form submissions land here automatically
-- **Customer Database**
-- **Quote Builder** with print layout
-- **Work Order Management** with printable invoice
-- **Dumpster Inventory** tracking
-- **Scheduling Calendar**
-- **Reports & Revenue Tracking**
-- **User & Role Management** (admin, office, dispatcher, readonly)
-- **Email Notifications** via PHPMailer (SMTP) or PHP `mail()` fallback
-- **Two-Factor Authentication** per user (TOTP — Google Authenticator, Authy, etc.)
+
+#### 📦 Bookings
+- Full booking list with status/payment filters and date range search
+- Detailed booking view with customer info, unit details, pricing breakdown
+- Booking status workflow: Pending → Confirmed → Completed → Canceled
+- Payment status updates: Unpaid, Pending, Paid (Stripe), Paid Cash, Paid Check, Refunded
+- Quick-mark cash/check payments with optional payment notes
+- Create Work Order directly from a booking
+
+#### 🛠️ Work Orders
+- Work order list with status tabs and search
+- Full work order detail view with notes timeline
+- Work order statuses: Scheduled, Delivered, Active, Pickup Requested, Picked Up, Completed, Canceled
+- Add timestamped notes to any work order
+- **Printable work order** with company letterhead, logo, and configurable footer text
+- Generate an invoice from a completed work order
+- Assign dumpsters to work orders
+
+#### 📄 Invoices
+- Create custom invoices with unlimited line items
+- Line item rate types: Fixed, Daily, Weekly, Monthly
+- Auto-generate Stripe Checkout payment links when Stripe is configured
+- Invoice statuses: Draft, Sent, Paid, Void, Canceled
+- Quick-pay actions: Mark Paid (Cash), Mark Paid (Check), Mark as Sent, Cancel
+- **Printable invoice** with company logo, contact info, line items, totals, terms, and footer text
+- Payment records only appear for actually-paid invoices (not just drafts/sent)
+
+#### 💰 Payments
+- All-time revenue totals by payment method (Stripe, Cash, Check)
+- Month-to-date revenue summary
+- Filterable payment records: by method, status, date range, source (booking/invoice)
+- Stripe live data: account balance, recent payouts, monthly charge summary
+- Only shows invoices with actual payment activity (not draft/sent without payment)
+
+#### 🗑️ Inventory (Dumpsters)
+- Full dumpster fleet management with status tracking
+- Dumpster statuses: Available, Reserved, In Use, Maintenance
+- Flexible pricing: base price + rental days + extra-day rate (or legacy daily/weekly/monthly)
+- Optional delivery fee, pickup fee, mileage fee, and tax rate per unit
+- Sync individual dumpsters or **Sync All to Stripe** with one click
+- Inventory block system: block units from booking for specific date ranges
+
+#### 📅 Calendar
+- Visual monthly calendar view of all deliveries and pickups
+- Color-coded booking events with clickable links
+
+#### 👥 Customers
+- Customer database with contact info and billing address
+- View full booking history per customer
+- Create invoices directly from a customer profile
+
+#### 📊 Reports
+- Revenue breakdown by payment method for any date range or all-time
+- Booking and invoice revenue summaries
+
+#### 🔔 Notifications
+- Send email/SMS notifications to customers about their bookings
+- Contact form submissions saved as leads and trigger admin alert emails
+
+#### ⚙️ Settings
+- **Company Information** — name, phone, email, address
+- **Logo Upload** — upload a logo image directly (PNG, JPG, SVG, etc.) or enter a URL
+- **Document Templates** — Invoice T&C, work order footer text, invoice footer text, booking terms
+- **Email / SMTP** — configure SMTP for reliable email delivery (or use PHP mail())
+- **Stripe** — API keys, webhook secret, currency, mode (test/live)
+- **Database Upgrade** — run schema migrations from the UI
+- Section-isolated saves: saving company info never touches email/SMTP settings
+
+#### 👤 Users
+- Manage admin users with roles: admin, office
+- Password change with force-change-on-first-login flow
+
+#### ❓ Help & Guide
+- In-app help documentation
+- Stripe onboarding walkthrough
+- Email setup guide (SMTP providers, test card numbers)
+- Admin navigation overview
 
 ---
+
+## 📧 Email Notifications
+
+The following emails are sent automatically by the system:
+
+| Event | Recipient | Description |
+|-------|-----------|-------------|
+| New booking (online) | Customer + admin notification emails | Booking confirmation with dumpster, dates, total, and Stripe payment link |
+| Booking confirmed by admin | Customer | Confirmation that booking has been approved |
+| Booking canceled | Customer | Cancellation notification |
+| Payment received (Stripe webhook) | Customer + admin | Payment confirmation and receipt details |
+| Pickup request submitted | Admin notification emails | Customer has requested pickup via public form |
+| Contact form submission | Admin notification emails | Inquiry with customer name, email, message |
+| Test email (manual trigger) | Company email address | Verifies that email sending is configured correctly |
+
+All emails use an HTML template with your company name and branding. Configure SMTP in **Settings → Email Configuration** for reliable delivery.
+
 
 ## Tech Stack
 

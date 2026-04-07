@@ -99,7 +99,7 @@ layout_start('Invoices', 'invoices');
                class="form-control form-control-sm"
                placeholder="Search invoice # or customer…">
         <button type="submit" class="btn-tp-primary btn-tp-sm">
-            <i class="fa-solid fa-magnifying-glass"></i>
+            <i class="fa-solid fa-magnifying-glass"></i> Search
         </button>
         <?php if ($search): ?>
         <a href="?filter=<?= e($filter) ?>" class="btn-tp-ghost btn-tp-sm">

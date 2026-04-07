@@ -130,7 +130,7 @@ layout_start('Bookings', 'bookings');
                class="tp-search form-control form-control-sm"
                style="min-width:220px;max-width:320px;">
         <button type="submit" class="btn-tp-primary btn-tp-sm">
-            <i class="fa-solid fa-magnifying-glass"></i>
+            <i class="fa-solid fa-magnifying-glass"></i> Search
         </button>
         <?php if ($q !== ''): ?>
         <a href="<?= e(bk_url(['q' => '', 'page' => 1])) ?>" class="btn-tp-ghost btn-tp-sm">
@@ -274,7 +274,7 @@ layout_start('Bookings', 'bookings');
                         <?php if (has_role('admin')): ?>
                         <a href="delete.php?id=<?= (int)$b['id'] ?>" class="btn-tp-ghost btn-tp-xs text-danger"
                            onclick="return confirm('Permanently delete booking <?= e($b['booking_number']) ?>? This cannot be undone.')">
-                            <i class="fa-solid fa-trash"></i>
+                            <i class="fa-solid fa-trash"></i> Delete
                         </a>
                         <?php endif; ?>
                     </div>

@@ -173,10 +173,16 @@ if ($source === 'all' || $source === 'invoice') {
         if ($pay_status === 'paid') {
             $inv_where[] = "i.status = 'paid'";
         } elseif ($pay_status === 'pending') {
-            $inv_where[] = "i.status IN ('draft','sent')";
+            // Only show sent invoices that have an active Stripe payment link/session as "pending"
+            // Draft invoices with no payment attempt should NOT appear in payment records
+            $inv_where[] = "i.status = 'sent' AND (i.stripe_session_id IS NOT NULL OR i.stripe_payment_link IS NOT NULL)";
         } elseif ($pay_status === 'refunded') {
             $inv_where[] = "i.status = 'void'";
         }
+    } else {
+        // Default "all" view: only show invoices with actual payment activity
+        // (paid, or sent with a stripe session/link, or voided)
+        $inv_where[] = "(i.status = 'paid' OR i.status = 'void' OR (i.status = 'sent' AND (i.stripe_session_id IS NOT NULL OR i.stripe_payment_link IS NOT NULL)))";
     }
     if ($date_from !== '') {
         $inv_where[] = "i.updated_at >= ?";
@@ -436,7 +442,7 @@ layout_start('Payments', 'payments');
                 <i class="fa-solid fa-filter"></i> Filter
             </button>
             <a href="index.php" class="btn-tp-ghost btn-tp-sm" title="Clear filters">
-                <i class="fa-solid fa-xmark"></i>
+                <i class="fa-solid fa-xmark"></i> Clear
             </a>
         </div>
     </form>

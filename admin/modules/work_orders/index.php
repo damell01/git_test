@@ -151,7 +151,7 @@ layout_start('Work Orders', 'work_orders');
                        value="<?= htmlspecialchars($search) ?>">
                 <?php if ($search): ?>
                 <a href="?<?= wo_qs(['q' => '', 'page' => 1]) ?>" class="btn-tp-ghost btn-tp-sm" title="Clear">
-                    <i class="fa-solid fa-xmark"></i>
+                    <i class="fa-solid fa-xmark"></i> Clear
                 </a>
                 <?php endif; ?>
             </div>
