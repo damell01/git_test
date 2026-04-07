@@ -357,7 +357,7 @@ layout_start('Calendar', 'calendar');
                                 <a href="<?= e(APP_URL) ?>/modules/bookings/unblock.php?id=<?= (int)$blk['id'] ?>"
                                    class="btn-tp-ghost btn-tp-xs text-danger"
                                    onclick="return confirm('Remove this inventory block?')">
-                                    <i class="fa-solid fa-trash"></i>
+                                    <i class="fa-solid fa-trash"></i> Remove
                                 </a>
                             </td>
                             <?php endif; ?>

@@ -43,18 +43,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             mkdir($upload_dir, 0755, true);
             // Protect uploads directory
             file_put_contents($upload_dir . '.htaccess',
-                "Options -Indexes\n<FilesMatch \"^(?!.*\.(png|jpg|jpeg|gif|webp|svg)$).*$\">\n  Require all denied\n</FilesMatch>\n"
+                "Options -Indexes\n<FilesMatch \"^(?!.*\.(png|jpg|jpeg|gif|webp)$).*$\">\n  Require all denied\n</FilesMatch>\n"
             );
         }
         if (!empty($_FILES['logo_file']['tmp_name']) && $_FILES['logo_file']['error'] === UPLOAD_ERR_OK) {
-            $allowed_types = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml'];
+            // SVG excluded — can contain embedded JS (XSS risk)
+            $allowed_types = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
             $finfo = new finfo(FILEINFO_MIME_TYPE);
             $mime  = $finfo->file($_FILES['logo_file']['tmp_name']);
             if (!in_array($mime, $allowed_types, true)) {
-                flash_error('Invalid file type. Please upload a PNG, JPG, GIF, WebP, or SVG image.');
+                flash_error('Invalid file type. Please upload a PNG, JPG, GIF, or WebP image.');
             } else {
-                $ext      = pathinfo($_FILES['logo_file']['name'], PATHINFO_EXTENSION);
-                $filename = 'logo_' . time() . '.' . strtolower($ext);
+                $ext_map = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/gif' => 'gif', 'image/webp' => 'webp'];
+                $ext      = $ext_map[$mime] ?? 'png';
+                $filename = 'logo_' . uniqid('', true) . '.' . $ext;
                 $dest     = $upload_dir . $filename;
                 if (move_uploaded_file($_FILES['logo_file']['tmp_name'], $dest)) {
                     // Store as a URL path relative to APP_URL
@@ -73,11 +75,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('index.php');
     }
 
+    // ── Save logo path only ──────────────────────────────────────────────────
+    if ($action === 'save_logo_path') {
+        $path = trim($_POST['logo_path'] ?? '');
+        set_setting('logo_path', $path);
+        if ($path !== '') {
+            // When a manual path is set, clear the uploaded logo URL preference
+            set_setting('logo_url', '');
+        }
+        log_activity('update', 'Updated logo path setting', 'settings', 0);
+        flash_success('Logo path saved.');
+        redirect('index.php');
+    }
+
     // ── Section-specific saves (prevent cross-section field clobbering) ──────
     $section_fields = [
         'save_company' => [
             'company_name', 'company_phone', 'company_email', 'company_address',
-            'quote_terms', 'wo_footer', 'invoice_footer', 'logo_path', 'booking_terms', 'currency',
+            'quote_terms', 'wo_footer', 'invoice_footer', 'booking_terms', 'currency',
         ],
         'save_email' => [
             'email_from_name', 'email_from_email', 'notification_emails',
@@ -207,25 +222,21 @@ layout_start('Settings', 'settings');
         <label class="form-label" for="logo_file">Upload Logo Image</label>
         <div class="d-flex gap-2 align-items-center flex-wrap">
             <input type="file" id="logo_file" name="logo_file" class="form-control"
-                   accept="image/png,image/jpeg,image/gif,image/webp,image/svg+xml"
+                   accept="image/png,image/jpeg,image/gif,image/webp"
                    style="max-width:360px;">
             <button type="submit" class="btn-tp-primary btn-tp-sm">
                 <i class="fa-solid fa-upload"></i> Upload Logo
             </button>
         </div>
         <div class="form-text" style="color:var(--gy);">
-            Accepted formats: PNG, JPG, GIF, WebP, SVG. Recommended size: 300×80 px or similar landscape shape.
+            Accepted formats: PNG, JPG, GIF, WebP. Recommended size: 300×80 px or similar landscape shape.
         </div>
     </form>
 
-    <!-- Or enter a URL/path manually -->
+    <!-- Or enter a URL/path manually — uses save_logo_path action to avoid touching other fields -->
     <form method="POST" action="index.php">
         <?= csrf_field() ?>
-        <input type="hidden" name="action" value="save_company">
-        <!-- Pass through all other company fields as hidden so they don't get blanked -->
-        <?php foreach(['company_name','company_phone','company_email','company_address','quote_terms','wo_footer','invoice_footer','booking_terms','currency'] as $_f): ?>
-        <input type="hidden" name="<?= $_f ?>" value="<?= e(get_setting($_f)) ?>">
-        <?php endforeach; ?>
+        <input type="hidden" name="action" value="save_logo_path">
         <label class="form-label" for="logo_path">
             Or enter a Logo URL / Path manually
             <span style="font-weight:400;font-size:.8rem;color:var(--gy);">(overrides uploaded logo)</span>

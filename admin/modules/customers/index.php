@@ -207,12 +207,12 @@ layout_start('Customers', 'customers');
                             </a>
                             <a href="<?= APP_URL ?>/modules/customers/edit.php?id=<?= (int)$cust['id'] ?>"
                                class="btn-tp-ghost btn-tp-sm" title="Edit">
-                                <i class="fa-solid fa-pencil"></i>
+                                <i class="fa-solid fa-pencil"></i> Edit
                             </a>
                             <a href="<?= APP_URL ?>/modules/customers/delete.php?id=<?= (int)$cust['id'] ?>"
                                class="btn-tp-ghost btn-tp-sm text-danger" title="Delete"
                                onclick="return confirm('Delete customer <?= e(addslashes($cust['name'])) ?>? This cannot be undone.')">
-                                <i class="fa-solid fa-trash"></i>
+                                <i class="fa-solid fa-trash"></i> Delete
                             </a>
                             <?php endif; ?>
                         </div>

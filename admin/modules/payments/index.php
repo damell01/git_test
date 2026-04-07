@@ -442,7 +442,7 @@ layout_start('Payments', 'payments');
                 <i class="fa-solid fa-filter"></i> Filter
             </button>
             <a href="index.php" class="btn-tp-ghost btn-tp-sm" title="Clear filters">
-                <i class="fa-solid fa-xmark"></i>
+                <i class="fa-solid fa-xmark"></i> Clear
             </a>
         </div>
     </form>

@@ -1,4 +1,4 @@
 Options -Indexes
-<FilesMatch "^(?!.*\.(png|jpg|jpeg|gif|webp|svg)$).*$">
+<FilesMatch "^(?!.*\.(png|jpg|jpeg|gif|webp)$).*$">
   Require all denied
 </FilesMatch>
