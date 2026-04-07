@@ -84,8 +84,14 @@ function stripe_create_checkout(array $booking, string $success_url, string $can
                 'unit_code'      => $booking['unit_code'] ?? '',
             ],
         ],
-        'customer_email' => $booking['customer_email'] ?? null,
     ];
+
+    // Only include customer_email when a valid email address is provided.
+    // Passing null or an empty string causes Stripe's API to return a validation error.
+    $cust_email = trim((string)($booking['customer_email'] ?? ''));
+    if ($cust_email !== '' && filter_var($cust_email, FILTER_VALIDATE_EMAIL)) {
+        $session_params['customer_email'] = $cust_email;
+    }
 
     // For $0 amounts, allow checkout completion without requiring a payment method.
     if ($amount_cents === 0) {
@@ -161,8 +167,14 @@ function stripe_create_multi_checkout(array $bookings, string $success_url, stri
                 'customer_name'   => $bookings[0]['customer_name'] ?? '',
             ],
         ],
-        'customer_email' => $bookings[0]['customer_email'] ?? null,
     ];
+
+    // Only include customer_email when a valid email address is provided.
+    // Passing null or an empty string causes Stripe's API to return a validation error.
+    $cust_email = trim((string)($bookings[0]['customer_email'] ?? ''));
+    if ($cust_email !== '' && filter_var($cust_email, FILTER_VALIDATE_EMAIL)) {
+        $session_params['customer_email'] = $cust_email;
+    }
 
     if ($total_cents === 0) {
         $session_params['payment_method_collection'] = 'if_required';

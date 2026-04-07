@@ -576,6 +576,31 @@ if (table_exists($pdo, 'bookings') && !column_exists($pdo, 'bookings', 'payment_
 }
 
 // =============================================================================
+// UPGRADE 21b — bookings: add stripe_session_id / stripe_payment_id if missing
+// (Needed when upgrading from a schema that pre-dates Stripe support.)
+// =============================================================================
+echo "\n--- Upgrade 21b: bookings stripe columns ---\n";
+
+if (table_exists($pdo, 'bookings')) {
+    if (!column_exists($pdo, 'bookings', 'stripe_session_id')) {
+        run_step($pdo, "bookings.stripe_session_id", "ALTER TABLE `bookings`
+            ADD COLUMN `stripe_session_id` VARCHAR(255) DEFAULT NULL
+            COMMENT 'Stripe Checkout session ID' AFTER `payment_status`");
+    } else {
+        $log[] = "[SKIP] bookings.stripe_session_id (already exists)";
+    }
+    if (!column_exists($pdo, 'bookings', 'stripe_payment_id')) {
+        run_step($pdo, "bookings.stripe_payment_id", "ALTER TABLE `bookings`
+            ADD COLUMN `stripe_payment_id` VARCHAR(255) DEFAULT NULL
+            COMMENT 'Stripe PaymentIntent ID' AFTER `stripe_session_id`");
+    } else {
+        $log[] = "[SKIP] bookings.stripe_payment_id (already exists)";
+    }
+} else {
+    $log[] = "[SKIP] bookings.stripe_session_id/stripe_payment_id (bookings table missing)";
+}
+
+// =============================================================================
 // UPGRADE 22 — invoices: add stripe_session_id + canceled status
 // =============================================================================
 echo "\n--- Upgrade 22: invoices stripe_session_id + canceled status ---\n";

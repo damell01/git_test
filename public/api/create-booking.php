@@ -106,6 +106,22 @@ if (!in_array($payment_method, ['stripe', 'cash', 'check'], true)) {
     api_error('Invalid payment method.');
 }
 
+// For Stripe payments, verify the SDK and secret key are available before
+// creating any booking records. This prevents unnecessary DB operations and
+// gives a clearer error when Stripe is not yet configured.
+if ($payment_method === 'stripe') {
+    $_stripe_autoload = $_admin_root . '/vendor/autoload.php';
+    if (!file_exists($_stripe_autoload)) {
+        api_error('Card payment is currently unavailable. Please select a different payment method.', 503);
+    }
+    require_once $_stripe_autoload;
+    require_once INC_PATH . '/stripe.php';
+    if (empty(get_setting('stripe_secret_key', ''))) {
+        api_error('Card payment is not configured. Please contact us to arrange payment.', 503);
+    }
+    unset($_stripe_autoload);
+}
+
 // Calculate days once (shared across all units)
 $d1   = new \DateTime($rental_start);
 $d2   = new \DateTime($rental_end);
@@ -304,15 +320,7 @@ function rollback_stripe_bookings(array $new_ids): void {
 
 // Stripe checkout
 if ($payment_method === 'stripe') {
-    $autoload = $_admin_root . '/vendor/autoload.php';
-    if (!file_exists($autoload)) {
-        error_log('[Booking] Stripe SDK not found. Run `composer install` in the admin directory.');
-        rollback_stripe_bookings($new_ids);
-        api_error('Card payment is currently unavailable. Please select a different payment method.', 503);
-    }
-
-    require_once $autoload;
-    require_once INC_PATH . '/stripe.php';
+    // SDK and key were already verified before booking creation; no need to reload.
 
     try {
         $scheme      = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
@@ -327,6 +335,10 @@ if ($payment_method === 'stripe') {
         foreach ($new_ids as $bid) {
             $row = db_fetch('SELECT * FROM bookings WHERE id = ? LIMIT 1', [$bid]);
             if ($row) $booking_rows[] = $row;
+        }
+
+        if (empty($booking_rows)) {
+            throw new \RuntimeException('No booking records found for Stripe checkout.');
         }
 
         $session = count($booking_rows) === 1
