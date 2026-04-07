@@ -27,3 +27,10 @@ Thumbs.db
 # Upload / cache directories
 admin/assets/img/uploads/
 admin/cache/
+# Uploaded logo/images (keep the directory skeleton but not user uploads)
+admin/uploads/*.png
+admin/uploads/*.jpg
+admin/uploads/*.jpeg
+admin/uploads/*.gif
+admin/uploads/*.webp
+admin/uploads/*.svg

@@ -48,6 +48,7 @@ if ($is_print):
     $company_email   = get_setting('company_email',   '');
     $company_address = get_setting('company_address', '');
     $wo_footer       = get_setting('wo_footer',       '');
+    $logo_url_print  = get_setting('logo_url', '') ?: get_setting('logo_path', '');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -101,6 +102,11 @@ if ($is_print):
     <!-- Letterhead -->
     <div class="letterhead">
         <div>
+            <?php if (!empty($logo_url_print)): ?>
+            <img src="<?= htmlspecialchars($logo_url_print, ENT_QUOTES, 'UTF-8') ?>" alt="<?= htmlspecialchars($company_name) ?>"
+                 style="max-height:55px;max-width:180px;object-fit:contain;margin-bottom:4px;display:block;"
+                 onerror="this.style.display='none';">
+            <?php endif; ?>
             <div class="company-name"><?= htmlspecialchars($company_name) ?></div>
             <div class="company-info">
                 <?php if ($company_address): ?><?= nl2br(htmlspecialchars($company_address)) ?><br><?php endif; ?>
@@ -200,7 +206,7 @@ if ($is_print):
 </div>
 
 <div class="print-btn">
-    <button onclick="window.print()">Print / Save PDF</button>
+    <button onclick="window.print()"><i class="fa-solid fa-print"></i> Print / Save PDF</button>
 </div>
 </body>
 </html>

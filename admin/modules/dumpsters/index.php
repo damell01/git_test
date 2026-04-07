@@ -56,12 +56,24 @@ $tabs = [
 layout_start('Inventory', 'inventory');
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h5 class="mb-0">Dumpster Inventory</h5>
     <?php if (has_role('admin', 'office')): ?>
-    <a href="create.php" class="btn-tp-primary btn-tp-sm">
-        <i class="fa-solid fa-plus"></i> Add Dumpster
-    </a>
+    <div class="d-flex gap-2 flex-wrap">
+        <?php if (trim(get_setting('stripe_secret_key', '')) !== ''): ?>
+        <form method="POST" action="sync_all_stripe.php" id="syncAllForm">
+            <?= csrf_field() ?>
+            <button type="submit" class="btn-tp-ghost btn-tp-sm"
+                    onclick="return confirm('Sync all dumpsters to Stripe? This will create or update Stripe products/prices for all active dumpsters.')"
+                    id="syncAllBtn">
+                <i class="fa-brands fa-stripe me-1"></i> Sync All to Stripe
+            </button>
+        </form>
+        <?php endif; ?>
+        <a href="create.php" class="btn-tp-primary btn-tp-sm">
+            <i class="fa-solid fa-plus"></i> Add Dumpster
+        </a>
+    </div>
     <?php endif; ?>
 </div>
 

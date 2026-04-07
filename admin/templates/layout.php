@@ -118,6 +118,14 @@ function layout_start(string $page_title, string $active_nav = ''): void
             'roles' => ['admin'],
             'badge' => null,
         ],
+        [
+            'key'   => 'help',
+            'label' => 'Help &amp; Guide',
+            'icon'  => 'fa-circle-question',
+            'href'  => APP_URL . '/modules/help/index.php',
+            'roles' => null,
+            'badge' => null,
+        ],
     ];
 
     // Resolve badge counts lazily so a missing DB connection does not fatal-error the layout.
@@ -210,10 +218,13 @@ function layout_start(string $page_title, string $active_nav = ''): void
     <!-- Brand -->
     <div class="sb-brand">
         <?php
-        // Try custom logo from settings first, then fall back to bundled logo
+        // Try uploaded logo first, then custom path, then bundled logo
+        $custom_logo_url  = get_setting('logo_url', '');
         $custom_logo_path = get_setting('logo_path', '');
         $logo_url         = '';
-        if (!empty($custom_logo_path)) {
+        if (!empty($custom_logo_url)) {
+            $logo_url = htmlspecialchars($custom_logo_url, ENT_QUOTES, 'UTF-8');
+        } elseif (!empty($custom_logo_path)) {
             $logo_url = htmlspecialchars($custom_logo_path, ENT_QUOTES, 'UTF-8');
         } elseif (!empty($asset_path)) {
             $logo_url = htmlspecialchars($asset_path, ENT_QUOTES, 'UTF-8') . '/img/logo.png';

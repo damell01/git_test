@@ -610,6 +610,31 @@ if (table_exists($pdo, 'invoices')) {
 }
 
 // =============================================================================
+// UPGRADE 23 — settings: invoice_footer; logo_url for uploaded images
+// =============================================================================
+echo "\n--- Upgrade 23: invoice_footer setting + logo_url ---\n";
+
+// Ensure the uploads directory exists
+$uploads_dir = dirname(__DIR__) . '/uploads';
+if (!is_dir($uploads_dir)) {
+    if (mkdir($uploads_dir, 0755, true)) {
+        $log[] = "[OK]  Created admin/uploads directory";
+    } else {
+        $errors[] = "[FAIL] Could not create admin/uploads directory";
+    }
+}
+// Add .htaccess to uploads dir for security — only allow image types
+$htaccess_path = $uploads_dir . '/.htaccess';
+if (!file_exists($htaccess_path)) {
+    file_put_contents($htaccess_path,
+        "Options -Indexes\n<FilesMatch \"^(?!.*\.(png|jpg|jpeg|gif|webp|svg)$).*$\">\n  Require all denied\n</FilesMatch>\n"
+    );
+    $log[] = "[OK]  Created uploads/.htaccess security file";
+}
+
+$log[] = "[SKIP] invoice_footer setting — inserted via application on first save";
+
+// =============================================================================
 // Summary
 // =============================================================================
 echo "\n" . str_repeat('=', 60) . "\n";

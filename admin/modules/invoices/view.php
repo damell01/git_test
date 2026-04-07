@@ -21,6 +21,8 @@ $company_name    = get_setting('company_name',    'Trash Panda Roll-Offs');
 $company_phone   = get_setting('company_phone',   '');
 $company_email   = get_setting('company_email',   '');
 $company_address = get_setting('company_address', '');
+$invoice_footer  = get_setting('invoice_footer',  '');
+$logo_url        = get_setting('logo_url', '') ?: get_setting('logo_path', '');
 
 $print_mode = !empty($_GET['print']);
 
@@ -36,8 +38,9 @@ if ($print_mode):
 <style>
   body { background:#fff; color:#111; font-family:Arial,Helvetica,sans-serif; font-size:14px; }
   .inv-header { border-bottom:2px solid #f97316; padding-bottom:1rem; margin-bottom:1.5rem; }
-  .inv-logo { font-size:2rem; font-weight:900; letter-spacing:.04em; color:#111; }
-  .inv-logo span { color:#f97316; }
+  .inv-logo-img { max-height:60px; max-width:200px; object-fit:contain; }
+  .inv-logo-text { font-size:1.6rem; font-weight:900; letter-spacing:.04em; color:#111; }
+  .inv-logo-text span { color:#f97316; }
   .badge-status { display:inline-block; padding:.25rem .75rem; border-radius:4px; font-size:.8rem; font-weight:700; text-transform:uppercase; }
   .badge-draft { background:#e5e7eb; color:#374151; }
   .badge-sent  { background:#dbeafe; color:#1d4ed8; }
@@ -48,6 +51,7 @@ if ($print_mode):
   .subtotal-row td { border-top:2px solid #e5e7eb; font-weight:600; background:#f9fafb; }
   .total-row td { border-top:2px solid #f97316; font-weight:700; font-size:1.1rem; }
   .payment-box { background:#fffbeb; border:1px solid #f59e0b; border-radius:6px; padding:1rem 1.25rem; margin-top:1.5rem; }
+  .inv-footer { border-top:1px solid #e5e7eb; margin-top:2rem; padding-top:.75rem; font-size:.8rem; color:#6b7280; text-align:center; }
   @media print {
     .no-print { display:none !important; }
     body { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
@@ -58,10 +62,17 @@ if ($print_mode):
 <div class="container py-4">
   <div class="inv-header d-flex justify-content-between align-items-start">
     <div>
-      <div class="inv-logo">🗑 <span><?= e($company_name) ?></span></div>
-      <?php if ($company_phone):   ?><div><?= e($company_phone) ?></div><?php endif; ?>
-      <?php if ($company_email):   ?><div><?= e($company_email) ?></div><?php endif; ?>
-      <?php if ($company_address): ?><div><?= e($company_address) ?></div><?php endif; ?>
+      <?php if (!empty($logo_url)): ?>
+      <img src="<?= e($logo_url) ?>" alt="<?= e($company_name) ?>" class="inv-logo-img mb-1"
+           onerror="this.style.display='none';">
+      <br>
+      <?php else: ?>
+      <div class="inv-logo-text">🗑 <span><?= e($company_name) ?></span></div>
+      <?php endif; ?>
+      <div style="font-size:.95rem;font-weight:600;"><?= e($company_name) ?></div>
+      <?php if ($company_phone):   ?><div style="font-size:.85rem;"><?= e($company_phone) ?></div><?php endif; ?>
+      <?php if ($company_email):   ?><div style="font-size:.85rem;"><?= e($company_email) ?></div><?php endif; ?>
+      <?php if ($company_address): ?><div style="font-size:.85rem;"><?= e($company_address) ?></div><?php endif; ?>
     </div>
     <div class="text-end">
       <h2 class="mb-1">INVOICE</h2>
@@ -150,9 +161,13 @@ if ($print_mode):
   <div class="mt-2" style="font-size:.85rem;color:#6b7280;"><strong>Terms:</strong><br><?= nl2br(e($inv['terms'])) ?></div>
   <?php endif; ?>
 
+  <?php if (!empty($invoice_footer)): ?>
+  <div class="inv-footer"><?= nl2br(e($invoice_footer)) ?></div>
+  <?php endif; ?>
+
   <div class="no-print mt-4 text-center">
-    <button class="btn btn-primary" onclick="window.print()">Print / Save PDF</button>
-    <a href="view.php?id=<?= $id ?>" class="btn btn-outline-secondary ms-2">Back</a>
+    <button class="btn btn-primary" onclick="window.print()"><i class="fa-solid fa-print me-1"></i> Print / Save PDF</button>
+    <a href="view.php?id=<?= $id ?>" class="btn btn-outline-secondary ms-2"><i class="fa-solid fa-arrow-left me-1"></i> Back</a>
   </div>
 </div>
 </body>
@@ -194,7 +209,12 @@ layout_start('Invoice ' . $inv['invoice_number'], 'invoices');
             <!-- Header -->
             <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
                 <div>
-                    <div style="font-family:var(--font-display);font-size:1.3rem;">
+                    <?php if (!empty($logo_url)): ?>
+                    <img src="<?= e($logo_url) ?>" alt="<?= e($company_name) ?>"
+                         style="max-height:55px;max-width:180px;object-fit:contain;margin-bottom:.4rem;display:block;"
+                         onerror="this.style.display='none';">
+                    <?php endif; ?>
+                    <div style="font-family:var(--font-display);font-size:1.1rem;">
                         🗑 <?= e($company_name) ?>
                     </div>
                     <?php if ($company_phone):   ?><div style="color:var(--gl);font-size:.88rem;"><?= e($company_phone) ?></div><?php endif; ?>
@@ -283,6 +303,12 @@ layout_start('Invoice ' . $inv['invoice_number'], 'invoices');
             <div class="mt-3 pt-3" style="border-top:1px solid var(--st2);">
                 <div style="color:var(--gl);font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem;">Terms</div>
                 <div style="color:var(--gl);font-size:.85rem;"><?= nl2br(e($inv['terms'])) ?></div>
+            </div>
+            <?php endif; ?>
+
+            <?php if (!empty($invoice_footer)): ?>
+            <div class="mt-3 pt-3" style="border-top:1px solid var(--st2);text-align:center;">
+                <div style="color:var(--gl);font-size:.82rem;"><?= nl2br(e($invoice_footer)) ?></div>
             </div>
             <?php endif; ?>
         </div>
