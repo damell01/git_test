@@ -1,0 +1,10 @@
+<?php
+require_once __DIR__ . '/_bootstrap.php';
+require_permission('bookings.view');
+$search = trim((string) ($_GET['search'] ?? ''));
+$status = trim((string) ($_GET['status'] ?? ''));
+$rows = db_fetchall('SELECT b.*, CONCAT_WS(" ", c.first_name, c.last_name) AS customer_name FROM bookings b LEFT JOIN customers c ON c.id = b.customer_id WHERE b.tenant_id = ? AND b.deleted_at IS NULL AND (? = "" OR b.status = ?) AND (? = "" OR b.booking_number LIKE ? OR CONCAT_WS(" ", c.first_name, c.last_name) LIKE ?) ORDER BY b.created_at DESC', [current_tenant_id(), $status, $status, $search, '%' . $search . '%', '%' . $search . '%']);
+fieldora_layout_start('Bookings', 'bookings'); ?>
+<form method="get" class="card form-grid"><input name="search" value="<?= e($search) ?>" placeholder="Search bookings or customers"><select name="status"><option value="">All statuses</option><?php foreach(['requested','confirmed','scheduled','completed','canceled'] as $option): ?><option value="<?= e($option) ?>"<?= $status===$option?' selected':'' ?>><?= e($option) ?></option><?php endforeach; ?></select><button class="primary-btn" type="submit">Filter</button></form>
+<section class="table-wrap" style="margin-top:20px;"><table><thead><tr><th>Booking</th><th>Customer</th><th>Status</th><th>Payment</th><th>Total</th><th>Date</th></tr></thead><tbody><?php if ($rows === []): ?><tr><td colspan="6">No bookings match those filters yet. Test your public booking page or share the booking link to start collecting requests.</td></tr><?php else: ?><?php foreach ($rows as $row): ?><tr><td><a href="<?= e(APP_URL) ?>/modules/fieldora/booking_view.php?id=<?= (int)$row['id'] ?>"><?= e($row['booking_number']) ?></a></td><td><?= e($row['customer_name']) ?></td><td><span class="tag"><?= e($row['status']) ?></span></td><td><?= e($row['payment_state']) ?></td><td>$<?= number_format((float)$row['total_amount'],2) ?></td><td><?= e($row['scheduled_date']) ?></td></tr><?php endforeach; ?><?php endif; ?></tbody></table></section>
+<?php fieldora_layout_end();

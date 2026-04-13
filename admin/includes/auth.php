@@ -1,23 +1,21 @@
 <?php
 /**
- * Authentication & session helpers
- * Trash Panda Roll-Offs
+ * Authentication and session helpers.
  */
 
-/**
- * Configure and start the PHP session if not already active.
- */
 function session_init(): void
 {
     if (session_status() === PHP_SESSION_ACTIVE) {
         return;
     }
 
+    $isSecure = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+
     session_set_cookie_params([
         'lifetime' => SESSION_LIFETIME,
-        'path'     => '/',
-        'domain'   => '',
-        'secure'   => true,
+        'path' => '/',
+        'domain' => '',
+        'secure' => $isSecure,
         'httponly' => true,
         'samesite' => 'Lax',
     ]);
@@ -26,31 +24,23 @@ function session_init(): void
     session_start();
 }
 
-/**
- * Redirect to login if the visitor has no active session.
- */
 function require_login(): void
 {
     if (empty($_SESSION['user_id'])) {
-        header('Location: ' . APP_URL . '/login.php');
+        header('Location: ' . SITE_URL . '/login');
         exit;
     }
 }
 
-/**
- * Return the currently logged-in user row, with a static cache.
- *
- * @return array|null
- */
 function current_user(): ?array
 {
-    static $user = false;   // false = not yet loaded
+    static $user = false;
 
     if ($user === false) {
         if (empty($_SESSION['user_id'])) {
             $user = null;
         } else {
-            $row  = db_fetch('SELECT * FROM users WHERE id = ? LIMIT 1', [$_SESSION['user_id']]);
+            $row = db_fetch('SELECT * FROM users WHERE id = ? LIMIT 1', [$_SESSION['user_id']]);
             $user = $row ?: null;
         }
     }
@@ -58,12 +48,6 @@ function current_user(): ?array
     return $user;
 }
 
-/**
- * Return true if the current user has one of the specified roles.
- *
- * @param string ...$roles
- * @return bool
- */
 function has_role(string ...$roles): bool
 {
     $user = current_user();
@@ -73,59 +57,37 @@ function has_role(string ...$roles): bool
     return in_array($user['role'], $roles, true);
 }
 
-/**
- * Enforce login and role; send 403 if the role requirement is not met.
- *
- * @param string ...$roles
- */
 function require_role(string ...$roles): void
 {
     require_login();
 
     if (!has_role(...$roles)) {
         http_response_code(403);
-        die(
-            '<h1>403 Forbidden</h1>' .
-            '<p>You do not have permission to access this page. ' .
-            'If you believe this is an error, please contact your administrator.</p>'
-        );
+        die('You do not have permission to access this page.');
     }
 }
 
-/**
- * Mark a user as logged in: regenerate session ID, store session data,
- * record activity, and update last_login timestamp.
- *
- * @param array $user  Row from the users table
- */
 function login_user(array $user): void
 {
     session_regenerate_id(true);
 
-    $_SESSION['user_id']   = $user['id'];
+    $_SESSION['user_id'] = (int) $user['id'];
     $_SESSION['user_name'] = $user['name'];
     $_SESSION['user_role'] = $user['role'];
+    $_SESSION['tenant_id'] = (int) ($user['tenant_id'] ?? 0);
 
-    log_activity('login', 'User logged in', 'user', (int)$user['id'], (int)$user['id']);
-
+    log_activity('login', 'User logged in', 'user', (int) $user['id'], (int) $user['id']);
     db_execute('UPDATE users SET last_login = NOW() WHERE id = ?', [$user['id']]);
 }
 
-/**
- * Destroy the current session and redirect to the login page.
- */
 function logout_user(): void
 {
+    $_SESSION = [];
     session_destroy();
-    header('Location: ' . APP_URL . '/login.php');
+    header('Location: ' . SITE_URL . '/login');
     exit;
 }
 
-/**
- * Return the CSRF token for the current session, generating one if needed.
- *
- * @return string
- */
 function csrf_token(): string
 {
     if (empty($_SESSION[CSRF_TOKEN_NAME])) {
@@ -134,25 +96,15 @@ function csrf_token(): string
     return $_SESSION[CSRF_TOKEN_NAME];
 }
 
-/**
- * Return a hidden HTML input carrying the CSRF token.
- *
- * @return string
- */
 function csrf_field(): string
 {
     return '<input type="hidden" name="' . CSRF_TOKEN_NAME . '" value="' . csrf_token() . '">';
 }
 
-/**
- * Compare the submitted CSRF token against the session token.
- *
- * @return bool
- */
 function csrf_verify(): bool
 {
     $submitted = $_POST[CSRF_TOKEN_NAME] ?? '';
-    $stored    = $_SESSION[CSRF_TOKEN_NAME] ?? '';
+    $stored = $_SESSION[CSRF_TOKEN_NAME] ?? '';
 
     if ($stored === '' || $submitted === '') {
         return false;
@@ -161,9 +113,6 @@ function csrf_verify(): bool
     return hash_equals($stored, $submitted);
 }
 
-/**
- * Terminate the request with an error message if the CSRF token is invalid.
- */
 function csrf_check(): void
 {
     if (!csrf_verify()) {

@@ -1,0 +1,11 @@
+<?php
+require_once __DIR__ . '/_bootstrap.php';
+require_permission('automations.manage');
+require_feature('automations');
+$tenantId = current_tenant_id();
+if ($_SERVER['REQUEST_METHOD'] === 'POST') { csrf_check(); db_insert('automation_rules',['tenant_id'=>$tenantId,'name'=>trim((string)$_POST['name']),'trigger_key'=>trim((string)$_POST['trigger_key']),'conditions_json'=>json_encode(['status'=>trim((string)($_POST['status_condition'] ?? ''))]),'actions_json'=>json_encode([['type'=>trim((string)$_POST['action_type']),'target'=>trim((string)($_POST['action_target'] ?? ''))]]),'is_active'=>1,'created_at'=>date('Y-m-d H:i:s'),'updated_at'=>date('Y-m-d H:i:s')]); flash_success('Automation created.'); redirect($_SERVER['REQUEST_URI']); }
+$rows = db_fetchall('SELECT * FROM automation_rules WHERE tenant_id = ? ORDER BY created_at DESC',[$tenantId]);
+fieldora_layout_start('Automations', 'automations'); ?>
+<form method="post" class="card form-grid"><?= csrf_field() ?><input name="name" placeholder="Rule name" required><select name="trigger_key"><option value="booking.created">booking.created</option><option value="payment.completed">payment.completed</option><option value="invoice.sent">invoice.sent</option><option value="job.completed">job.completed</option></select><input name="status_condition" placeholder="Optional status condition"><select name="action_type"><option value="send_email">Send email</option><option value="send_sms">Send SMS</option><option value="send_webhook">Send webhook</option><option value="update_status">Update status</option><option value="create_task">Create reminder/task</option></select><input name="action_target" placeholder="Action target or template"><button class="primary-btn" type="submit">Create automation</button></form>
+<section class="table-wrap" style="margin-top:20px;"><table><thead><tr><th>Name</th><th>Trigger</th><th>Actions</th></tr></thead><tbody><?php foreach ($rows as $row): ?><tr><td><a href="<?= e(APP_URL) ?>/modules/fieldora/automation_edit.php?id=<?= (int)$row['id'] ?>"><?= e($row['name']) ?></a></td><td><?= e($row['trigger_key']) ?></td><td><?= e($row['actions_json']) ?></td></tr><?php endforeach; ?></tbody></table></section>
+<?php fieldora_layout_end();

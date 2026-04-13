@@ -1,0 +1,10 @@
+<?php
+require_once __DIR__ . '/_bootstrap.php';
+require_permission('bookings.manage');
+$id = (int) ($_GET['id'] ?? 0);
+$row = db_fetch('SELECT * FROM services WHERE tenant_id = ? AND id = ? LIMIT 1', [current_tenant_id(), $id]);
+if (!$row) { http_response_code(404); exit('Service not found'); }
+if ($_SERVER['REQUEST_METHOD'] === 'POST') { csrf_check(); db_execute('UPDATE services SET name = ?, description = ?, price = ?, duration_minutes = ?, deposit_mode = ?, deposit_value = ?, is_active = ?, updated_at = NOW() WHERE id = ? AND tenant_id = ?', [trim((string)$_POST['name']), trim((string)($_POST['description'] ?? '')), (float)$_POST['price'], (int)($_POST['duration_minutes'] ?? 0) ?: null, trim((string)($_POST['deposit_mode'] ?? 'none')), (float)($_POST['deposit_value'] ?? 0), (int)($_POST['is_active'] ?? 0), $id, current_tenant_id()]); log_fieldora_event('service.updated','Updated service','service',$id); flash_success('Service updated.'); redirect(APP_URL . '/modules/fieldora/service_view.php?id=' . $id); }
+fieldora_layout_start('Edit Service', 'services'); ?>
+<form method="post" class="card form-grid"><?= csrf_field() ?><input name="name" value="<?= e($row['name']) ?>" required><input name="price" type="number" step="0.01" value="<?= e((string)$row['price']) ?>" required><input name="duration_minutes" type="number" value="<?= e((string)$row['duration_minutes']) ?>"><select name="deposit_mode"><option value="none"<?= $row['deposit_mode']==='none'?' selected':'' ?>>None</option><option value="percent"<?= $row['deposit_mode']==='percent'?' selected':'' ?>>Percent</option><option value="fixed"<?= $row['deposit_mode']==='fixed'?' selected':'' ?>>Fixed</option></select><input name="deposit_value" type="number" step="0.01" value="<?= e((string)$row['deposit_value']) ?>"><select name="is_active"><option value="1"<?= (int)$row['is_active']===1?' selected':'' ?>>Active</option><option value="0"<?= (int)$row['is_active']===0?' selected':'' ?>>Inactive</option></select><textarea name="description"><?= e($row['description']) ?></textarea><button class="primary-btn" type="submit">Save service</button></form>
+<?php fieldora_layout_end();
