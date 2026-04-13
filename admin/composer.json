@@ -1,10 +1,9 @@
 {
-    "name": "trashpanda/rolloffs-admin",
-    "description": "Trash Panda Roll-Offs Admin Panel",
+    "name": "fieldora/platform-admin",
+    "description": "Fieldora modular multi-tenant booking and payments platform",
     "type": "project",
     "require": {
-        "php": "^8.1",
-        "minishlink/web-push": "^9.0",
+        "php": "^8.0",
         "phpmailer/phpmailer": "^6.9",
         "stripe/stripe-php": "^13.0"
     },
